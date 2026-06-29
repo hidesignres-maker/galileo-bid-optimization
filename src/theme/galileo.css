@@ -1,0 +1,119 @@
+/* ============================================================
+   Galileo Design System — DaisyUI v5 custom theme
+   Source of truth: 00_Galileo Design System.dc.html
+   ============================================================ */
+
+/* Raw Galileo DS tokens — available globally as CSS custom props */
+:root {
+  /* Semantic data colors */
+  --spend:  #FF9C40;
+  --rsv:    #04AFFF;
+  --share:  #0B5DA2;
+  --attr:   #7DC50F;
+  --incr:   #F740CE;
+
+  /* AI / recommendation accent — NOT general primary */
+  --ai:           #7221B6;
+  --ai-secondary: #009689;
+
+  /* Text */
+  --text-primary:   #1A1917;
+  --text-secondary: #5F5E5A;
+  --text-tertiary:  #9C9A92;
+
+  /* Surfaces */
+  --surface:   #FFFFFF;
+  --surface-2: #F9F8F6;
+  --surface-3: #F0EEE9;
+
+  /* Borders */
+  --border-light:  rgba(26, 25, 23, 0.08);
+  --border:        rgba(26, 25, 23, 0.14);
+  --border-strong: rgba(26, 25, 23, 0.22);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Dark mode overrides */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text-primary:   #E8E6E0;
+    --text-secondary: #9C9A92;
+    --text-tertiary:  #6E6C66;
+    --surface:        #1A1917;
+    --surface-2:      #242320;
+    --surface-3:      #2F2C27;
+    --border-light:   rgba(255, 255, 255, 0.06);
+    --border:         rgba(255, 255, 255, 0.10);
+    --border-strong:  rgba(255, 255, 255, 0.16);
+    --shadow-sm:      0 1px 2px rgba(0, 0, 0, 0.20);
+    --shadow-md:      0 4px 12px rgba(0, 0, 0, 0.30);
+    --shadow-lg:      0 8px 24px rgba(0, 0, 0, 0.40);
+    --ai:             #00C9B7;
+    --ai-secondary:   #009689;
+  }
+}
+
+/* ============================================================
+   DaisyUI v5 galileo theme
+   Maps DS tokens to DaisyUI semantic roles.
+
+   Roles used:
+     primary       → AI/recommendation purple (#7221B6)
+                     ONLY for AI-surfaced actions & accents.
+     secondary     → RSV cyan (#04AFFF) — key performance metric
+     accent        → Spend orange (#FF9C40) — budget / spend signals
+     neutral       → text-primary (#1A1917) / surface-3 (#F0EEE9)
+     base-100/200/300 → surface / surface-2 / surface-3
+     success       → attr green (#7DC50F) — positive lift / applied
+     warning       → spend orange (#FF9C40) — caution / pending
+     error         → incr pink (#F740CE) — negative / declined
+     info          → share blue (#0B5DA2) — share-of-voice / info
+   ============================================================ */
+
+@plugin "daisyui/theme" {
+  name: "galileo";
+  default: true;
+
+  /* Core roles */
+  --color-primary:         #7221B6;
+  --color-primary-content: #FFFFFF;
+
+  --color-secondary:         #04AFFF;
+  --color-secondary-content: #FFFFFF;
+
+  --color-accent:         #FF9C40;
+  --color-accent-content: #1A1917;
+
+  --color-neutral:         #F0EEE9;
+  --color-neutral-content: #1A1917;
+
+  /* Semantic status */
+  --color-success:         #7DC50F;
+  --color-success-content: #FFFFFF;
+
+  --color-warning:         #FF9C40;
+  --color-warning-content: #1A1917;
+
+  --color-error:         #F740CE;
+  --color-error-content: #FFFFFF;
+
+  --color-info:         #0B5DA2;
+  --color-info-content: #FFFFFF;
+
+  /* Base surfaces */
+  --color-base-100: #FFFFFF;
+  --color-base-200: #F9F8F6;
+  --color-base-300: #F0EEE9;
+  --color-base-content: #1A1917;
+
+  /* Radius & typography */
+  --radius-selector: 0.375rem;
+  --radius-field:    0.375rem;
+  --radius-box:      0.5rem;
+  --tab-border:      2px;
+  --border:          1px;
+}

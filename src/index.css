@@ -1,0 +1,5 @@
+@import "tailwindcss";
+@import "./theme/galileo.css";
+@plugin "daisyui" {
+  themes: galileo;
+}

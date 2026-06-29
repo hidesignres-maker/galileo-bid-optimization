@@ -480,135 +480,105 @@ export default function App() {
 
   const statusColor = { Pending:"yellow", Applied:"green", Rejected:"red", Expired:"gray" };
 
-  // Status → DaisyUI badge variant mapping for landing page
-  const landingBadgeVariant = {
-    Pending:  "badge-warning",
-    Applied:  "badge-success",
-    Rejected: "badge-error",
-    Expired:  "badge-ghost",
-  };
-
   const RecommendationsPage = () => (
-    <div data-theme="galileo" className="min-h-screen bg-base-200" style={{fontFamily:"Inter,-apple-system,sans-serif"}}>
-
-      {/* ── TOP BAR ──────────────────────────────────────────────────── */}
-      <div className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50 px-5" style={{boxShadow:"var(--shadow-sm)"}}>
-        <div className="flex-1 gap-2">
-          <span className="text-sm font-bold" style={{color:"var(--ai)"}}>Galileo</span>
-          <span className="text-base-content/30">|</span>
-          <span className="text-xs text-base-content/50">Campaign Management</span>
+    <div style={s.page}>
+      {/* TOP BAR */}
+      <div style={s.topbar}>
+        <div style={s.topLeft}>
+          <span style={{fontWeight:700,fontSize:13,color:C.blue,letterSpacing:0.2}}>Galileo</span>
+          <span style={{color:C.border}}>|</span>
+          <span style={{fontSize:12,color:C.textSub}}>Campaign Management</span>
         </div>
-        <div className="flex-none flex items-center gap-3">
-          <span className="text-xs text-base-content/50">Shirley Chisholm</span>
-          <div className="avatar avatar-placeholder">
-            <div className="bg-neutral text-neutral-content w-7 rounded-full text-xs font-semibold">
-              SC
-            </div>
-          </div>
+        <div style={s.topRight}>
+          <span style={{fontSize:12,color:C.textSub}}>Shirley Chisholm</span>
+          <div style={s.avatar}>SC</div>
         </div>
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-6 py-6">
-
-        {/* ── PAGE TITLE ───────────────────────────────────────────────── */}
-        <div className="mb-5">
-          <h1 className="text-lg font-semibold text-base-content mb-1">Campaign Optimization Recommendations</h1>
-          <p className="text-xs text-base-content/50">Review AI-generated optimization packages, assess projected impact, and apply approved changes to Skai.</p>
+      <div style={{...s.main, maxWidth:1160}}>
+        {/* PAGE TITLE */}
+        <div style={{marginBottom:20}}>
+          <h1 style={{...s.h1, fontSize:17, marginBottom:4}}>Campaign Optimization Recommendations</h1>
+          <div style={{fontSize:12,color:C.textSub}}>Review AI-generated optimization packages, assess projected impact, and apply approved changes to Skai.</div>
         </div>
 
-        {/* ── KPI SUMMARY ──────────────────────────────────────────────── */}
-        <div className="stats stats-horizontal shadow bg-base-100 border border-base-300 w-full mb-5">
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Projected RSV opportunity</div>
-            <div className="stat-value text-xl font-bold text-success">+$48.1K</div>
-            <div className="stat-desc text-xs">Across pending recommendations</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Pending reviews</div>
-            <div className={`stat-value text-xl font-bold ${pendingCount > 0 ? "text-warning" : "text-base-content/50"}`}>{pendingCount}</div>
-            <div className="stat-desc text-xs">Action required</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Applied this month</div>
-            <div className="stat-value text-xl font-bold text-base-content">{appliedCount}</div>
-            <div className="stat-desc text-xs">Packages pushed to Skai</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Projected spend impact</div>
-            <div className="stat-value text-xl font-bold text-base-content">$27.4K</div>
-            <div className="stat-desc text-xs">Across applied packages</div>
-          </div>
+        {/* KPI SUMMARY */}
+        <div style={{display:"flex",gap:12,marginBottom:20}}>
+          {[
+            {label:"Projected RSV opportunity", value:"+$48.1K", sub:"Across pending recommendations", color:C.green},
+            {label:"Pending reviews",           value:String(pendingCount), sub:"Action required",              color:pendingCount>0?C.yellow:C.textSub},
+            {label:"Applied this month",        value:String(appliedCount), sub:"Packages pushed to Skai",      color:C.text},
+            {label:"Projected spend impact",         value:"$27.4K", sub:"Across applied packages",         color:C.text},
+          ].map(({label,value,sub,color},i)=>(
+            <div key={i} style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 18px"}}>
+              <div style={{fontSize:11,color:C.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:0.4,marginBottom:4}}>{label}</div>
+              <div style={{fontSize:22,fontWeight:700,color,letterSpacing:-0.5,marginBottom:2}}>{value}</div>
+              <div style={{fontSize:11,color:C.textSub}}>{sub}</div>
+            </div>
+          ))}
         </div>
 
-        {/* ── RECOMMENDATIONS CARD ─────────────────────────────────────── */}
-        <div className="card bg-base-100 border border-base-300 shadow-sm">
-          <div className="card-body p-0">
+        {/* RECOMMENDATIONS CARD */}
+        <div style={s.panel}>
+          <div style={{...s.panelHead, flexDirection:"column", alignItems:"flex-start", gap:4}}>
+            <span style={s.panelTitle}>My Recommendations</span>
+            <span style={{fontSize:12,color:C.textSub}}>Open a recommendation package to review projected impact, approve changes, and submit updates to Skai.</span>
+          </div>
 
-            {/* Card header */}
-            <div className="px-5 pt-5 pb-3">
-              <h2 className="card-title text-sm font-semibold">My Recommendations</h2>
-              <p className="text-xs text-base-content/50 mt-0.5">Open a recommendation package to review projected impact, approve changes, and submit updates to Skai.</p>
-            </div>
+          {/* Visual-only tabs */}
+          <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,padding:"0 16px"}}>
+            {["All","Pending","Applied","Rejected","Expired"].map((tab,i)=>(
+              <div key={tab} style={{padding:"9px 14px",fontSize:13,fontWeight:i===0?700:500,color:i===0?C.blue:C.textSub,borderBottom:i===0?`2px solid ${C.blue}`:"2px solid transparent",cursor:"default",marginBottom:-1}}>{tab}</div>
+            ))}
+          </div>
 
-            {/* Visual-only tabs */}
-            <div className="tabs tabs-bordered border-b border-base-300 px-1">
-              {["All","Pending","Applied","Rejected","Expired"].map((tab, i) => (
-                <span key={tab} className={`tab tab-sm ${i === 0 ? "tab-active font-semibold" : "text-base-content/50"}`}>{tab}</span>
-              ))}
-            </div>
-
-            {/* TABLE */}
-            <div className="overflow-x-auto">
-              <table className="table table-sm w-full">
-                <thead>
-                  <tr className="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
-                    <th>Recommendation</th>
-                    <th>Retailer / Customer group</th>
-                    <th>Optimization target</th>
-                    <th>Recommended changes</th>
-                    <th>Projected RSV impact</th>
-                    <th>Projected spend change</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {RECS_LIST.map(r => {
-                    const rowStatus = r.statusKey === "wk12" ? wk12Status : r.status;
-                    const isClickable = r.id === "wk12" || rowStatus === "Applied";
-                    const handleRowClick = r.id === "wk12" ? () => setCurrentView("optimization") : undefined;
-                    const badgeVariant = landingBadgeVariant[rowStatus] || "badge-ghost";
-                    return (
-                      <tr key={r.id} className="hover:bg-base-200/50 transition-colors">
-                        <td>
-                          <div className="flex flex-col gap-0.5">
-                            <span
-                              onClick={handleRowClick}
-                              className={`text-sm font-semibold ${isClickable ? "text-primary cursor-pointer hover:underline" : "text-base-content cursor-default"}`}
-                            >{r.label}</span>
-                            <span className="text-xs text-base-content/40">{r.dateRange}</span>
-                          </div>
-                        </td>
-                        <td className="text-sm">{r.retailer}</td>
-                        <td className="text-sm">{r.optTarget}</td>
-                        <td className="text-xs text-base-content/50">{r.changes}</td>
-                        <td className={`text-sm font-semibold ${r.rsvImpact > 0 ? "text-success" : "text-error"}`}>
-                          {r.rsvImpact > 0 ? "+" : ""}{fmtCurrency(r.rsvImpact)}
-                        </td>
-                        <td className={`text-sm font-semibold ${r.spendChange < 0 ? "text-success" : "text-warning"}`}>
-                          {r.spendChange >= 0 ? "+" : ""}{fmtCurrency(r.spendChange)}
-                        </td>
-                        <td>
-                          <span className={`badge badge-sm ${badgeVariant}`}>{rowStatus}</span>
-                        </td>
-                        <td className="text-xs text-base-content/50">{r.created}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
+          {/* TABLE */}
+          <div style={s.tableWrap}>
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Recommendation</th>
+                  <th style={s.th}>Retailer / Customer group</th>
+                  <th style={s.th}>Optimization target</th>
+                  <th style={s.th}>Recommended changes</th>
+                  <th style={s.th}>Projected RSV impact</th>
+                  <th style={s.th}>Projected spend change</th>
+                  <th style={s.th}>Status</th>
+                  <th style={s.th}>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {RECS_LIST.map(r=>{
+                  const rowStatus = r.statusKey==="wk12" ? wk12Status : r.status;
+                  const isClickable = r.id==="wk12" || rowStatus==="Applied";
+                  const handleRowClick = r.id==="wk12" ? ()=>setCurrentView("optimization") : undefined;
+                  return (
+                    <tr key={r.id} style={{background:"#fff"}}>
+                      <td style={s.td}>
+                        <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                          <span
+                            onClick={handleRowClick}
+                            style={{fontWeight:700,color:isClickable?C.blue:C.text,cursor:isClickable?"pointer":"default",fontSize:13}}
+                          >{r.label}</span>
+                          <span style={{fontSize:11,color:C.textMuted}}>{r.dateRange}</span>
+                        </div>
+                      </td>
+                      <td style={s.td}>{r.retailer}</td>
+                      <td style={s.td}>{r.optTarget}</td>
+                      <td style={{...s.td,fontSize:12,color:C.textSub}}>{r.changes}</td>
+                      <td style={{...s.td,fontWeight:600,color:r.rsvImpact>0?C.green:C.red}}>
+                        {r.rsvImpact>0?"+":""}{fmtCurrency(r.rsvImpact)}
+                      </td>
+                      <td style={{...s.td,fontWeight:600,color:r.spendChange<0?C.green:"#D97706"}}>
+                        {r.spendChange>=0?"+":""}{fmtCurrency(r.spendChange)}
+                      </td>
+                      <td style={s.td}><Badge color={statusColor[rowStatus]||"gray"}>{rowStatus}</Badge></td>
+                      <td style={{...s.td,color:C.textSub,fontSize:12}}>{r.created}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>

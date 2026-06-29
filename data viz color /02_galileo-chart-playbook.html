@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galileo Chart Playbook</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --spend:#FF9C40; --spend-a:#FFDDBD; --spend-b:#995E26;
+  --rsv:#04AFFF;   --rsv-a:#9CDFFF;   --rsv-b:#025880;
+  --share:#0B5DA2; --share-a:#92BDE0; --share-b:#063257;
+  --attr:#7DC50F;  --attr-a:#C2DC9A;  --attr-b:#3C5E07;
+  --incr:#F740CE;  --incr-a:#FABBEC;  --incr-b:#912679;
+  --ai:#7221B6;
+  --pepsi:#3B0CF8; --starry:#138F60; --mtndew:#C94905;
+  --ink:#1C1F26; --ink-2:#4A4F5C; --ink-3:#8B8F9A; --ink-4:#C2C5CC;
+  --page:#F5F6F8; --white:#FFFFFF; --surface:#F0F1F4;
+  --line:rgba(28,31,38,.09); --line-md:rgba(28,31,38,.16);
+  --accent:#2563EB;
+  --font:-apple-system,'Helvetica Neue',Arial,sans-serif;
+  --serif:Georgia,'Times New Roman',serif;
+}
+@media(prefers-color-scheme:dark){
+  :root{
+    --ink:#E8EAF0;--ink-2:#9AA0AE;--ink-3:#5C6270;--ink-4:#353840;
+    --page:#131518;--white:#1C1F26;--surface:#242729;
+    --line:rgba(255,255,255,.07);--line-md:rgba(255,255,255,.14);
+    --ai:#00C9B7;--accent:#60A5FA;
+  }
+}
+
+html{scroll-behavior:smooth}
+body{font-family:var(--font);background:var(--page);color:var(--ink);font-size:13px;line-height:1.65;-webkit-font-smoothing:antialiased;}
+.page{max-width:1100px;margin:0 auto;padding:72px 48px 120px;}
+@media(max-width:720px){.page{padding:48px 24px 80px;}}
+
+hr{border:none;border-top:1px solid var(--line);margin:72px 0;}
+hr.tight{margin:48px 0;}
+hr.slim{margin:36px 0;}
+
+/* HERO */
+.hero{margin-bottom:80px;}
+.hero-eyebrow{font-size:11px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:20px;display:flex;align-items:center;gap:10px;}
+.hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:var(--line-md);}
+.hero h1{font-family:var(--serif);font-size:52px;font-weight:400;letter-spacing:-.02em;line-height:1.1;color:var(--ink);margin-bottom:14px;}
+.hero-sub{font-size:15px;color:var(--ink-2);max-width:520px;line-height:1.7;margin-bottom:20px;}
+.hero-status{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);}
+
+/* SECTION LABEL */
+.sl{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:32px;display:flex;align-items:center;gap:12px;}
+.sl::after{content:'';flex:1;height:1px;background:var(--line);}
+.sl-num{color:var(--accent);}
+
+/* MODEL STATEMENT */
+.model-statement{margin-bottom:40px;}
+.model-line{font-family:var(--serif);font-size:28px;font-weight:400;line-height:1.35;color:var(--ink);}
+.model-line span{color:var(--ink-3);}
+.model-support{font-size:13px;color:var(--ink-2);margin-top:14px;max-width:560px;line-height:1.65;}
+
+/* DECISION STEPS */
+.step-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--line-md);border-radius:12px;overflow:hidden;margin-bottom:48px;}
+@media(max-width:900px){.step-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.step-grid{grid-template-columns:1fr;}}
+.step-panel{background:var(--white);padding:24px;}
+.step-num{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:6px;}
+.step-q{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:14px;line-height:1.4;}
+.step-options{display:flex;flex-direction:column;gap:8px;}
+.step-opt{font-size:11px;color:var(--ink-2);padding:8px 10px;background:var(--surface);border-radius:6px;line-height:1.5;}
+.step-opt-label{font-size:10px;font-weight:600;color:var(--ink);display:block;margin-bottom:3px;}
+.step-opt-eg{font-size:10px;color:var(--ink-3);}
+.step-rule{font-size:11px;color:var(--ink-3);margin-top:12px;font-style:italic;line-height:1.5;}
+
+/* IDENTITY SECTION */
+.identity-rule{font-size:14px;color:var(--ink-2);text-align:center;font-style:italic;margin-bottom:48px;}
+.id-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+@media(max-width:800px){.id-grid{grid-template-columns:1fr;}}
+.id-panel{background:var(--white);padding:28px 24px;}
+.id-label{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;}
+.id-title{font-size:14px;font-weight:500;color:var(--ink);margin-bottom:18px;}
+.id-rule{font-size:11px;color:var(--ink-2);margin-top:14px;padding-top:12px;border-top:1px solid var(--line);line-height:1.5;}
+
+/* DATA MODIFIER */
+.modifier-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;}
+@media(max-width:720px){.modifier-grid{grid-template-columns:1fr 1fr;}}
+.mod-chip{background:var(--white);border:1px solid var(--line-md);border-radius:8px;padding:14px 16px;}
+.mod-name{font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px;}
+.mod-dim{font-size:10px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-3);}
+.mod-note{font-size:11px;color:var(--ink-3);font-style:italic;margin-top:16px;}
+.mod-example{font-size:11px;color:var(--ink-2);margin-top:4px;}
+
+/* DEFAULTS TABLE */
+.defaults-wrap{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.defaults-table{width:100%;border-collapse:collapse;font-size:12px;}
+.defaults-table th{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--line);text-align:left;}
+.defaults-table td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top;color:var(--ink-2);line-height:1.55;}
+.defaults-table tr:last-child td{border-bottom:none;}
+.dt-term{font-weight:500;color:var(--ink);}
+.dt-default{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:500;color:var(--ink);}
+.dt-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+.dt-note{font-size:11px;color:var(--ink-3);margin-top:3px;font-style:italic;}
+
+/* ATTRIBUTED CALLOUT */
+.attr-callout{background:var(--white);border:1px solid var(--line-md);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+.attr-callout-head{padding:16px 24px;border-bottom:1px solid var(--line);background:var(--surface);}
+.attr-callout-title{font-size:12px;font-weight:600;color:var(--ink);}
+.attr-callout-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+@media(max-width:640px){.attr-callout-body{grid-template-columns:1fr;}}
+.attr-col{padding:20px 24px;}
+.attr-col:first-child{border-right:1px solid var(--line);}
+.attr-col-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px;}
+.attr-metric-label{color:var(--attr);}
+.attr-modifier-label{color:var(--ink-3);}
+.attr-rule{font-size:11px;color:var(--ink-3);margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-style:italic;}
+
+/* MARK PANELS */
+.mark-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;background:var(--line);border-radius:12px;overflow:hidden;margin-bottom:16px;}
+@media(max-width:900px){.mark-grid{grid-template-columns:1fr 1fr;}}
+@media(max-width:560px){.mark-grid{grid-template-columns:1fr;}}
+.mark-panel{background:var(--white);padding:24px;}
+.mark-title{font-size:16px;font-weight:500;color:var(--ink);margin-bottom:4px;}
+.mark-chart-wrap{background:var(--surface);border-radius:6px;padding:12px 10px 8px;margin:14px 0;}
+.illus-label{font-size:8.5px;color:var(--ink-3);text-align:right;margin-bottom:2px;font-style:italic;}
+.mark-rules{display:flex;flex-direction:column;gap:8px;margin-top:4px;}
+.mr{display:flex;gap:7px;align-items:flex-start;}
+.mr-label{font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;flex-shrink:0;margin-top:1px;white-space:nowrap;}
+.mr-best{background:rgba(37,99,235,.1);color:var(--accent);}
+.mr-ctx{background:rgba(28,31,38,.08);color:var(--ink-3);}
+.mr-avoid{background:rgba(220,38,38,.08);color:#B91C1C;}
+@media(prefers-color-scheme:dark){.mr-avoid{background:rgba(252,165,165,.1);color:#FCA5A5;}}
+.mr-text{font-size:11px;color:var(--ink-2);line-height:1.5;}
+.mark-guidance{margin-top:12px;padding-top:10px;border-top:1px solid var(--line);}
+.mg-title{font-size:9px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:6px;}
+.mg-row{font-size:10px;color:var(--ink-2);margin-bottom:3px;display:flex;gap:5px;}
+.mg-key{color:var(--ink-3);min-width:82px;}
+
+/* CASES */
+.case-full{border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-bottom:24px;}
+.case-full-head{background:var(--white);padding:18px 28px;border-bottom:1px solid var(--line);display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;}
+.cf-num{font-size:10px;font-weight:700;color:var(--ink-3);letter-spacing:.1em;text-transform:uppercase;}
+.cf-title{font-size:14px;font-weight:500;color:var(--ink);}
+.cf-ctx{font-size:11px;color:var(--ink-3);margin-left:auto;}
+.cf-stress{font-size:9px;font-weight:600;background:rgba(245,158,11,.12);color:#92400E;border:0.5px solid rgba(245,158,11,.3);border-radius:4px;padding:2px 7px;letter-spacing:.04em;text-transform:uppercase;}
+@media(prefers-color-scheme:dark){.cf-stress{background:rgba(245,158,11,.15);color:#FCD34D;}}
+.case-full-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+@media(max-width:720px){.case-full-body{grid-template-columns:1fr;}}
+.cf-col{padding:22px 28px;}
+.cf-col.is-before{border-right:1px solid var(--line);background:var(--page);}
+@media(max-width:720px){.cf-col.is-before{border-right:none;border-bottom:1px solid var(--line);}}
+.cf-col-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px;}
+.cf-col-label.before{color:#B91C1C;}
+.cf-col-label.better{color:#15803D;}
+.cf-rule{font-size:11px;color:var(--ink-2);margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-style:italic;line-height:1.5;}
+.chart-area{background:var(--surface);border-radius:6px;padding:10px 10px 6px;margin-bottom:6px;}
+
+/* BEFORE/BETTER SPLIT */
+.bb-wrap{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:var(--line);border-radius:12px;overflow:hidden;}
+@media(max-width:720px){.bb-wrap{grid-template-columns:1fr;}}
+.bb-panel{background:var(--white);padding:28px 32px;}
+.bb-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:14px;}
+.bb-label.before{color:#B91C1C;}
+.bb-label.better{color:#15803D;}
+.bb-statement{font-size:22px;font-family:var(--serif);color:var(--ink);margin-top:32px;line-height:1.3;}
+.bb-sub{font-size:12px;color:var(--ink-3);margin-top:8px;font-style:italic;}
+
+/* MATRIX */
+.matrix-wrap{background:var(--white);border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+.mx-table{width:100%;border-collapse:collapse;font-size:12px;}
+.mx-table th{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--line);text-align:center;}
+.mx-table th:first-child{text-align:left;}
+.mx-table td{padding:9px 14px;border-bottom:1px solid var(--line);vertical-align:middle;text-align:center;color:var(--ink-2);}
+.mx-table tr:last-child td{border-bottom:none;}
+.mx-table td:first-child{text-align:left;font-weight:500;color:var(--ink);}
+.mx-rec{font-size:10px;color:var(--accent);font-weight:500;}
+.mx-ctx{font-size:10px;color:var(--ink-3);}
+.mx-avoid{font-size:10px;color:#B91C1C;}
+.mx-na{font-size:10px;color:var(--ink-4);}
+@media(prefers-color-scheme:dark){.mx-avoid{color:#FCA5A5;}}
+
+/* COLOR REF */
+.color-ref{display:flex;gap:0;background:var(--line);border-radius:12px;overflow:hidden;}
+@media(max-width:800px){.color-ref{flex-direction:column;}}
+.cr-metric{flex:1;background:var(--white);padding:20px;}
+.cr-swatch-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.cr-swatch-row:last-child{margin-bottom:0;}
+.cr-dot{width:28px;height:28px;border-radius:6px;flex-shrink:0;}
+.cr-name{font-size:12px;font-weight:500;color:var(--ink);}
+.cr-token{font-size:10px;color:var(--ink-3);font-family:monospace;}
+.cr-families{background:var(--surface);padding:20px;min-width:240px;}
+.cr-fam-title{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:14px;}
+.cr-fam{margin-bottom:16px;}
+.cr-fam:last-child{margin-bottom:0;}
+.cr-fam-name{font-size:11px;font-weight:500;color:var(--ink);margin-bottom:6px;}
+.cr-ramp{display:flex;height:20px;border-radius:4px;overflow:hidden;margin-bottom:4px;}
+.cr-ramp-seg{flex:1;}
+.cr-ramp-labels{display:flex;gap:0;}
+.cr-ramp-labels span{flex:1;font-size:8.5px;color:var(--ink-3);text-align:center;}
+.cr-note{font-size:11px;color:var(--ink-3);font-style:italic;line-height:1.55;margin-top:14px;padding-top:12px;border-top:1px solid var(--line);}
+
+/* GLOSSARY */
+.gloss-2col{display:grid;grid-template-columns:1fr 1fr;gap:0 40px;}
+@media(max-width:700px){.gloss-2col{grid-template-columns:1fr;}}
+.gloss-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);}
+.gloss-term{font-weight:500;color:var(--ink);min-width:110px;flex-shrink:0;font-size:12px;}
+.gloss-def{font-size:12px;color:var(--ink-2);line-height:1.5;}
+
+/* CHECKLIST */
+.check-list{list-style:none;}
+.check-list li{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:flex-start;}
+.check-list li:last-child{border-bottom:none;}
+.check-num{font-size:11px;font-weight:700;color:var(--ink-3);min-width:18px;margin-top:1px;}
+.check-q{font-size:13px;color:var(--ink);line-height:1.5;}
+.check-box{width:16px;height:16px;min-width:16px;border-radius:4px;border:1.5px solid var(--ink-4);cursor:pointer;position:relative;margin-top:2px;transition:all .15s;}
+.check-box:hover{border-color:var(--accent);}
+.check-box.checked{background:var(--accent);border-color:var(--accent);}
+.check-box.checked::after{content:'';position:absolute;left:4px;top:2px;width:6px;height:4px;border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(-45deg);}
+
+.footer{margin-top:64px;padding-top:24px;border-top:1px solid var(--line);font-size:11px;color:var(--ink-3);line-height:1.6;}
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-eyebrow">Galileo · Chart guidance</div>
+  <h1>Chart Playbook</h1>
+  <p class="hero-sub">A practical guide for choosing color, tonal variants, and mark treatments.</p>
+  <p class="hero-status">Working design guidance &nbsp;·&nbsp; Exploratory &nbsp;·&nbsp; Not final specification</p>
+</div>
+
+<!-- S1: CORE MODEL -->
+<div class="sl"><span class="sl-num">01</span> The core model</div>
+
+<div class="model-statement">
+  <div class="model-line">Primary identifies.</div>
+  <div class="model-line">Primary-A and Primary-B <span>reinforce.</span></div>
+  <div class="model-line">Mark treatment <span>communicates additional meaning.</span></div>
+</div>
+<p class="model-support">Choose the Primary identity first, then apply the Data modifier according to the chart mark.</p>
+
+<div style="background:var(--white);border:1px solid var(--line);border-radius:12px;padding:32px 36px;margin-top:36px;">
+  <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--ink-3);margin-bottom:24px;">Spend color family — three modifier states on a line mark</div>
+  <div style="display:flex;flex-direction:column;gap:12px;">
+    <!-- Primary — Actual -->
+    <div style="display:flex;align-items:center;gap:20px;">
+      <span style="font-size:12px;color:var(--ink);min-width:180px;font-weight:500;">Spend Actual</span>
+      <svg width="200" height="16"><line x1="0" y1="8" x2="200" y2="8" stroke="#FF9C40" stroke-width="2.5"/><circle cx="0" cy="8" r="3" fill="#FF9C40"/><circle cx="66" cy="8" r="3" fill="#FF9C40"/><circle cx="133" cy="8" r="3" fill="#FF9C40"/><circle cx="200" cy="8" r="3" fill="#FF9C40"/></svg>
+      <span style="font-size:10px;color:var(--ink-3);min-width:160px;">Primary · solid · markers</span>
+      <div style="width:14px;height:14px;border-radius:3px;background:#FF9C40;flex-shrink:0;"></div>
+    </div>
+    <!-- Primary + dash — Forecast -->
+    <div style="display:flex;align-items:center;gap:20px;">
+      <span style="font-size:12px;color:var(--ink);min-width:180px;font-weight:500;">Spend Forecast</span>
+      <svg width="200" height="16"><line x1="0" y1="8" x2="200" y2="8" stroke="#FF9C40" stroke-width="2" stroke-dasharray="7 5"/></svg>
+      <span style="font-size:10px;color:var(--ink-3);min-width:160px;">Primary · dashed</span>
+      <div style="width:14px;height:14px;border-radius:3px;background:#FF9C40;flex-shrink:0;"></div>
+    </div>
+    <!-- Primary-A — too light -->
+    <div style="display:flex;align-items:center;gap:20px;">
+      <span style="font-size:12px;color:var(--ink-3);min-width:180px;">Primary-A as sole distinction</span>
+      <svg width="200" height="16"><line x1="0" y1="8" x2="200" y2="8" stroke="#FFDDBD" stroke-width="1.5"/></svg>
+      <span style="font-size:10px;color:#B91C1C;min-width:160px;">Nearly invisible at 1.5 px on white</span>
+      <div style="width:14px;height:14px;border-radius:3px;background:#FFDDBD;border:0.5px solid var(--line-md);flex-shrink:0;"></div>
+    </div>
+    <!-- Primary-B — Attributed -->
+    <div style="display:flex;align-items:center;gap:20px;">
+      <span style="font-size:12px;color:var(--ink);min-width:180px;font-weight:500;">Spend Attributed</span>
+      <svg width="200" height="16"><line x1="0" y1="8" x2="200" y2="8" stroke="#995E26" stroke-width="2"/><rect x="62" y="4" width="8" height="8" rx="1" fill="#995E26"/><rect x="128" y="4" width="8" height="8" rx="1" fill="#995E26"/></svg>
+      <span style="font-size:10px;color:var(--ink-3);min-width:160px;">Primary-B · square marker + label</span>
+      <div style="width:14px;height:14px;border-radius:3px;background:#995E26;flex-shrink:0;"></div>
+    </div>
+    <!-- AI recommendation -->
+    <div style="display:flex;align-items:center;gap:20px;">
+      <span style="font-size:12px;color:var(--ink);min-width:180px;font-weight:500;">Spend Recommendation</span>
+      <svg width="200" height="16"><line x1="0" y1="8" x2="200" y2="8" stroke="#FF9C40" stroke-width="3.2"/><circle cx="0" cy="8" r="4" fill="none" stroke="#7221B6" stroke-width="1.5"/><circle cx="66" cy="8" r="4" fill="none" stroke="#7221B6" stroke-width="1.5"/><circle cx="133" cy="8" r="4" fill="none" stroke="#7221B6" stroke-width="1.5"/><circle cx="200" cy="8" r="4" fill="none" stroke="#7221B6" stroke-width="1.5"/></svg>
+      <span style="font-size:10px;color:var(--ink-3);min-width:160px;">Primary · heavy + AI accent marker</span>
+      <div style="display:flex;gap:4px;flex-shrink:0;"><div style="width:14px;height:14px;border-radius:3px;background:#FF9C40;"></div><div style="width:14px;height:14px;border-radius:3px;background:#7221B6;opacity:.6;"></div></div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:var(--ink-3);text-align:center;margin-top:24px;font-style:italic;">Same metric identity. Different analytical meaning.</p>
+</div>
+
+<hr>
+
+<!-- S2: FOUR-STEP DECISION MODEL -->
+<div class="sl"><span class="sl-num">02</span> Decision model</div>
+
+<div class="step-grid">
+  <div class="step-panel">
+    <div class="step-num">Step 1</div>
+    <div class="step-q">What should the Primary color identify?</div>
+    <div class="step-options">
+      <div class="step-opt">
+        <span class="step-opt-label">Core metric</span>
+        <span class="step-opt-eg">Spend · RSV · Share · Attributed Sales · Incremental Sales</span>
+      </div>
+      <div class="step-opt">
+        <span class="step-opt-label">Dimension member</span>
+        <span class="step-opt-eg">Business Unit · Category · Brand</span>
+      </div>
+      <div class="step-opt">
+        <span class="step-opt-label">Other approved identity</span>
+        <span class="step-opt-eg">Promo · Trend grouping</span>
+      </div>
+    </div>
+    <p class="step-rule">Primary should have one main responsibility within a chart.</p>
+  </div>
+
+  <div class="step-panel" style="border-left:1px solid var(--line);">
+    <div class="step-num">Step 2</div>
+    <div class="step-q">Which Data modifier must be distinguished?</div>
+    <div class="step-options">
+      <div class="step-opt"><span class="step-opt-label">Actual <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Value nature</span></span></div>
+      <div class="step-opt"><span class="step-opt-label">Forecast <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Value nature</span></span></div>
+      <div class="step-opt"><span class="step-opt-label">Trailing <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Time window</span></span></div>
+      <div class="step-opt"><span class="step-opt-label">Attributed <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Method</span></span></div>
+      <div class="step-opt"><span class="step-opt-label">Model recommendation <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Scenario + provenance</span></span></div>
+      <div class="step-opt"><span class="step-opt-label">Pacing data <span style="font-size:9px;font-weight:400;color:var(--ink-3);">— Semantic status</span></span></div>
+    </div>
+    <p class="step-rule">Modifiers are not always mutually exclusive. An attributed forecast may also belong to a model-recommended scenario.</p>
+  </div>
+
+  <div class="step-panel" style="border-left:1px solid var(--line);">
+    <div class="step-num">Step 3</div>
+    <div class="step-q">Which mark represents the data?</div>
+    <div class="step-options">
+      <div class="step-opt"><span class="step-opt-label">Line</span><span class="step-opt-eg">Stroke · dash · weight · marker</span></div>
+      <div class="step-opt"><span class="step-opt-label">Bar</span><span class="step-opt-eg">Fill · outline · grouping</span></div>
+      <div class="step-opt"><span class="step-opt-label">Area</span><span class="step-opt-eg">Fill · opacity · layering</span></div>
+      <div class="step-opt"><span class="step-opt-label">Point</span><span class="step-opt-eg">Shape · fill · border</span></div>
+    </div>
+    <p class="step-rule">Treatment must match the perceptual behavior of the selected mark.</p>
+  </div>
+
+  <div class="step-panel" style="border-left:1px solid var(--line);">
+    <div class="step-num">Step 4</div>
+    <div class="step-q">Can the chart still be decoded easily?</div>
+    <div class="step-options">
+      <div class="step-opt" style="border-left:2px solid #15803D;padding-left:8px;">
+        <span class="step-opt-label" style="color:#15803D;">Yes → proceed</span>
+        <span class="step-opt-eg">Validate at actual mark size</span>
+      </div>
+      <div class="step-opt" style="border-left:2px solid #B91C1C;padding-left:8px;">
+        <span class="step-opt-label" style="color:#B91C1C;">No → simplify</span>
+        <span class="step-opt-eg">Highlight · filter · small multiples · split views · direct labels · progressive disclosure</span>
+      </div>
+    </div>
+    <p class="step-rule">Simplify before adding more encoding.</p>
+  </div>
+</div>
+
+<hr>
+
+<!-- S3: PRIMARY IDENTITY -->
+<div class="sl"><span class="sl-num">03</span> Primary identity — three cases</div>
+
+<div class="id-grid">
+  <div class="id-panel">
+    <div class="id-label">A · Core metrics</div>
+    <div class="id-title">Spend · RSV · Share</div>
+    <svg width="100%" viewBox="0 0 200 100">
+      <text x="0" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K / Share % · Weeks 1–6</text>
+      <line x1="0" y1="90" x2="200" y2="90" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="68" x2="200" y2="68" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="46" x2="200" y2="46" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="24" x2="200" y2="24" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="12,66 50,50 88,56 126,40 164,46 194,38"/>
+      <circle cx="12" cy="66" r="3" fill="#FF9C40"/><circle cx="50" cy="50" r="3" fill="#FF9C40"/><circle cx="88" cy="56" r="3" fill="#FF9C40"/><circle cx="126" cy="40" r="3" fill="#FF9C40"/><circle cx="164" cy="46" r="3" fill="#FF9C40"/><circle cx="194" cy="38" r="3" fill="#FF9C40"/>
+      <polyline fill="none" stroke="#04AFFF" stroke-width="2.5" points="12,76 50,60 88,66 126,52 164,58 194,50"/>
+      <circle cx="12" cy="76" r="3" fill="#04AFFF"/><circle cx="194" cy="50" r="3" fill="#04AFFF"/>
+      <polyline fill="none" stroke="#0B5DA2" stroke-width="2.5" points="12,58 50,42 88,48 126,32 164,38 194,28"/>
+      <circle cx="12" cy="58" r="3" fill="#0B5DA2"/><circle cx="194" cy="28" r="3" fill="#0B5DA2"/>
+      <text x="196" y="39" font-size="8" fill="#FF9C40" font-family="sans-serif">Spend</text>
+      <text x="196" y="50" font-size="8" fill="#04AFFF" font-family="sans-serif">RSV</text>
+      <text x="196" y="29" font-size="8" fill="#0B5DA2" font-family="sans-serif">Share</text>
+      <text x="0" y="100" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif" font-style="italic">Illustrative data</text>
+    </svg>
+    <div class="id-rule">Primary color family identifies the <strong>metric</strong>. Use approved Galileo assignments.</div>
+  </div>
+
+  <div class="id-panel" style="border-left:1px solid var(--line);">
+    <div class="id-label">B · Dimension members</div>
+    <div class="id-title">Spend by Brand</div>
+    <svg width="100%" viewBox="0 0 200 100">
+      <text x="0" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K · Brand A / B / C</text>
+      <line x1="0" y1="90" x2="200" y2="90" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="68" x2="200" y2="68" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="46" x2="200" y2="46" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <rect x="12" y="42" width="14" height="48" fill="#3B0CF8" rx="1.5"/>
+      <rect x="70" y="30" width="14" height="60" fill="#3B0CF8" rx="1.5"/>
+      <rect x="128" y="36" width="14" height="54" fill="#3B0CF8" rx="1.5"/>
+      <rect x="28" y="54" width="14" height="36" fill="#138F60" rx="1.5"/>
+      <rect x="86" y="48" width="14" height="42" fill="#138F60" rx="1.5"/>
+      <rect x="144" y="52" width="14" height="38" fill="#138F60" rx="1.5"/>
+      <rect x="44" y="48" width="14" height="42" fill="#C94905" rx="1.5"/>
+      <rect x="102" y="38" width="14" height="52" fill="#C94905" rx="1.5"/>
+      <rect x="160" y="44" width="14" height="46" fill="#C94905" rx="1.5"/>
+      <rect x="12" y="16" width="8" height="8" rx="1" fill="#3B0CF8"/>
+      <text x="23" y="23" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Brand A</text>
+      <rect x="64" y="16" width="8" height="8" rx="1" fill="#138F60"/>
+      <text x="75" y="23" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Brand B</text>
+      <rect x="116" y="16" width="8" height="8" rx="1" fill="#C94905"/>
+      <text x="127" y="23" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Brand C</text>
+      <text x="0" y="100" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif" font-style="italic">Illustrative data</text>
+    </svg>
+    <div class="id-rule">Assign categorical Primary color families to <strong>dimension members</strong> when they are the main comparison.</div>
+  </div>
+
+  <div class="id-panel" style="border-left:1px solid var(--line);">
+    <div class="id-label">C · Scenario comparison</div>
+    <div class="id-title">Baseline vs Recommended</div>
+    <svg width="100%" viewBox="0 0 200 100">
+      <text x="0" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">RSV $M · Weeks 1–8</text>
+      <line x1="0" y1="90" x2="200" y2="90" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="65" x2="200" y2="65" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="40" x2="200" y2="40" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="18" x2="200" y2="18" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="96" y1="14" x2="96" y2="90" stroke="var(--line-md)" stroke-width="0.5" stroke-dasharray="3 3"/>
+      <text x="14" y="16" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Historical</text>
+      <text x="110" y="16" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Forecast →</text>
+      <polyline fill="none" stroke="#8B8F9A" stroke-width="1.5" points="12,68 36,58 60,62 84,54 96,50"/>
+      <circle cx="12" cy="68" r="2.5" fill="#8B8F9A"/>
+      <polyline fill="none" stroke="#C2C5CC" stroke-width="1.4" stroke-dasharray="5 3" points="96,50 120,48 152,52 186,56"/>
+      <polyline fill="none" stroke="#7221B6" stroke-width="3" points="96,50 120,36 152,26 186,20"/>
+      <circle cx="186" cy="20" r="4" fill="#7221B6"/>
+      <rect x="118" y="22" width="62" height="13" rx="3" fill="rgba(114,33,182,.12)"/>
+      <text x="149" y="31" text-anchor="middle" font-size="8" fill="#7221B6" font-weight="600" font-family="sans-serif">Recommended</text>
+      <text x="130" y="56" font-size="8" fill="#C2C5CC" font-family="sans-serif">Baseline</text>
+      <text x="0" y="100" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif" font-style="italic">Illustrative data</text>
+    </svg>
+    <div class="id-rule">When scenario is the primary comparison, <strong>emphasis</strong> may identify scenario rather than metric.</div>
+  </div>
+</div>
+
+<p class="identity-rule">Primary should have one main responsibility within a chart.</p>
+
+<hr>
+
+<!-- S4: DATA MODIFIERS -->
+<div class="sl"><span class="sl-num">04</span> Data modifiers</div>
+
+<div class="modifier-grid">
+  <div class="mod-chip"><div class="mod-name">Actual</div><div class="mod-dim">Value nature</div></div>
+  <div class="mod-chip"><div class="mod-name">Forecast</div><div class="mod-dim">Value nature</div></div>
+  <div class="mod-chip"><div class="mod-name">Trailing</div><div class="mod-dim">Time window</div></div>
+  <div class="mod-chip"><div class="mod-name">Attributed</div><div class="mod-dim">Method</div></div>
+  <div class="mod-chip"><div class="mod-name">Model recommendation</div><div class="mod-dim">Scenario + provenance</div></div>
+  <div class="mod-chip"><div class="mod-name">Pacing data</div><div class="mod-dim">Semantic status</div></div>
+</div>
+<p class="mod-note">Data modifiers are not always mutually exclusive. <span class="mod-example">An attributed forecast may also belong to a model-recommended scenario.</span></p>
+
+<hr class="tight">
+
+<!-- S5: CURRENT DEFAULTS -->
+<div class="sl"><span class="sl-num">05</span> Current Galileo modifier defaults</div>
+
+<div class="defaults-wrap">
+  <table class="defaults-table">
+    <thead>
+      <tr>
+        <th style="width:120px">Modifier</th>
+        <th style="width:200px">Current default</th>
+        <th>Guidance</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td class="dt-term">Actual</td>
+        <td>
+          <div class="dt-default"><div class="dt-dot" style="background:#FF9C40"></div>Primary · solid</div>
+        </td>
+        <td>Observed value. Use Primary with full solid stroke or fill.</td>
+      </tr>
+      <tr>
+        <td class="dt-term">Forecast</td>
+        <td>
+          <div class="dt-default"><div class="dt-dot" style="background:#FF9C40"></div><div class="dt-dot" style="background:#FFDDBD;border:0.5px solid var(--line-md)"></div>Primary + Primary-A</div>
+        </td>
+        <td>Primary-A may reinforce Forecast, but must not be the only distinction on thin marks. For thin lines, add dash, markers, or stroke weight.<div class="dt-note">If Primary-A lacks contrast, retain Primary and use dash.</div></td>
+      </tr>
+      <tr>
+        <td class="dt-term">Trailing</td>
+        <td>
+          <div class="dt-default"><div class="dt-dot" style="background:#FF9C40"></div>Metric family + reduced treatment</div>
+        </td>
+        <td>Trailing changes the time window, not the categorical identity. Retain the relevant Primary color family. Distinguish through line treatment and reduced emphasis.<div class="dt-note">Do not assign an unrelated categorical color to Trailing series.</div></td>
+      </tr>
+      <tr>
+        <td class="dt-term">Attributed</td>
+        <td>
+          <div class="dt-default"><div class="dt-dot" style="background:#FF9C40"></div><div class="dt-dot" style="background:#995E26"></div>Primary + Primary-B</div>
+        </td>
+        <td>Primary-B may reinforce Attributed, but should not carry the meaning alone when ambiguity exists. Add a label or supporting mark treatment.<div class="dt-note">Confirm whether Attributed is the metric or the method before assigning color.</div></td>
+      </tr>
+      <tr>
+        <td class="dt-term">Model recommendation</td>
+        <td>
+          <div class="dt-default"><div class="dt-dot" style="background:#FF9C40"></div><div class="dt-dot" style="background:#7221B6"></div>Metric identity + AI emphasis</div>
+        </td>
+        <td>Preserve the underlying metric or categorical identity. Add AI accent when recommendation provenance matters. Do not replace the metric identity with AI purple.<div class="dt-note">AI accent communicates provenance or recommendation emphasis.</div></td>
+      </tr>
+      <tr>
+        <td class="dt-term">Pacing data</td>
+        <td>Dedicated pacing semantic colors</td>
+        <td>Pacing remains separate from categorical color identity and tonal variants. Use the dedicated pacing semantic color system.</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p style="font-size:11px;color:var(--ink-3);font-style:italic;margin-top:10px;">These are current Galileo defaults. Final application depends on chart mark, chart density, and legibility.</p>
+
+<hr class="tight">
+
+<!-- S6: ATTRIBUTED CALLOUT -->
+<div class="sl"><span class="sl-num">06</span> Attributed Sales vs Attributed modifier</div>
+
+<div class="attr-callout">
+  <div class="attr-callout-head">
+    <div class="attr-callout-title">Confirm whether Attributed is the metric or the method before assigning color.</div>
+  </div>
+  <div class="attr-callout-body">
+    <div class="attr-col">
+      <div class="attr-col-label attr-metric-label">Attributed Sales as metric</div>
+      <svg width="100%" viewBox="0 0 240 80">
+        <text x="0" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Attributed Sales $K · Jan–Jun</text>
+        <line x1="0" y1="70" x2="240" y2="70" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="50" x2="240" y2="50" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="30" x2="240" y2="30" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <polyline fill="none" stroke="#7DC50F" stroke-width="2.5" points="14,58 58,44 102,50 146,36 190,42 230,34"/>
+        <circle cx="14" cy="58" r="3" fill="#7DC50F"/>
+        <circle cx="58" cy="44" r="3" fill="#7DC50F"/>
+        <circle cx="102" cy="50" r="3" fill="#7DC50F"/>
+        <circle cx="146" cy="36" r="3" fill="#7DC50F"/>
+        <circle cx="190" cy="42" r="3" fill="#7DC50F"/>
+        <circle cx="230" cy="34" r="3" fill="#7DC50F"/>
+        <text x="232" y="35" font-size="8" fill="#7DC50F" font-family="sans-serif">Attr. Sales</text>
+        <text x="0" y="80" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif" font-style="italic">Illustrative data</text>
+      </svg>
+      <div style="margin-top:10px;">
+        <div style="font-size:11px;color:var(--ink-2);line-height:1.55;"><strong>Primary identity:</strong> Attributed Sales<br><strong>Color:</strong> charts-cat-3 · #7DC50F (approved metric color)</div>
+      </div>
+      <div class="attr-rule">Attributed Sales has its own approved Primary color. Treat it as a core metric identity.</div>
+    </div>
+    <div class="attr-col">
+      <div class="attr-col-label attr-modifier-label">Attributed as method modifier</div>
+      <svg width="100%" viewBox="0 0 240 80">
+        <text x="0" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K — Actual vs Attributed · Jan–Jun</text>
+        <line x1="0" y1="70" x2="240" y2="70" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="50" x2="240" y2="50" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="30" x2="240" y2="30" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <!-- Spend Actual — Primary -->
+        <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="14,58 58,44 102,50 146,36 190,42 230,34"/>
+        <circle cx="14" cy="58" r="3" fill="#FF9C40"/>
+        <circle cx="230" cy="34" r="3" fill="#FF9C40"/>
+        <!-- Spend Attributed — Primary-B + square marker -->
+        <polyline fill="none" stroke="#995E26" stroke-width="2" points="14,64 58,52 102,58 146,44 190,50 230,42"/>
+        <rect x="10" y="60" width="8" height="8" rx="1" fill="#995E26"/>
+        <rect x="226" y="38" width="8" height="8" rx="1" fill="#995E26"/>
+        <text x="232" y="35" font-size="8" fill="#FF9C40" font-family="sans-serif">Actual</text>
+        <text x="232" y="44" font-size="8" fill="#995E26" font-family="sans-serif">Attributed</text>
+        <text x="0" y="80" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif" font-style="italic">Illustrative data</text>
+      </svg>
+      <div style="margin-top:10px;">
+        <div style="font-size:11px;color:var(--ink-2);line-height:1.55;"><strong>Primary identity:</strong> Spend (metric)<br><strong>Data modifier:</strong> Attributed (method)<br><strong>Treatment:</strong> Primary-B + square marker + label</div>
+      </div>
+      <div class="attr-rule">Attributed as a method retains the underlying metric identity. Use Primary-B plus an appropriate mark treatment.</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- S7: MARK GUIDANCE -->
+<div class="sl"><span class="sl-num">07</span> Mark treatment guide</div>
+
+<div class="mark-grid">
+
+  <!-- LINE -->
+  <div class="mark-panel">
+    <div class="mark-title">Line</div>
+    <div class="mark-chart-wrap">
+      <div class="illus-label">Illustrative data</div>
+      <svg width="100%" viewBox="0 0 180 90">
+        <line x1="0" y1="80" x2="180" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="58" x2="180" y2="58" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="36" x2="180" y2="36" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="14" x2="180" y2="14" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <!-- Actual — solid Primary -->
+        <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="8,60 44,44 80,50 116,34 152,40 174,32"/>
+        <circle cx="8" cy="60" r="2.5" fill="#FF9C40"/><circle cx="44" cy="44" r="2.5" fill="#FF9C40"/>
+        <circle cx="80" cy="50" r="2.5" fill="#FF9C40"/><circle cx="116" cy="34" r="2.5" fill="#FF9C40"/>
+        <circle cx="152" cy="40" r="2.5" fill="#FF9C40"/><circle cx="174" cy="32" r="2.5" fill="#FF9C40"/>
+        <!-- Forecast — Primary dashed -->
+        <polyline fill="none" stroke="#FF9C40" stroke-width="1.8" stroke-dasharray="6 4" points="8,66 44,52 80,58 116,42 152,48 174,40"/>
+        <!-- Trailing — Primary-B lower emphasis -->
+        <polyline fill="none" stroke="#995E26" stroke-width="1.5" stroke-dasharray="3 3" points="8,70 44,58 80,64 116,50 152,56 174,48"/>
+        <!-- Labels -->
+        <text x="4" y="9" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Spend $K · W1–W6</text>
+        <text x="138" y="29" font-size="7" fill="#FF9C40" font-family="sans-serif">Actual</text>
+        <text x="138" y="37" font-size="7" fill="#FF9C40" opacity=".7" font-family="sans-serif">Forecast</text>
+        <text x="138" y="45" font-size="7" fill="#995E26" opacity=".8" font-family="sans-serif">Trailing</text>
+      </svg>
+    </div>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Primary stroke · solid/dashed · stroke weight · markers · direct labels</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Primary-A or Primary-B · opacity</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Two-color line patterns · Primary-A as the only distinction on thin lines</span></div>
+    </div>
+    <div class="mark-guidance">
+      <div class="mg-title">Modifier defaults</div>
+      <div class="mg-row"><span class="mg-key">Actual</span>Primary · solid</div>
+      <div class="mg-row"><span class="mg-key">Forecast</span>Primary-A + dash, or Primary + dash if contrast is low</div>
+      <div class="mg-row"><span class="mg-key">Trailing</span>Metric family + alternate line treatment</div>
+      <div class="mg-row"><span class="mg-key">Attributed</span>Primary-B + label or supporting treatment</div>
+      <div class="mg-row"><span class="mg-key">Recommendation</span>Metric identity + restrained AI emphasis</div>
+    </div>
+  </div>
+
+  <!-- BAR -->
+  <div class="mark-panel" style="border-left:1px solid var(--line);">
+    <div class="mark-title">Bar</div>
+    <div class="mark-chart-wrap">
+      <div class="illus-label">Illustrative data</div>
+      <svg width="100%" viewBox="0 0 180 90">
+        <line x1="0" y1="80" x2="180" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="58" x2="180" y2="58" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="36" x2="180" y2="36" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <!-- Actual — Primary fill -->
+        <rect x="6"  y="32" width="18" height="48" fill="#FF9C40" rx="1.5"/>
+        <rect x="52" y="22" width="18" height="58" fill="#FF9C40" rx="1.5"/>
+        <rect x="98" y="28" width="18" height="52" fill="#FF9C40" rx="1.5"/>
+        <rect x="144" y="20" width="18" height="60" fill="#FF9C40" rx="1.5"/>
+        <!-- Forecast — Primary-A fill -->
+        <rect x="26" y="40" width="18" height="40" fill="#FFDDBD" rx="1.5" stroke="#FF9C40" stroke-width="0.5"/>
+        <rect x="72" y="30" width="18" height="50" fill="#FFDDBD" rx="1.5" stroke="#FF9C40" stroke-width="0.5"/>
+        <rect x="118" y="36" width="18" height="44" fill="#FFDDBD" rx="1.5" stroke="#FF9C40" stroke-width="0.5"/>
+        <!-- Labels -->
+        <text x="4" y="9" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Spend $K · Q1–Q4</text>
+        <rect x="4" y="14" width="8" height="8" rx="1" fill="#FF9C40"/>
+        <text x="14" y="21" font-size="7" fill="var(--ink-3)" font-family="sans-serif">Actual</text>
+        <rect x="50" y="14" width="8" height="8" rx="1" fill="#FFDDBD" stroke="#FF9C40" stroke-width="0.5"/>
+        <text x="60" y="21" font-size="7" fill="var(--ink-3)" font-family="sans-serif">Forecast</text>
+      </svg>
+    </div>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Primary fill · Primary-A or Primary-B · outline · grouping and spacing</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Restrained pattern · opacity</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Dense texture · too many similar tonal variants</span></div>
+    </div>
+    <div class="mark-guidance">
+      <div class="mg-title">Modifier defaults</div>
+      <div class="mg-row"><span class="mg-key">Actual</span>Primary fill</div>
+      <div class="mg-row"><span class="mg-key">Forecast</span>Primary-A fill</div>
+      <div class="mg-row"><span class="mg-key">Trailing</span>Outline or reduced emphasis</div>
+      <div class="mg-row"><span class="mg-key">Attributed</span>Primary-B fill</div>
+      <div class="mg-row"><span class="mg-key">Recommendation</span>Metric identity + AI emphasis</div>
+    </div>
+  </div>
+
+  <!-- AREA -->
+  <div class="mark-panel" style="border-left:1px solid var(--line);">
+    <div class="mark-title">Area</div>
+    <div class="mark-chart-wrap">
+      <div class="illus-label">Illustrative data</div>
+      <svg width="100%" viewBox="0 0 180 90">
+        <line x1="0" y1="80" x2="180" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="58" x2="180" y2="58" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="36" x2="180" y2="36" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <!-- Share area (back) -->
+        <path d="M8,52 44,38 80,44 116,30 152,36 174,28 174,80 8,80 Z" fill="#0B5DA2" opacity=".12"/>
+        <polyline fill="none" stroke="#0B5DA2" stroke-width="1.8" points="8,52 44,38 80,44 116,30 152,36 174,28"/>
+        <!-- Spend area (front) -->
+        <path d="M8,62 44,50 80,56 116,42 152,48 174,42 174,80 8,80 Z" fill="#FF9C40" opacity=".22"/>
+        <polyline fill="none" stroke="#FF9C40" stroke-width="1.8" points="8,62 44,50 80,56 116,42 152,48 174,42"/>
+        <!-- Forecast area — dashed outline -->
+        <path d="M8,68 44,58 80,64 116,52 152,56 174,50 174,80 8,80 Z" fill="#FF9C40" opacity=".08"/>
+        <polyline fill="none" stroke="#FF9C40" stroke-width="1.3" stroke-dasharray="4 3" points="8,68 44,58 80,64 116,52 152,56 174,50"/>
+        <text x="4" y="9" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">RSV $M / Share % · Jan–Jun</text>
+        <text x="140" y="30" font-size="7" fill="#0B5DA2" font-family="sans-serif">Share</text>
+        <text x="140" y="42" font-size="7" fill="#FF9C40" font-family="sans-serif">Spend Act.</text>
+        <text x="140" y="52" font-size="7" fill="#FF9C40" opacity=".7" font-family="sans-serif">Spend Fct.</text>
+      </svg>
+    </div>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Fill · opacity · outline · layering order</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Primary-A and Primary-B fills</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Opaque overlapping fills · pattern-heavy treatment</span></div>
+    </div>
+    <div class="mark-guidance">
+      <div class="mg-title">Modifier defaults</div>
+      <div class="mg-row"><span class="mg-key">Actual</span>Primary fill + appropriate opacity</div>
+      <div class="mg-row"><span class="mg-key">Forecast</span>Primary-A + opacity or outline</div>
+      <div class="mg-row"><span class="mg-key">Trailing</span>Reduced emphasis fill</div>
+      <div class="mg-row"><span class="mg-key">Attributed</span>Primary-B + opacity</div>
+      <div class="mg-row"><span class="mg-key">Recommendation</span>Metric identity + AI emphasis</div>
+    </div>
+  </div>
+
+  <!-- POINT -->
+  <div class="mark-panel" style="border-left:1px solid var(--line);">
+    <div class="mark-title">Point</div>
+    <div class="mark-chart-wrap">
+      <div class="illus-label">Illustrative data</div>
+      <svg width="100%" viewBox="0 0 180 90">
+        <line x1="0" y1="80" x2="180" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+        <line x1="0" y1="58" x2="180" y2="58" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="36" x2="180" y2="36" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="14" x2="180" y2="14" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <text x="4" y="9" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Spend vs RSV — treatments</text>
+        <!-- Actual — filled circles -->
+        <circle cx="20" cy="62" r="6" fill="#FF9C40"/>
+        <circle cx="50" cy="46" r="6" fill="#0B5DA2"/>
+        <circle cx="80" cy="54" r="6" fill="#7DC50F"/>
+        <!-- Forecast — outlined circles -->
+        <circle cx="110" cy="42" r="6" fill="none" stroke="#FF9C40" stroke-width="2"/>
+        <circle cx="140" cy="32" r="6" fill="none" stroke="#0B5DA2" stroke-width="2"/>
+        <!-- Attributed — square marker -->
+        <rect x="158" y="28" width="12" height="12" rx="1.5" fill="#995E26"/>
+        <!-- AI marker — ring -->
+        <circle cx="30" cy="30" r="8" fill="none" stroke="#7221B6" stroke-width="1.5"/>
+        <circle cx="30" cy="30" r="4" fill="#FF9C40"/>
+        <!-- Labels -->
+        <text x="14" y="76" font-size="7" fill="var(--ink-3)" font-family="sans-serif">Actual</text>
+        <text x="104" y="76" font-size="7" fill="var(--ink-3)" font-family="sans-serif">Forecast</text>
+        <text x="152" y="48" font-size="7" fill="var(--ink-3)" font-family="sans-serif">Attributed</text>
+        <text x="22" y="46" font-size="7" fill="#7221B6" font-family="sans-serif">Rec.</text>
+      </svg>
+    </div>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Shape · fill · border · direct label</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Size (when meaningful) · Primary-A or Primary-B</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Color-only differentiation for very small points</span></div>
+    </div>
+    <div class="mark-guidance">
+      <div class="mg-title">Modifier defaults</div>
+      <div class="mg-row"><span class="mg-key">Actual</span>Primary fill</div>
+      <div class="mg-row"><span class="mg-key">Forecast</span>Primary-A + border or shape</div>
+      <div class="mg-row"><span class="mg-key">Trailing</span>Reduced emphasis or alternate marker</div>
+      <div class="mg-row"><span class="mg-key">Attributed</span>Primary-B + supporting distinction</div>
+      <div class="mg-row"><span class="mg-key">Recommendation</span>Metric identity + AI emphasis marker</div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- S8: CASES IN ACTION -->
+<div class="sl"><span class="sl-num">08</span> Galileo cases in action</div>
+
+<!-- Case 1 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 1</span>
+    <span class="cf-title">Spend Actual vs Forecast</span>
+    <span class="cf-ctx">One metric · two value natures</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col is-before">
+      <div class="cf-col-label before">Before</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <line x1="0" y1="22" x2="260" y2="22" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#FF9C40" stroke-width="1.5" points="8,50 58,36 108,42 158,28 208,34 252,26"/>
+          <polyline fill="none" stroke="#FFDDBD" stroke-width="1.5" points="8,54 58,40 108,46 158,32 208,38 252,30"/>
+          <polyline fill="none" stroke="#995E26" stroke-width="1.5" points="8,52 58,38 108,44 158,30 208,36 252,28"/>
+          <text x="2" y="12" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K · W1–W6 — three near-identical lines</text>
+        </svg>
+      </div>
+      <p style="font-size:11px;color:var(--ink-3);font-style:italic;">Primary-A (#FFDDBD) is nearly invisible on white at 1.5 px. Three tones merge visually.</p>
+      <div class="cf-rule">Primary, Primary-A, and Primary-B used as thin lines with insufficient distinction.</div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <line x1="0" y1="22" x2="260" y2="22" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="8,50 58,36 108,42 158,28 208,34 252,26"/>
+          <circle cx="8" cy="50" r="3" fill="#FF9C40"/><circle cx="58" cy="36" r="3" fill="#FF9C40"/>
+          <circle cx="108" cy="42" r="3" fill="#FF9C40"/><circle cx="158" cy="28" r="3" fill="#FF9C40"/>
+          <circle cx="208" cy="34" r="3" fill="#FF9C40"/><circle cx="252" cy="26" r="3" fill="#FF9C40"/>
+          <polyline fill="none" stroke="#FF9C40" stroke-width="1.8" stroke-dasharray="6 4" points="8,56 58,44 108,50 158,36 208,42 252,34"/>
+          <text x="214" y="24" font-size="8" fill="#FF9C40" font-family="sans-serif" font-weight="500">Actual</text>
+          <text x="214" y="34" font-size="8" fill="#FF9C40" opacity=".7" font-family="sans-serif">Forecast</text>
+          <text x="2" y="12" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K · W1–W6</text>
+        </svg>
+      </div>
+      <div class="cf-rule"><em>"Primary = metric identity. Treatment = value nature."</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 2 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 2</span>
+    <span class="cf-title">Spend Current vs Trailing</span>
+    <span class="cf-ctx">One metric · two time windows</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col is-before">
+      <div class="cf-col-label before">Before</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="8,50 58,36 108,42 158,28 208,34 252,26"/>
+          <circle cx="8" cy="50" r="3" fill="#FF9C40"/><circle cx="252" cy="26" r="3" fill="#FF9C40"/>
+          <!-- Trailing with unrelated color — wrong -->
+          <polyline fill="none" stroke="#04AFFF" stroke-width="2" points="8,54 58,42 108,48 158,36 208,40 252,32"/>
+          <circle cx="8" cy="54" r="2.5" fill="#04AFFF"/><circle cx="252" cy="32" r="2.5" fill="#04AFFF"/>
+          <text x="214" y="25" font-size="8" fill="#FF9C40" font-family="sans-serif">Current</text>
+          <text x="214" y="33" font-size="8" fill="#04AFFF" font-family="sans-serif">Trailing?</text>
+          <text x="2" y="12" font-size="8" fill="#B91C1C" font-family="sans-serif">Trailing assigned an unrelated metric color</text>
+        </svg>
+      </div>
+      <div class="cf-rule">Trailing receives an unrelated categorical color, implying it is a different metric.</div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="8,50 58,36 108,42 158,28 208,34 252,26"/>
+          <circle cx="8" cy="50" r="3" fill="#FF9C40"/><circle cx="252" cy="26" r="3" fill="#FF9C40"/>
+          <!-- Trailing — same family, reduced -->
+          <polyline fill="none" stroke="#995E26" stroke-width="1.5" stroke-dasharray="3 3" points="8,55 58,43 108,48 158,36 208,40 252,33" opacity=".7"/>
+          <text x="214" y="25" font-size="8" fill="#FF9C40" font-family="sans-serif">Current</text>
+          <text x="214" y="35" font-size="8" fill="#995E26" opacity=".8" font-family="sans-serif">Trailing 4W</text>
+          <text x="2" y="12" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K — Trailing 4-week avg.</text>
+        </svg>
+      </div>
+      <div class="cf-rule"><em>"Trailing modifies time window, not identity."</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 3 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 3</span>
+    <span class="cf-title">Spend by Brand, Actual vs Forecast</span>
+    <span class="cf-ctx">Dimension is primary · value nature is modifier</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col is-before">
+      <div class="cf-col-label before">Before</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <rect x="8"  y="22" width="15" height="40" fill="#FF9C40" rx="1"/>
+          <rect x="25" y="30" width="15" height="32" fill="#FFDDBD" rx="1"/>
+          <rect x="70" y="18" width="15" height="44" fill="#FF9C40" rx="1"/>
+          <rect x="87" y="26" width="15" height="36" fill="#FFDDBD" rx="1"/>
+          <rect x="132" y="24" width="15" height="38" fill="#FF9C40" rx="1"/>
+          <rect x="149" y="32" width="15" height="30" fill="#FFDDBD" rx="1"/>
+          <text x="2" y="12" font-size="8" fill="#B91C1C" font-family="sans-serif">All brands use same orange family — identity lost</text>
+        </svg>
+      </div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <rect x="8"  y="22" width="14" height="40" fill="#3B0CF8" rx="1"/>
+          <rect x="24" y="30" width="14" height="32" fill="none" stroke="#3B0CF8" stroke-width="1.5" rx="1"/>
+          <rect x="68" y="18" width="14" height="44" fill="#138F60" rx="1"/>
+          <rect x="84" y="26" width="14" height="36" fill="none" stroke="#138F60" stroke-width="1.5" rx="1"/>
+          <rect x="128" y="24" width="14" height="38" fill="#C94905" rx="1"/>
+          <rect x="144" y="32" width="14" height="30" fill="none" stroke="#C94905" stroke-width="1.5" rx="1"/>
+          <rect x="8" y="8" width="7" height="7" rx="1" fill="#3B0CF8"/>
+          <text x="17" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Brand A</text>
+          <rect x="68" y="8" width="7" height="7" rx="1" fill="#138F60"/>
+          <text x="77" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Brand B</text>
+          <rect x="128" y="8" width="7" height="7" rx="1" fill="#C94905"/>
+          <text x="137" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Brand C</text>
+          <rect x="196" y="8" width="7" height="7" rx="1" fill="var(--ink-2)"/>
+          <text x="205" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Actual</text>
+          <rect x="196" y="18" width="7" height="7" rx="1" fill="none" stroke="var(--ink-2)" stroke-width="1.2"/>
+          <text x="205" y="24" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Forecast</text>
+        </svg>
+      </div>
+      <div class="cf-rule"><em>"Color = dimension member. Treatment = value nature."</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 4 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 4</span>
+    <span class="cf-title">Model recommendation</span>
+    <span class="cf-ctx">Metric identity preserved · AI accent as provenance</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col is-before">
+      <div class="cf-col-label before">Before</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#8B8F9A" stroke-width="1.5" points="8,50 58,40 96,44"/>
+          <circle cx="8" cy="50" r="2.5" fill="#8B8F9A"/>
+          <line x1="96" y1="12" x2="96" y2="62" stroke="var(--line-md)" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <!-- Entire forecast in purple — identity lost -->
+          <polyline fill="none" stroke="#7221B6" stroke-width="2.5" points="96,44 140,32 186,22 248,16"/>
+          <circle cx="248" cy="16" r="4" fill="#7221B6"/>
+          <text x="150" y="16" font-size="8" fill="#7221B6" font-family="sans-serif">Recommended?</text>
+          <text x="2" y="12" font-size="8" fill="#B91C1C" font-family="sans-serif">Metric identity replaced by AI purple</text>
+        </svg>
+      </div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data · RSV $M</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <line x1="0" y1="42" x2="260" y2="42" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <line x1="0" y1="22" x2="260" y2="22" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+          <polyline fill="none" stroke="#8B8F9A" stroke-width="1.5" points="8,50 52,40 96,44"/>
+          <circle cx="8" cy="50" r="2.5" fill="#8B8F9A"/>
+          <line x1="96" y1="12" x2="96" y2="62" stroke="var(--line-md)" stroke-width="0.5" stroke-dasharray="3 3"/>
+          <text x="2" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Historical →</text>
+          <text x="100" y="14" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Forecast →</text>
+          <!-- Baseline — neutral -->
+          <polyline fill="none" stroke="#C2C5CC" stroke-width="1.4" stroke-dasharray="5 3" points="96,44 140,44 186,46 248,48"/>
+          <!-- Recommended — RSV color preserved, AI ring marker -->
+          <polyline fill="none" stroke="#04AFFF" stroke-width="2.8" points="96,44 140,32 186,22 248,16"/>
+          <circle cx="140" cy="32" r="5" fill="none" stroke="#7221B6" stroke-width="1.5"/>
+          <circle cx="186" cy="22" r="5" fill="none" stroke="#7221B6" stroke-width="1.5"/>
+          <circle cx="248" cy="16" r="5" fill="none" stroke="#7221B6" stroke-width="1.5"/>
+          <circle cx="248" cy="16" r="3" fill="#04AFFF"/>
+          <rect x="162" y="8" width="68" height="13" rx="3" fill="rgba(4,175,255,.1)"/>
+          <text x="196" y="17" text-anchor="middle" font-size="7.5" fill="#04AFFF" font-weight="600" font-family="sans-serif">✦ Recommended</text>
+          <text x="186" y="54" font-size="7.5" fill="#C2C5CC" font-family="sans-serif">Baseline</text>
+        </svg>
+      </div>
+      <div class="cf-rule"><em>"AI accent communicates provenance or recommendation emphasis. Do not replace metric identity with AI purple."</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 5: Combination -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 5</span>
+    <span class="cf-title">Line + bar combination</span>
+    <span class="cf-ctx">Spend bars · Share line</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col is-before">
+      <div class="cf-col-label before">Before</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <rect x="8"   y="22" width="30" height="40" fill="#FF9C40" rx="1"/>
+          <rect x="78"  y="16" width="30" height="46" fill="#FF9C40" rx="1"/>
+          <rect x="148" y="20" width="30" height="42" fill="#FF9C40" rx="1"/>
+          <rect x="218" y="14" width="30" height="48" fill="#FF9C40" rx="1"/>
+          <polyline fill="none" stroke="#0B5DA2" stroke-width="1.2" points="23,46 93,36 163,40 233,30"/>
+          <text x="2" y="12" font-size="8" fill="#B91C1C" font-family="sans-serif">Bars dominate — Share line is hard to find</text>
+        </svg>
+      </div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <div class="chart-area">
+        <div class="illus-label">Illustrative data</div>
+        <svg width="100%" viewBox="0 0 260 72">
+          <line x1="0" y1="62" x2="260" y2="62" stroke="var(--line)" stroke-width="0.5"/>
+          <rect x="8"   y="26" width="28" height="36" fill="#FF9C40" opacity=".5" rx="1"/>
+          <rect x="76"  y="20" width="28" height="42" fill="#FF9C40" opacity=".5" rx="1"/>
+          <rect x="144" y="24" width="28" height="38" fill="#FF9C40" opacity=".5" rx="1"/>
+          <rect x="212" y="18" width="28" height="44" fill="#FF9C40" opacity=".5" rx="1"/>
+          <polyline fill="none" stroke="#0B5DA2" stroke-width="2.5" points="22,44 90,34 158,38 226,28"/>
+          <circle cx="22"  cy="44" r="3.5" fill="#0B5DA2"/>
+          <circle cx="90"  cy="34" r="3.5" fill="#0B5DA2"/>
+          <circle cx="158" cy="38" r="3.5" fill="#0B5DA2"/>
+          <circle cx="226" cy="28" r="3.5" fill="#0B5DA2"/>
+          <text x="228" y="26" font-size="8" fill="#0B5DA2" font-weight="600" font-family="sans-serif">Share</text>
+          <text x="228" y="56" font-size="8" fill="#FF9C40" font-family="sans-serif">Spend</text>
+          <text x="2" y="12" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Spend $K / Share % · Q1–Q4</text>
+        </svg>
+      </div>
+      <div class="cf-rule"><em>"Balance visual hierarchy across marks."</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 6: Stress test -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 6</span>
+    <span class="cf-title">Complex chart — simplification</span>
+    <span class="cf-ctx cf-stress">Stress test · edge case</span>
+  </div>
+  <div class="bb-wrap" style="border-radius:0;margin:0;">
+    <div class="bb-panel">
+      <div class="bb-label before">Before — more encoding</div>
+      <svg width="100%" viewBox="0 0 340 110">
+        <line x1="0" y1="100" x2="340" y2="100" stroke="var(--line)" stroke-width="0.5"/>
+        <line x1="0" y1="72" x2="340" y2="72" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="44" x2="340" y2="44" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="16" x2="340" y2="16" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <polyline fill="none" stroke="#FF9C40" stroke-width="2"   points="8,78 68,58 128,66 188,46 248,54 330,42"/>
+        <polyline fill="none" stroke="#FFDDBD" stroke-width="1.5" stroke-dasharray="4 3" points="8,82 68,62 128,70 188,50 248,58 330,46"/>
+        <polyline fill="none" stroke="#995E26" stroke-width="1.5" points="8,80 68,60 128,68 188,48 248,56 330,44"/>
+        <polyline fill="none" stroke="#04AFFF" stroke-width="2"   points="8,68 68,48 128,56 188,36 248,44 330,32"/>
+        <polyline fill="none" stroke="#9CDFFF" stroke-width="1.5" stroke-dasharray="4 3" points="8,72 68,52 128,60 188,40 248,48 330,36"/>
+        <polyline fill="none" stroke="#0B5DA2" stroke-width="2"   points="8,60 68,40 128,48 188,28 248,36 330,24"/>
+        <polyline fill="none" stroke="#7DC50F" stroke-width="1.5" stroke-dasharray="3 2" points="8,86 68,72 128,78 188,62 248,68 330,58"/>
+        <polyline fill="none" stroke="#F740CE" stroke-width="1.5" points="8,90 68,78 128,84 188,68 248,74 330,64"/>
+        <polyline fill="none" stroke="#7221B6" stroke-width="2.5" stroke-dasharray="5 2" points="8,74 68,54 128,62 188,42 248,50 330,38"/>
+        <text x="2" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">9 series — legend required to decode every line</text>
+      </svg>
+    </div>
+    <div class="bb-panel" style="border-left:1px solid var(--line);">
+      <div class="bb-label better">Better — clearer structure</div>
+      <svg width="100%" viewBox="0 0 340 110">
+        <line x1="0" y1="100" x2="340" y2="100" stroke="var(--line)" stroke-width="0.5"/>
+        <line x1="0" y1="72" x2="340" y2="72" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="44" x2="340" y2="44" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <line x1="0" y1="16" x2="340" y2="16" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+        <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,78 68,58 128,66 188,46 248,54 330,42"/>
+        <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,68 68,48 128,56 188,36 248,44 330,32"/>
+        <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,86 68,72 128,78 188,62 248,68 330,58"/>
+        <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,60 68,40 128,48 188,28 248,36 330,24"/>
+        <polyline fill="none" stroke="#FF9C40" stroke-width="3"   points="8,80 68,60 128,68 188,48 248,56 330,44"/>
+        <circle cx="8" cy="80" r="3.5" fill="#FF9C40"/><circle cx="68" cy="60" r="3.5" fill="#FF9C40"/>
+        <circle cx="128" cy="68" r="3.5" fill="#FF9C40"/><circle cx="188" cy="48" r="3.5" fill="#FF9C40"/>
+        <circle cx="248" cy="56" r="3.5" fill="#FF9C40"/><circle cx="330" cy="44" r="3.5" fill="#FF9C40"/>
+        <rect x="240" y="30" width="72" height="14" rx="3" fill="rgba(255,156,64,.12)"/>
+        <text x="276" y="39" text-anchor="middle" font-size="8" fill="#FF9C40" font-weight="600" font-family="sans-serif">Spend Actual</text>
+        <text x="2" y="10" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Focus + de-emphasis · direct label · no legend needed</text>
+      </svg>
+      <div style="margin-top:12px;font-size:11px;color:var(--ink-3);font-style:italic;">Use: highlight · filter · small multiples · split views · direct labels · progressive disclosure</div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;margin-top:36px;">
+  <div class="bb-statement">Simplify before adding more encoding.</div>
+  <div class="bb-sub">If the legend must rescue the chart, reconsider the structure.</div>
+</div>
+
+<hr>
+
+<!-- S9: MATRIX -->
+<div class="sl"><span class="sl-num">09</span> Mark treatment matrix</div>
+
+<div class="matrix-wrap">
+  <table class="mx-table">
+    <thead>
+      <tr>
+        <th style="width:130px">Treatment</th>
+        <th>Line</th><th>Bar</th><th>Area</th><th>Point</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Primary</td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-rec">Recommended</span></td></tr>
+      <tr><td>Primary-A</td><td><span class="mx-avoid">Avoid as sole distinction</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td></tr>
+      <tr><td>Primary-B</td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td></tr>
+      <tr><td>Dash</td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-na">Not applicable</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-na">Not applicable</span></td></tr>
+      <tr><td>Pattern</td><td><span class="mx-avoid">Avoid</span></td><td><span class="mx-ctx">Restrained</span></td><td><span class="mx-avoid">Avoid</span></td><td><span class="mx-na">Not applicable</span></td></tr>
+      <tr><td>Opacity</td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-ctx">Context dependent</span></td></tr>
+      <tr><td>Stroke weight</td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-na">Not applicable</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-na">Not applicable</span></td></tr>
+      <tr><td>Marker</td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-na">Not applicable</span></td><td><span class="mx-na">Not applicable</span></td><td><span class="mx-rec">Recommended</span></td></tr>
+      <tr><td>Outline</td><td><span class="mx-na">Not applicable</span></td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-ctx">Context dependent</span></td></tr>
+      <tr><td>Direct label</td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-rec">Recommended</span></td><td><span class="mx-ctx">Context dependent</span></td><td><span class="mx-rec">Recommended</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="tight">
+
+<!-- S10: COLOR REFERENCE -->
+<div class="sl"><span class="sl-num">10</span> Galileo color reference</div>
+
+<div class="color-ref">
+  <div class="cr-metric">
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#FF9C40"></div><div><div class="cr-name">Spend</div><div class="cr-token">charts-cat-2 · #FF9C40</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#04AFFF"></div><div><div class="cr-name">RSV</div><div class="cr-token">charts-cat-5 · #04AFFF</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#0B5DA2"></div><div><div class="cr-name">Share</div><div class="cr-token">charts-cat-9 · #0B5DA2</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#7DC50F"></div><div><div class="cr-name">Attributed Sales</div><div class="cr-token">charts-cat-3 · #7DC50F</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#F740CE"></div><div><div class="cr-name">Incremental Sales</div><div class="cr-token">charts-cat-20 · #F740CE</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#7221B6"></div><div><div class="cr-name">AI accent</div><div class="cr-token">ai-accent-bg · #7221B6</div></div></div>
+  </div>
+  <div class="cr-families">
+    <div class="cr-fam-title">Color families</div>
+    <div class="cr-fam">
+      <div class="cr-fam-name">Spend</div>
+      <div class="cr-ramp"><div class="cr-ramp-seg" style="background:#FFDDBD"></div><div class="cr-ramp-seg" style="background:#FF9C40"></div><div class="cr-ramp-seg" style="background:#995E26"></div></div>
+      <div class="cr-ramp-labels"><span>Primary-A</span><span>Primary</span><span>Primary-B</span></div>
+    </div>
+    <div class="cr-fam">
+      <div class="cr-fam-name">Share</div>
+      <div class="cr-ramp"><div class="cr-ramp-seg" style="background:#92BDE0"></div><div class="cr-ramp-seg" style="background:#0B5DA2"></div><div class="cr-ramp-seg" style="background:#063257"></div></div>
+      <div class="cr-ramp-labels"><span>Primary-A</span><span>Primary</span><span>Primary-B</span></div>
+    </div>
+    <div class="cr-fam">
+      <div class="cr-fam-name">Attributed Sales</div>
+      <div class="cr-ramp"><div class="cr-ramp-seg" style="background:#C2DC9A"></div><div class="cr-ramp-seg" style="background:#7DC50F"></div><div class="cr-ramp-seg" style="background:#3C5E07"></div></div>
+      <div class="cr-ramp-labels"><span>Primary-A</span><span>Primary</span><span>Primary-B</span></div>
+    </div>
+    <div class="cr-note">Primary-A and Primary-B are tonal resources. They do not inherently mean Forecast, Attributed, Recommended, or another analytical state.</div>
+  </div>
+</div>
+
+<hr class="tight">
+
+<!-- S11: GLOSSARY -->
+<div class="sl"><span class="sl-num">11</span> Compact reference</div>
+
+<div class="gloss-2col">
+  <div>
+    <div class="gloss-item"><span class="gloss-term">Primary identity</span><span class="gloss-def">The main metric, dimension member, or categorical identity represented by the Primary color family.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Value nature</span><span class="gloss-def">Whether a value is observed or estimated.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Time window</span><span class="gloss-def">The period or rolling range used to calculate a value.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Method</span><span class="gloss-def">How a value was calculated or assigned.</span></div>
+  </div>
+  <div>
+    <div class="gloss-item"><span class="gloss-term">Scenario</span><span class="gloss-def">A possible outcome under assumptions.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Provenance</span><span class="gloss-def">Where a value or recommendation came from.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Semantic status</span><span class="gloss-def">A dedicated evaluative state such as pacing.</span></div>
+  </div>
+</div>
+
+<hr class="tight">
+
+<!-- S12: FINAL CHECK -->
+<div class="sl"><span class="sl-num">12</span> Final check</div>
+
+<ul class="check-list" style="max-width:700px;">
+  <li><div class="check-box" onclick="this.classList.toggle('checked')"></div><span class="check-num">1</span><span class="check-q">What is the Primary identity?</span></li>
+  <li><div class="check-box" onclick="this.classList.toggle('checked')"></div><span class="check-num">2</span><span class="check-q">Which Data modifier must be shown?</span></li>
+  <li><div class="check-box" onclick="this.classList.toggle('checked')"></div><span class="check-num">3</span><span class="check-q">Which mark represents the data?</span></li>
+  <li><div class="check-box" onclick="this.classList.toggle('checked')"></div><span class="check-num">4</span><span class="check-q">Is the treatment readable at actual size?</span></li>
+  <li><div class="check-box" onclick="this.classList.toggle('checked')"></div><span class="check-num">5</span><span class="check-q">Should the chart be simplified?</span></li>
+</ul>
+
+<div class="footer">Working Galileo design guidance. Defaults and exceptions will be refined through review of real charts.</div>
+
+</div>
+</body>
+</html>

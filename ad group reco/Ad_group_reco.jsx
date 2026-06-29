@@ -25,14 +25,14 @@ function fmtBid(n) { return `$${n.toFixed(2)}`; }
 
 // ── MOCK DATA — PAUSE RECS ────────────────────────────────────────────────────
 const PAUSE_RECS = [
-  {id:1,campaign:"Cheetos — Display Prospecting",  adGroup:"Cheetos Puffs Awareness",    currentSpend:3200,currentRSV:7800, currentROAS:2.4,rsvImpact:-420, projectedSpendReduction:3200},
-  {id:2,campaign:"Tostitos — Display NB",          adGroup:"Tostitos Party Size NB",     currentSpend:2750,currentRSV:6100, currentROAS:2.2,rsvImpact:-310, projectedSpendReduction:2750},
-  {id:3,campaign:"Lay's — Display Retarget",       adGroup:"Lay's Stax Low-Intent RT",   currentSpend:1840,currentRSV:4600, currentROAS:2.5,rsvImpact:-190, projectedSpendReduction:1840},
-  {id:4,campaign:"Doritos — Sponsored Products NB",adGroup:"Doritos NB Generic KW",      currentSpend:2100,currentRSV:5400, currentROAS:2.6,rsvImpact:-280, projectedSpendReduction:2100},
-  {id:5,campaign:"Quaker — Display Prospecting",   adGroup:"Quaker Granola Bars Cold",   currentSpend:1100,currentRSV:2700, currentROAS:2.5,rsvImpact:-140, projectedSpendReduction:1100},
-  {id:6,campaign:"Gatorade — Display NB",          adGroup:"Gatorade Zero Awareness",    currentSpend:3900,currentRSV:9200, currentROAS:2.4,rsvImpact:-510, projectedSpendReduction:3900},
-  {id:7,campaign:"Pepsi — Sponsored Display",      adGroup:"Pepsi Wild Cherry RT Broad", currentSpend:1650,currentRSV:3900, currentROAS:2.4,rsvImpact:-200, projectedSpendReduction:1650},
-  {id:8,campaign:"Lay's — Sponsored Products NB",  adGroup:"Lay's Kettle Chip Generic",  currentSpend:980, currentRSV:2500, currentROAS:2.6,rsvImpact:-120, projectedSpendReduction:980 },
+  {id:1,campaign:"Cheetos — Display Prospecting",  adGroup:"Cheetos Puffs Awareness",    currentSpend:3200,currentRSV:7800, currentROAS:2.4,rsvImpact:-420, spendReleased:3200},
+  {id:2,campaign:"Tostitos — Display NB",          adGroup:"Tostitos Party Size NB",     currentSpend:2750,currentRSV:6100, currentROAS:2.2,rsvImpact:-310, spendReleased:2750},
+  {id:3,campaign:"Lay's — Display Retarget",       adGroup:"Lay's Stax Low-Intent RT",   currentSpend:1840,currentRSV:4600, currentROAS:2.5,rsvImpact:-190, spendReleased:1840},
+  {id:4,campaign:"Doritos — Sponsored Products NB",adGroup:"Doritos NB Generic KW",      currentSpend:2100,currentRSV:5400, currentROAS:2.6,rsvImpact:-280, spendReleased:2100},
+  {id:5,campaign:"Quaker — Display Prospecting",   adGroup:"Quaker Granola Bars Cold",   currentSpend:1100,currentRSV:2700, currentROAS:2.5,rsvImpact:-140, spendReleased:1100},
+  {id:6,campaign:"Gatorade — Display NB",          adGroup:"Gatorade Zero Awareness",    currentSpend:3900,currentRSV:9200, currentROAS:2.4,rsvImpact:-510, spendReleased:3900},
+  {id:7,campaign:"Pepsi — Sponsored Display",      adGroup:"Pepsi Wild Cherry RT Broad", currentSpend:1650,currentRSV:3900, currentROAS:2.4,rsvImpact:-200, spendReleased:1650},
+  {id:8,campaign:"Lay's — Sponsored Products NB",  adGroup:"Lay's Kettle Chip Generic",  currentSpend:980, currentRSV:2500, currentROAS:2.6,rsvImpact:-120, spendReleased:980 },
 ];
 
 // ── MOCK DATA — AD GROUP BID RECS ─────────────────────────────────────────────
@@ -67,6 +67,17 @@ const CHART_DATA = {
   baseline: [null,null,null,null,1.52,1.58,1.61,1.66,1.70],
   optimized:[null,null,null,null,1.68,1.76,1.82,1.89,1.95],
 };
+
+// ── BUDGET TRANSITION DELTA ───────────────────────────────────────────────────
+// Returns the net budget impact of accepting a bid-change row,
+// accounting for its current decision state to avoid double-counting.
+function transitionDelta(currentDec, spendChange) {
+  // Already accepted → accepting again changes nothing
+  if (currentDec === "accepted") return 0;
+  // Pending or Declined → Accepted: apply the full budget impact
+  if (spendChange > 0) return -spendChange;   // increase consumes budget
+  return Math.abs(spendChange);               // decrease frees budget
+}
 
 // ── SHARED COMPONENTS ─────────────────────────────────────────────────────────
 const Badge = ({ color="gray", children }) => {
@@ -177,9 +188,9 @@ function GuidedStepper({ active, visitedMax, pauseReviewed, agReviewed, kwReview
               disabled={!canClick}
               style={{
                 display:"flex",alignItems:"center",gap:5,
-                border:"none",cursor:canClick?"pointer":"default",
+                background:"none",border:"none",cursor:canClick?"pointer":"default",
                 padding:"6px 10px",borderRadius:6,
-                background: curr ? C.blueLight : "transparent",
+                background: curr ? C.blueLight : "none",
               }}
             >
               <div style={{
@@ -205,46 +216,57 @@ function GuidedStepper({ active, visitedMax, pauseReviewed, agReviewed, kwReview
 
 // ── SCENARIO IMPACT STRIP ─────────────────────────────────────────────────────
 function ScenarioImpactStrip({ modelMetrics, acceptedMetrics, reviewedCount, pendingCount }) {
+  const cols = modelMetrics.map((m,i)=>({
+    label: m.label,
+    modelVal: m.value,
+    modelColor: m.color,
+    acceptedVal: acceptedMetrics[i].value,
+    acceptedColor: acceptedMetrics[i].color,
+  }));
   return (
-    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,marginBottom:14,padding:"14px 16px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
-        <div>
-          <div style={{fontSize:12,fontWeight:700,color:C.text}}>Scenario impact</div>
-          <div style={{fontSize:11,color:C.textMuted,marginTop:2}}>Updates after you accept or decline recommendations.</div>
+    <div style={{
+      background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,
+      marginBottom:16,overflow:"hidden",
+    }}>
+      <div style={{display:"flex",borderBottom:`1px solid ${C.border}`}}>
+        {/* Label column */}
+        <div style={{width:160,flexShrink:0,borderRight:`1px solid ${C.border}`,padding:"10px 14px"}}>
+          <div style={{fontSize:10,color:C.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:0.4,marginBottom:2}}>Metric</div>
         </div>
-        <div style={{fontSize:11,color:C.textSub}}>{reviewedCount} reviewed · {pendingCount} pending</div>
+        {/* Model scenario */}
+        <div style={{flex:1,borderRight:`1px solid ${C.border}`,padding:"10px 14px",background:"#FAF8FF"}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.purple,textTransform:"uppercase",letterSpacing:0.4}}>Model scenario</div>
+          <div style={{fontSize:10,color:C.textMuted,marginTop:1}}>All recommendations</div>
+        </div>
+        {/* Your scenario */}
+        <div style={{flex:1,padding:"10px 14px",background:"#F0FBF4"}}>
+          <div style={{fontSize:10,fontWeight:700,color:C.green,textTransform:"uppercase",letterSpacing:0.4}}>Your accepted scenario</div>
+          <div style={{fontSize:10,color:C.textMuted,marginTop:1}}>{reviewedCount} reviewed · {pendingCount} pending</div>
+        </div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr",columnGap:14,rowGap:0}}>
-        <div style={{fontSize:10,color:C.textMuted,padding:"0 0 7px"}}>Metric</div>
-        <div style={{fontSize:10,fontWeight:700,color:C.purple,padding:"0 0 7px"}}>Model scenario</div>
-        <div style={{fontSize:10,fontWeight:700,color:C.blue,padding:"0 0 7px"}}>Your accepted scenario</div>
-        {modelMetrics.map((metric,i)=>(
-          <>
-            <div key={`l-${i}`} style={{fontSize:11,color:C.textSub,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{metric.label}</div>
-            <div key={`m-${i}`} style={{fontSize:12,fontWeight:700,color:metric.color||C.purple,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{metric.value}</div>
-            <div key={`a-${i}`} style={{fontSize:12,fontWeight:700,color:acceptedMetrics[i].color||C.blue,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{acceptedMetrics[i].value}</div>
-          </>
-        ))}
-      </div>
+      {cols.map((col,i)=>(
+        <div key={i} style={{display:"flex",borderBottom:i<cols.length-1?`1px solid ${C.borderLight}`:"none"}}>
+          <div style={{width:160,flexShrink:0,borderRight:`1px solid ${C.border}`,padding:"8px 14px",fontSize:12,color:C.textSub,fontWeight:500}}>{col.label}</div>
+          <div style={{flex:1,borderRight:`1px solid ${C.border}`,padding:"8px 14px",background:"#FAF8FF"}}>
+            <span style={{fontSize:13,fontWeight:700,color:col.modelColor||C.purple}}>{col.modelVal}</span>
+          </div>
+          <div style={{flex:1,padding:"8px 14px",background:"#F0FBF4"}}>
+            <span style={{fontSize:13,fontWeight:700,color:col.acceptedColor||C.green}}>{col.acceptedVal}</span>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
 
-function StepImpactSummary({ accepted, spendChange, rsvLift, projROAS }) {
-  const spendColor = spendChange == null ? C.textMuted : spendChange < 0 ? C.green : C.orange;
-  const rsvColor = rsvLift == null ? C.textMuted : rsvLift >= 0 ? C.green : C.red;
-  const items = [
-    {label:"Accepted",value:String(accepted),color:C.text},
-    {label:"Projected spend change",value:spendChange==null?"—":`${spendChange>=0?"+":""}${fmtCurrency(spendChange)}`,color:spendColor},
-    {label:"Projected RSV lift",value:rsvLift==null?"—":`${rsvLift>=0?"+":""}${fmtCurrency(rsvLift)}`,color:rsvColor},
-    {label:"Projected ROAS",value:projROAS?`${projROAS}x`:"—",color:C.purple},
-  ];
+// ── BUDGET STRIP ──────────────────────────────────────────────────────────────
+function BudgetStrip({items}) {
   return (
-    <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:0,background:C.bg,borderBottom:`1px solid ${C.border}`}}>
-      {items.map((item,i)=>(
-        <div key={item.label} style={{padding:"10px 14px",borderRight:i<items.length-1?`1px solid ${C.border}`:"none"}}>
-          <div style={{fontSize:10,color:C.textMuted,marginBottom:3}}>{item.label}</div>
-          <div style={{fontSize:15,fontWeight:700,color:item.color}}>{item.value}</div>
+    <div style={{display:"flex",gap:0,borderBottom:`1px solid ${C.border}`,background:C.bg}}>
+      {items.map(({label,value,color},i)=>(
+        <div key={i} style={{flex:1,padding:"10px 14px",borderRight:i<items.length-1?`1px solid ${C.border}`:"none"}}>
+          <div style={{fontSize:10,color:C.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:0.4,marginBottom:3}}>{label}</div>
+          <div style={{fontSize:15,fontWeight:700,color}}>{fmtCurrency(value)}</div>
         </div>
       ))}
     </div>
@@ -283,6 +305,8 @@ export default function App() {
 
   const [selected,setSelected] = useState({pause:new Set(),adGroup:new Set(),keyword:new Set()});
   const [decisions,setDecisions] = useState({pause:{},adGroup:{},keyword:{}});
+  const [agBudgetError,setAgBudgetError] = useState(null);
+  const [kwBudgetError,setKwBudgetError] = useState(null);
 
   // ── PAUSE ─────────────────────────────────────────────────────────────────
   const pauseSel=selected.pause, pauseDec=decisions.pause;
@@ -296,11 +320,11 @@ export default function App() {
   const pauseAccept=()=>{setPauseDec(p=>{const n={...p};pauseSel.forEach(id=>{n[id]="accepted";});return n;});setPauseSel(()=>new Set());};
   const pauseDecline=()=>{setPauseDec(p=>{const n={...p};pauseSel.forEach(id=>{n[id]="declined";});return n;});setPauseSel(()=>new Set());};
 
-  const pauseSpendReduction=useMemo(()=>PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted").reduce((s,r)=>s+r.projectedSpendReduction,0),[pauseDec]);
-  const pauseRSVImpact=useMemo(()=>PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted").reduce((s,r)=>s+r.rsvImpact,0),[pauseDec]);
+  const releasedSpend=useMemo(()=>PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted").reduce((s,r)=>s+r.spendReleased,0),[pauseDec]);
   const pauseDecidedCount=Object.keys(pauseDec).length;
   const pauseAcceptedCount=Object.values(pauseDec).filter(v=>v==="accepted").length;
   const pauseDeclinedCount=Object.values(pauseDec).filter(v=>v==="declined").length;
+  const pauseRSVImpact=useMemo(()=>PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted").reduce((s,r)=>s+r.rsvImpact,0),[pauseDec]);
 
   // ── AD GROUP BIDS ─────────────────────────────────────────────────────────
   const agSel=selected.adGroup, agDec=decisions.adGroup;
@@ -310,18 +334,28 @@ export default function App() {
   const setAgSel=fn=>setSelected(p=>({...p,adGroup:fn(p.adGroup)}));
   const setAgDec=fn=>setDecisions(p=>({...p,adGroup:fn(p.adGroup)}));
   const agToggleAll=()=>setAgSel(s=>agAllSel?new Set():new Set(agAllIds));
-  const agToggleRow=id=>setAgSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
-  const agAccept=()=>{setAgDec(p=>{const n={...p};agSel.forEach(id=>{n[id]="accepted";});return n;});setAgSel(()=>new Set());};
-  const agDecline=()=>{setAgDec(p=>{const n={...p};agSel.forEach(id=>{n[id]="declined";});return n;});setAgSel(()=>new Set());};
+  const agToggleRow=id=>{setAgBudgetError(null);setAgSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});};
 
-  const agSpendChange=useMemo(()=>AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted").reduce((s,r)=>s+r.spendChange,0),[agDec]);
+  const agSavings  =useMemo(()=>AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted"&&r.spendChange<0).reduce((s,r)=>s+Math.abs(r.spendChange),0),[agDec]);
+  const agAllocated=useMemo(()=>AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted"&&r.spendChange>0).reduce((s,r)=>s+r.spendChange,0),[agDec]);
+  const agDecidedCount  =Object.keys(agDec).length;
+  const agAcceptedCount =Object.values(agDec).filter(v=>v==="accepted").length;
+  const agDeclinedCount =Object.values(agDec).filter(v=>v==="declined").length;
   const agRSVLift=useMemo(()=>AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted").reduce((s,r)=>s+(r.optimizedRSV-r.baselineRSV),0),[agDec]);
-  const agProjectedROAS=useMemo(()=>{const rows=AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted");if(!rows.length)return null;const w=rows.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);const t=rows.reduce((s,r)=>s+r.optimizedRSV,0);return t>0?(w/t).toFixed(1):null;},[agDec]);
-  const agDecidedCount=Object.keys(agDec).length;
-  const agAcceptedCount=Object.values(agDec).filter(v=>v==="accepted").length;
-  const agDeclinedCount=Object.values(agDec).filter(v=>v==="declined").length;
 
-  // ── KEYWORD BIDS ──────────────────────────────────────────────────────────
+  const agAccept=()=>{
+    // Transition-based delta: skip rows already accepted.
+    // Include existing keyword decisions so backward edits can't create a global deficit.
+    const delta=AD_GROUP_RECS.filter(r=>agSel.has(r.id)).reduce((s,r)=>s+transitionDelta(agDec[r.id],r.spendChange),0);
+    const projected=releasedSpend+agSavings-agAllocated+kwSavings-kwAllocated+delta;
+    if(projected<0){setAgBudgetError(Math.abs(projected));return;}
+    setAgBudgetError(null);
+    setAgDec(p=>{const n={...p};agSel.forEach(id=>{n[id]="accepted";});return n;});
+    setAgSel(()=>new Set());
+  };
+  const agDecline=()=>{setAgBudgetError(null);setAgDec(p=>{const n={...p};agSel.forEach(id=>{n[id]="declined";});return n;});setAgSel(()=>new Set());};
+
+  // ── KEYWORD BIDS ─────────────────────────────────────────────────────────
   const kwSel=selected.keyword, kwDec=decisions.keyword;
   const kwAllIds=KEYWORD_RECS.map(r=>r.id);
   const kwAllSel=kwAllIds.every(id=>kwSel.has(id));
@@ -329,28 +363,48 @@ export default function App() {
   const setKwSel=fn=>setSelected(p=>({...p,keyword:fn(p.keyword)}));
   const setKwDec=fn=>setDecisions(p=>({...p,keyword:fn(p.keyword)}));
   const kwToggleAll=()=>setKwSel(s=>kwAllSel?new Set():new Set(kwAllIds));
-  const kwToggleRow=id=>setKwSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});
-  const kwAccept=()=>{setKwDec(p=>{const n={...p};kwSel.forEach(id=>{n[id]="accepted";});return n;});setKwSel(()=>new Set());};
-  const kwDecline=()=>{setKwDec(p=>{const n={...p};kwSel.forEach(id=>{n[id]="declined";});return n;});setKwSel(()=>new Set());};
+  const kwToggleRow=id=>{setKwBudgetError(null);setKwSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n;});};
 
-  const kwSpendChange=useMemo(()=>KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted").reduce((s,r)=>s+r.spendChange,0),[kwDec]);
+  const kwSavings  =useMemo(()=>KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted"&&r.spendChange<0).reduce((s,r)=>s+Math.abs(r.spendChange),0),[kwDec]);
+  const kwAllocated=useMemo(()=>KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted"&&r.spendChange>0).reduce((s,r)=>s+r.spendChange,0),[kwDec]);
+  const kwDecidedCount  =Object.keys(kwDec).length;
+  const kwAcceptedCount =Object.values(kwDec).filter(v=>v==="accepted").length;
+  const kwDeclinedCount =Object.values(kwDec).filter(v=>v==="declined").length;
   const kwRSVLift=useMemo(()=>KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted").reduce((s,r)=>s+(r.optimizedRSV-r.baselineRSV),0),[kwDec]);
-  const kwProjectedROAS=useMemo(()=>{const rows=KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted");if(!rows.length)return null;const w=rows.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);const t=rows.reduce((s,r)=>s+r.optimizedRSV,0);return t>0?(w/t).toFixed(1):null;},[kwDec]);
-  const kwDecidedCount=Object.keys(kwDec).length;
-  const kwAcceptedCount=Object.values(kwDec).filter(v=>v==="accepted").length;
-  const kwDeclinedCount=Object.values(kwDec).filter(v=>v==="declined").length;
+
+  // Budget carried into Step 3 = releasedSpend + agSavings - agAllocated
+  const budgetAfterAg=useMemo(()=>releasedSpend+agSavings-agAllocated,[releasedSpend,agSavings,agAllocated]);
+
+  const kwAccept=()=>{
+    const delta=KEYWORD_RECS.filter(r=>kwSel.has(r.id)).reduce((s,r)=>s+transitionDelta(kwDec[r.id],r.spendChange),0);
+    const projected=budgetAfterAg+kwSavings-kwAllocated+delta;
+    if(projected<0){setKwBudgetError(Math.abs(projected));return;}
+    setKwBudgetError(null);
+    setKwDec(p=>{const n={...p};kwSel.forEach(id=>{n[id]="accepted";});return n;});
+    setKwSel(()=>new Set());
+  };
+  const kwDecline=()=>{setKwBudgetError(null);setKwDec(p=>{const n={...p};kwSel.forEach(id=>{n[id]="declined";});return n;});setKwSel(()=>new Set());};
+
+  // ── GLOBAL BUDGET ─────────────────────────────────────────────────────────
+  const globalRemaining=useMemo(()=>releasedSpend+agSavings-agAllocated+kwSavings-kwAllocated,[releasedSpend,agSavings,agAllocated,kwSavings,kwAllocated]);
+  const budgetDeficit=globalRemaining<0;
 
   // ── REVIEW & PUSH METRICS ─────────────────────────────────────────────────
   const totalAccepted=pauseAcceptedCount+agAcceptedCount+kwAcceptedCount;
   const projectedRSVLift=pauseRSVImpact+agRSVLift+kwRSVLift;
   const acceptedBidRecs=useMemo(()=>[...AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted"),...KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted")],[agDec,kwDec]);
-  const projectedROAS=useMemo(()=>{if(!acceptedBidRecs.length)return null;const w=acceptedBidRecs.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);const t=acceptedBidRecs.reduce((s,r)=>s+r.optimizedRSV,0);return t>0?(w/t).toFixed(1):null;},[acceptedBidRecs]);
+  const projectedROAS=useMemo(()=>{
+    if(acceptedBidRecs.length===0) return null;
+    const weighted=acceptedBidRecs.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);
+    const totalRSV=acceptedBidRecs.reduce((s,r)=>s+r.optimizedRSV,0);
+    return totalRSV>0?(weighted/totalRSV).toFixed(1):null;
+  },[acceptedBidRecs]);
 
   // ── NAVIGATION GUARDS (Option A) ─────────────────────────────────────────
   const canContinueStep1=pauseDecidedCount>0;
-  const canContinueStep2=agDecidedCount>0;
-  const canContinueStep3=kwDecidedCount>0;
-  const canPush=totalAccepted>0&&pushStatus==="idle";
+  const canContinueStep2=agDecidedCount>0&&!budgetDeficit;
+  const canContinueStep3=kwDecidedCount>0&&!budgetDeficit;
+  const canPush=!budgetDeficit&&totalAccepted>0&&pushStatus==="idle";
 
   // ── GUIDED NAVIGATION ─────────────────────────────────────────────────────
   const navigateGuided = (i) => {
@@ -360,7 +414,7 @@ export default function App() {
 
   // ── MODEL SCENARIO CALCULATIONS ──────────────────────────────────────────
   // Pause model scenario
-  const modelPauseSpendReduction = useMemo(()=>PAUSE_RECS.reduce((s,r)=>s+r.projectedSpendReduction,0),[]);
+  const modelPauseSpendReduction = useMemo(()=>PAUSE_RECS.reduce((s,r)=>s+r.spendReleased,0),[]);
   const modelPauseRSVImpact      = useMemo(()=>PAUSE_RECS.reduce((s,r)=>s+r.rsvImpact,0),[]);
   const modelPauseROAS           = useMemo(()=>{const total=PAUSE_RECS.reduce((s,r)=>s+r.currentRSV,0);const sp=PAUSE_RECS.reduce((s,r)=>s+r.currentSpend,0);return sp>0?(total/sp).toFixed(1):null;},[]);
 
@@ -373,6 +427,40 @@ export default function App() {
   const modelKwSpendChange = useMemo(()=>KEYWORD_RECS.reduce((s,r)=>s+r.spendChange,0),[]);
   const modelKwRSVLift     = useMemo(()=>KEYWORD_RECS.reduce((s,r)=>s+(r.optimizedRSV-r.baselineRSV),0),[]);
   const modelKwROAS        = useMemo(()=>{const w=KEYWORD_RECS.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);const t=KEYWORD_RECS.reduce((s,r)=>s+r.optimizedRSV,0);return t>0?(w/t).toFixed(1):null;},[]);
+
+  // Accepted ROAS for ad groups
+  const acceptedAgROAS = useMemo(()=>{
+    const rows=AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted");
+    if(!rows.length) return null;
+    const w=rows.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);
+    const t=rows.reduce((s,r)=>s+r.optimizedRSV,0);
+    return t>0?(w/t).toFixed(1):null;
+  },[agDec]);
+
+  // Accepted ROAS for keywords
+  const acceptedKwROAS = useMemo(()=>{
+    const rows=KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted");
+    if(!rows.length) return null;
+    const w=rows.reduce((s,r)=>s+r.optimizedROAS*r.optimizedRSV,0);
+    const t=rows.reduce((s,r)=>s+r.optimizedRSV,0);
+    return t>0?(w/t).toFixed(1):null;
+  },[kwDec]);
+
+  // Accepted ROAS for pauses (current ROAS of accepted rows)
+  const acceptedPauseROAS = useMemo(()=>{
+    const rows=PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted");
+    if(!rows.length) return null;
+    const totalRSV=rows.reduce((s,r)=>s+r.currentRSV,0);
+    const totalSp=rows.reduce((s,r)=>s+r.currentSpend,0);
+    return totalSp>0?(totalRSV/totalSp).toFixed(1):null;
+  },[pauseDec]);
+
+  // Accepted pause spend reduction
+  const acceptedPauseSpendReduction=useMemo(()=>PAUSE_RECS.filter(r=>pauseDec[r.id]==="accepted").reduce((s,r)=>s+r.spendReleased,0),[pauseDec]);
+  // accepted ag spend change
+  const acceptedAgSpendChange=useMemo(()=>AD_GROUP_RECS.filter(r=>agDec[r.id]==="accepted").reduce((s,r)=>s+r.spendChange,0),[agDec]);
+  // accepted kw spend change
+  const acceptedKwSpendChange=useMemo(()=>KEYWORD_RECS.filter(r=>kwDec[r.id]==="accepted").reduce((s,r)=>s+r.spendChange,0),[kwDec]);
 
   // Stepper state for guided mode
   const pauseReviewedCount = pauseAcceptedCount+pauseDeclinedCount;
@@ -480,135 +568,105 @@ export default function App() {
 
   const statusColor = { Pending:"yellow", Applied:"green", Rejected:"red", Expired:"gray" };
 
-  // Status → DaisyUI badge variant mapping for landing page
-  const landingBadgeVariant = {
-    Pending:  "badge-warning",
-    Applied:  "badge-success",
-    Rejected: "badge-error",
-    Expired:  "badge-ghost",
-  };
-
   const RecommendationsPage = () => (
-    <div data-theme="galileo" className="min-h-screen bg-base-200" style={{fontFamily:"Inter,-apple-system,sans-serif"}}>
-
-      {/* ── TOP BAR ──────────────────────────────────────────────────── */}
-      <div className="navbar bg-base-100 border-b border-base-300 sticky top-0 z-50 px-5" style={{boxShadow:"var(--shadow-sm)"}}>
-        <div className="flex-1 gap-2">
-          <span className="text-sm font-bold" style={{color:"var(--ai)"}}>Galileo</span>
-          <span className="text-base-content/30">|</span>
-          <span className="text-xs text-base-content/50">Campaign Management</span>
+    <div style={s.page}>
+      {/* TOP BAR */}
+      <div style={s.topbar}>
+        <div style={s.topLeft}>
+          <span style={{fontWeight:700,fontSize:13,color:C.blue,letterSpacing:0.2}}>Galileo</span>
+          <span style={{color:C.border}}>|</span>
+          <span style={{fontSize:12,color:C.textSub}}>Campaign Management</span>
         </div>
-        <div className="flex-none flex items-center gap-3">
-          <span className="text-xs text-base-content/50">Shirley Chisholm</span>
-          <div className="avatar avatar-placeholder">
-            <div className="bg-neutral text-neutral-content w-7 rounded-full text-xs font-semibold">
-              SC
-            </div>
-          </div>
+        <div style={s.topRight}>
+          <span style={{fontSize:12,color:C.textSub}}>Shirley Chisholm</span>
+          <div style={s.avatar}>SC</div>
         </div>
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-6 py-6">
-
-        {/* ── PAGE TITLE ───────────────────────────────────────────────── */}
-        <div className="mb-5">
-          <h1 className="text-lg font-semibold text-base-content mb-1">Campaign Optimization Recommendations</h1>
-          <p className="text-xs text-base-content/50">Review AI-generated optimization packages, assess projected impact, and apply approved changes to Skai.</p>
+      <div style={{...s.main, maxWidth:1160}}>
+        {/* PAGE TITLE */}
+        <div style={{marginBottom:20}}>
+          <h1 style={{...s.h1, fontSize:17, marginBottom:4}}>Campaign Optimization Recommendations</h1>
+          <div style={{fontSize:12,color:C.textSub}}>Review AI-generated optimization packages, assess projected impact, and apply approved changes to Skai.</div>
         </div>
 
-        {/* ── KPI SUMMARY ──────────────────────────────────────────────── */}
-        <div className="stats stats-horizontal shadow bg-base-100 border border-base-300 w-full mb-5">
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Projected RSV opportunity</div>
-            <div className="stat-value text-xl font-bold text-success">+$48.1K</div>
-            <div className="stat-desc text-xs">Across pending recommendations</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Pending reviews</div>
-            <div className={`stat-value text-xl font-bold ${pendingCount > 0 ? "text-warning" : "text-base-content/50"}`}>{pendingCount}</div>
-            <div className="stat-desc text-xs">Action required</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Applied this month</div>
-            <div className="stat-value text-xl font-bold text-base-content">{appliedCount}</div>
-            <div className="stat-desc text-xs">Packages pushed to Skai</div>
-          </div>
-          <div className="stat">
-            <div className="stat-title text-xs font-semibold uppercase tracking-wide">Projected spend impact</div>
-            <div className="stat-value text-xl font-bold text-base-content">$27.4K</div>
-            <div className="stat-desc text-xs">Across applied packages</div>
-          </div>
+        {/* KPI SUMMARY */}
+        <div style={{display:"flex",gap:12,marginBottom:20}}>
+          {[
+            {label:"Projected RSV opportunity", value:"+$48.1K", sub:"Across pending recommendations", color:C.green},
+            {label:"Pending reviews",           value:String(pendingCount), sub:"Action required",              color:pendingCount>0?C.yellow:C.textSub},
+            {label:"Applied this month",        value:String(appliedCount), sub:"Packages pushed to Skai",      color:C.text},
+            {label:"Spend reallocated",         value:"$27.4K", sub:"Across applied packages",         color:C.text},
+          ].map(({label,value,sub,color},i)=>(
+            <div key={i} style={{flex:1,background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"14px 18px"}}>
+              <div style={{fontSize:11,color:C.textMuted,fontWeight:600,textTransform:"uppercase",letterSpacing:0.4,marginBottom:4}}>{label}</div>
+              <div style={{fontSize:22,fontWeight:700,color,letterSpacing:-0.5,marginBottom:2}}>{value}</div>
+              <div style={{fontSize:11,color:C.textSub}}>{sub}</div>
+            </div>
+          ))}
         </div>
 
-        {/* ── RECOMMENDATIONS CARD ─────────────────────────────────────── */}
-        <div className="card bg-base-100 border border-base-300 shadow-sm">
-          <div className="card-body p-0">
+        {/* RECOMMENDATIONS CARD */}
+        <div style={s.panel}>
+          <div style={{...s.panelHead, flexDirection:"column", alignItems:"flex-start", gap:4}}>
+            <span style={s.panelTitle}>My Recommendations</span>
+            <span style={{fontSize:12,color:C.textSub}}>Open a recommendation package to review projected impact, approve changes, and submit updates to Skai.</span>
+          </div>
 
-            {/* Card header */}
-            <div className="px-5 pt-5 pb-3">
-              <h2 className="card-title text-sm font-semibold">My Recommendations</h2>
-              <p className="text-xs text-base-content/50 mt-0.5">Open a recommendation package to review projected impact, approve changes, and submit updates to Skai.</p>
-            </div>
+          {/* Visual-only tabs */}
+          <div style={{display:"flex",borderBottom:`1px solid ${C.border}`,padding:"0 16px"}}>
+            {["All","Pending","Applied","Rejected","Expired"].map((tab,i)=>(
+              <div key={tab} style={{padding:"9px 14px",fontSize:13,fontWeight:i===0?700:500,color:i===0?C.blue:C.textSub,borderBottom:i===0?`2px solid ${C.blue}`:"2px solid transparent",cursor:"default",marginBottom:-1}}>{tab}</div>
+            ))}
+          </div>
 
-            {/* Visual-only tabs */}
-            <div className="tabs tabs-bordered border-b border-base-300 px-1">
-              {["All","Pending","Applied","Rejected","Expired"].map((tab, i) => (
-                <span key={tab} className={`tab tab-sm ${i === 0 ? "tab-active font-semibold" : "text-base-content/50"}`}>{tab}</span>
-              ))}
-            </div>
-
-            {/* TABLE */}
-            <div className="overflow-x-auto">
-              <table className="table table-sm w-full">
-                <thead>
-                  <tr className="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
-                    <th>Recommendation</th>
-                    <th>Retailer / Customer group</th>
-                    <th>Optimization target</th>
-                    <th>Recommended changes</th>
-                    <th>Projected RSV impact</th>
-                    <th>Projected spend change</th>
-                    <th>Status</th>
-                    <th>Created</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {RECS_LIST.map(r => {
-                    const rowStatus = r.statusKey === "wk12" ? wk12Status : r.status;
-                    const isClickable = r.id === "wk12" || rowStatus === "Applied";
-                    const handleRowClick = r.id === "wk12" ? () => setCurrentView("optimization") : undefined;
-                    const badgeVariant = landingBadgeVariant[rowStatus] || "badge-ghost";
-                    return (
-                      <tr key={r.id} className="hover:bg-base-200/50 transition-colors">
-                        <td>
-                          <div className="flex flex-col gap-0.5">
-                            <span
-                              onClick={handleRowClick}
-                              className={`text-sm font-semibold ${isClickable ? "text-primary cursor-pointer hover:underline" : "text-base-content cursor-default"}`}
-                            >{r.label}</span>
-                            <span className="text-xs text-base-content/40">{r.dateRange}</span>
-                          </div>
-                        </td>
-                        <td className="text-sm">{r.retailer}</td>
-                        <td className="text-sm">{r.optTarget}</td>
-                        <td className="text-xs text-base-content/50">{r.changes}</td>
-                        <td className={`text-sm font-semibold ${r.rsvImpact > 0 ? "text-success" : "text-error"}`}>
-                          {r.rsvImpact > 0 ? "+" : ""}{fmtCurrency(r.rsvImpact)}
-                        </td>
-                        <td className={`text-sm font-semibold ${r.spendChange < 0 ? "text-success" : "text-warning"}`}>
-                          {r.spendChange >= 0 ? "+" : ""}{fmtCurrency(r.spendChange)}
-                        </td>
-                        <td>
-                          <span className={`badge badge-sm ${badgeVariant}`}>{rowStatus}</span>
-                        </td>
-                        <td className="text-xs text-base-content/50">{r.created}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
+          {/* TABLE */}
+          <div style={s.tableWrap}>
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>Recommendation</th>
+                  <th style={s.th}>Retailer / Customer group</th>
+                  <th style={s.th}>Optimization target</th>
+                  <th style={s.th}>Recommended changes</th>
+                  <th style={s.th}>Projected RSV impact</th>
+                  <th style={s.th}>Projected spend change</th>
+                  <th style={s.th}>Status</th>
+                  <th style={s.th}>Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {RECS_LIST.map(r=>{
+                  const rowStatus = r.statusKey==="wk12" ? wk12Status : r.status;
+                  const isClickable = r.id==="wk12" || rowStatus==="Applied";
+                  const handleRowClick = r.id==="wk12" ? ()=>setCurrentView("optimization") : undefined;
+                  return (
+                    <tr key={r.id} style={{background:"#fff"}}>
+                      <td style={s.td}>
+                        <div style={{display:"flex",flexDirection:"column",gap:2}}>
+                          <span
+                            onClick={handleRowClick}
+                            style={{fontWeight:700,color:isClickable?C.blue:C.text,cursor:isClickable?"pointer":"default",fontSize:13}}
+                          >{r.label}</span>
+                          <span style={{fontSize:11,color:C.textMuted}}>{r.dateRange}</span>
+                        </div>
+                      </td>
+                      <td style={s.td}>{r.retailer}</td>
+                      <td style={s.td}>{r.optTarget}</td>
+                      <td style={{...s.td,fontSize:12,color:C.textSub}}>{r.changes}</td>
+                      <td style={{...s.td,fontWeight:600,color:r.rsvImpact>0?C.green:C.red}}>
+                        {r.rsvImpact>0?"+":""}{fmtCurrency(r.rsvImpact)}
+                      </td>
+                      <td style={{...s.td,fontWeight:600,color:r.spendChange<0?C.green:"#D97706"}}>
+                        {r.spendChange>=0?"+":""}{fmtCurrency(r.spendChange)}
+                      </td>
+                      <td style={s.td}><Badge color={statusColor[rowStatus]||"gray"}>{rowStatus}</Badge></td>
+                      <td style={{...s.td,color:C.textSub,fontSize:12}}>{r.created}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
       </div>
@@ -659,7 +717,7 @@ export default function App() {
   // ── GUIDED MODE RENDER ────────────────────────────────────────────────────
   if (experienceMode==="guided") {
     // Derived for Review step
-    const netSpendChangeG = agSpendChange + kwSpendChange - pauseSpendReduction;
+    const netSpendChangeG = acceptedAgSpendChange + acceptedKwSpendChange - acceptedPauseSpendReduction;
     const baselineSpendG  = 284000;
     const baselineRSVG    = 1700000;
     const optimizedSpendG = baselineSpendG + netSpendChangeG;
@@ -792,9 +850,9 @@ export default function App() {
                 ]}
                 acceptedMetrics={[
                   {label:"Accepted pauses",          value:pauseAcceptedCount,                            color:C.green},
-                  {label:"Projected spend reduction", value:fmtCurrency(pauseSpendReduction),      color:C.green},
+                  {label:"Projected spend reduction", value:fmtCurrency(acceptedPauseSpendReduction),      color:C.green},
                   {label:"Projected RSV impact",     value:pauseAcceptedCount>0?fmtCurrency(pauseRSVImpact):"—", color:C.red},
-                  {label:"Average ROAS",             value:modelPauseROAS?`${modelPauseROAS}x`:"—", color:C.purple},
+                  {label:"Average ROAS",             value:acceptedPauseROAS?`${acceptedPauseROAS}x`:"—", color:C.purple},
                 ]}
               />
 
@@ -807,7 +865,7 @@ export default function App() {
                       <th style={s.th}>Campaign</th><th style={s.th}>Ad Group</th>
                       <th style={s.th}>Current Spend</th><th style={s.th}>Current RSV</th>
                       <th style={s.th}>Current ROAS<div style={{fontSize:10,color:C.textMuted,fontWeight:400,textTransform:"none",letterSpacing:0,marginTop:1}}>Target ≥ 2.8x</div></th>
-                      <th style={s.th}>Projected RSV Impact</th><th style={s.th}>Projected Spend Reduction</th><th style={s.th}>Decision</th>
+                      <th style={s.th}>Projected RSV Impact</th><th style={s.th}>Spend Released</th><th style={s.th}>Decision</th>
                     </tr></thead>
                     <tbody>
                       {PAUSE_RECS.map(r=>{
@@ -822,7 +880,7 @@ export default function App() {
                             <td style={s.td}>{fmtCurrency(r.currentRSV)}</td>
                             <td style={{...s.td,color:C.red}}>{r.currentROAS.toFixed(1)}x</td>
                             <td style={{...s.td,color:C.red,fontWeight:600}}>{fmtCurrency(r.rsvImpact)}<div style={{fontSize:11,fontWeight:400,color:C.textMuted,marginTop:1}}>{fmtPct((r.rsvImpact/r.currentRSV)*100)}</div></td>
-                            <td style={{...s.td,color:C.green,fontWeight:600}}>{fmtCurrency(r.projectedSpendReduction)}</td>
+                            <td style={{...s.td,color:C.green,fontWeight:600}}>{fmtCurrency(r.spendReleased)}</td>
                             <td style={s.td}>
                               {!dec&&<Badge color="gray">Pending</Badge>}
                               {dec==="accepted"&&<Badge color="green">Accepted</Badge>}
@@ -860,9 +918,9 @@ export default function App() {
                 ]}
                 acceptedMetrics={[
                   {label:"Accepted changes",     value:agAcceptedCount,                                color:C.green},
-                  {label:"Projected spend change",value:agAcceptedCount>0?(agSpendChange>=0?"+":"")+fmtCurrency(agSpendChange):"—", color:agSpendChange>0?C.yellow:C.green},
+                  {label:"Projected spend change",value:agAcceptedCount>0?(acceptedAgSpendChange>=0?"+":"")+fmtCurrency(acceptedAgSpendChange):"—", color:acceptedAgSpendChange>0?C.yellow:C.green},
                   {label:"Projected RSV lift",   value:agAcceptedCount>0?"+"+fmtCurrency(agRSVLift):"—", color:C.green},
-                  {label:"Projected ROAS",       value:agProjectedROAS?`${agProjectedROAS}x`:"—",        color:C.purple},
+                  {label:"Projected ROAS",       value:acceptedAgROAS?`${acceptedAgROAS}x`:"—",        color:C.purple},
                 ]}
               />
 
@@ -934,9 +992,9 @@ export default function App() {
                 ]}
                 acceptedMetrics={[
                   {label:"Accepted changes",     value:kwAcceptedCount,                               color:C.green},
-                  {label:"Projected spend change",value:kwAcceptedCount>0?(kwSpendChange>=0?"+":"")+fmtCurrency(kwSpendChange):"—", color:kwSpendChange>0?C.yellow:C.green},
+                  {label:"Projected spend change",value:kwAcceptedCount>0?(acceptedKwSpendChange>=0?"+":"")+fmtCurrency(acceptedKwSpendChange):"—", color:acceptedKwSpendChange>0?C.yellow:C.green},
                   {label:"Projected RSV lift",   value:kwAcceptedCount>0?"+"+fmtCurrency(kwRSVLift):"—", color:C.green},
-                  {label:"Projected ROAS",       value:kwProjectedROAS?`${kwProjectedROAS}x`:"—",      color:C.purple},
+                  {label:"Projected ROAS",       value:acceptedKwROAS?`${acceptedKwROAS}x`:"—",      color:C.purple},
                 ]}
               />
 
@@ -1068,14 +1126,14 @@ export default function App() {
                       <div style={{paddingLeft:18}}>
                         <div style={{fontSize:11,color:C.textMuted,fontWeight:600,marginBottom:8}}>Impact contribution</div>
                         {[
-                          ["Pause spend change",    fmtCurrency(-pauseSpendReduction),C.green],
+                          ["Pause spend change",    fmtCurrency(-acceptedPauseSpendReduction),C.green],
                           ["Pause RSV impact",      fmtCurrency(pauseRSVImpact),              pauseRSVImpact>=0?C.green:C.red],
-                          ["Ad Group spend change", (agSpendChange>=0?"+":"")+fmtCurrency(agSpendChange), agSpendChange>0?C.yellow:C.green],
+                          ["Ad Group spend change", (acceptedAgSpendChange>=0?"+":"")+fmtCurrency(acceptedAgSpendChange), acceptedAgSpendChange>0?C.yellow:C.green],
                           ["Ad Group RSV lift",     agAcceptedCount>0?"+"+fmtCurrency(agRSVLift):"—", C.green],
-                          ["Ad Group ROAS",         agProjectedROAS?`${agProjectedROAS}x`:"—", C.purple],
-                          ["Keyword spend change",  (kwSpendChange>=0?"+":"")+fmtCurrency(kwSpendChange), kwSpendChange>0?C.yellow:C.green],
+                          ["Ad Group ROAS",         acceptedAgROAS?`${acceptedAgROAS}x`:"—", C.purple],
+                          ["Keyword spend change",  (acceptedKwSpendChange>=0?"+":"")+fmtCurrency(acceptedKwSpendChange), acceptedKwSpendChange>0?C.yellow:C.green],
                           ["Keyword RSV lift",      kwAcceptedCount>0?"+"+fmtCurrency(kwRSVLift):"—", C.green],
-                          ["Keyword ROAS",          kwProjectedROAS?`${kwProjectedROAS}x`:"—", C.purple],
+                          ["Keyword ROAS",          acceptedKwROAS?`${acceptedKwROAS}x`:"—", C.purple],
                         ].map(([label,val,color],i)=>(
                           <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:i<7?`1px solid ${C.borderLight}`:"none"}}>
                             <span style={{fontSize:12,color:C.textSub}}>{label}</span>
@@ -1185,7 +1243,7 @@ export default function App() {
 
         {/* KPI CARDS */}
         <div style={s.kpiRow}>
-          <KpiCard label="Current Weekly Spend"        value="$284K"  sub="Before selected recommendations"/>
+          <KpiCard label="Optimized Spend"            value="$284K"  sub="vs $261K baseline"/>
           <KpiCard label="Optimized Attributed Sales" value="$1.42M" sub="+8.4% vs baseline"/>
           <KpiCard label="Optimized Total Sales"      value="$2.86M" sub="+6.2% vs baseline"/>
           <KpiCard label="Optimized ROAS"             value="5.0x"   sub="vs 4.6x baseline"/>
@@ -1214,6 +1272,13 @@ export default function App() {
           </div>
         </div>
 
+        {/* GLOBAL BUDGET DEFICIT WARNING */}
+        {budgetDeficit&&(
+          <div style={{...s.errBanner,margin:"0 0 16px",fontSize:13}}>
+            Accepted recommendations exceed the available reallocation budget by {fmtCurrency(Math.abs(globalRemaining))}. Adjust earlier decisions before continuing.
+          </div>
+        )}
+
         {/* RECOMMENDATION REVIEW PANEL */}
         <div style={s.panel}>
           <div style={s.panelHead}>
@@ -1226,7 +1291,7 @@ export default function App() {
             <>
               <div style={s.stepHead}>
                 <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>Step 1 — Pause Recommendations</div>
-                <div style={{fontSize:12,color:C.textSub}}>Review underperforming ad groups recommended for pausing and assess their projected spend and RSV impact.</div>
+                <div style={{fontSize:12,color:C.textSub}}>Review ad groups recommended for pausing. Accepting a recommendation pauses the ad group and releases its spend for reallocation.</div>
               </div>
               <TableToolbar allSelected={pauseAllSel} someSelected={pauseSomeSel} selSize={pauseSel.size} onToggleAll={pauseToggleAll} onAccept={pauseAccept} onDecline={pauseDecline} s={s}/>
               <div style={s.tableWrap}>
@@ -1236,7 +1301,7 @@ export default function App() {
                     <th style={s.th}>Campaign</th><th style={s.th}>Ad Group</th>
                     <th style={s.th}>Current Spend</th><th style={s.th}>Current RSV</th>
                     <th style={s.th}>Current ROAS<div style={{fontSize:10,color:C.textMuted,fontWeight:400,textTransform:"none",letterSpacing:0,marginTop:1}}>Target ≥ 2.8x</div></th>
-                    <th style={s.th}>Projected RSV Impact</th><th style={s.th}>Projected Spend Reduction</th><th style={s.th}>Decision</th>
+                    <th style={s.th}>Projected RSV Impact</th><th style={s.th}>Spend Released</th><th style={s.th}>Decision</th>
                   </tr></thead>
                   <tbody>
                     {PAUSE_RECS.map(r=>{
@@ -1251,7 +1316,7 @@ export default function App() {
                           <td style={s.td}>{fmtCurrency(r.currentRSV)}</td>
                           <td style={{...s.td,color:C.red}}>{r.currentROAS.toFixed(1)}x</td>
                           <td style={{...s.td,color:C.red,fontWeight:600}}>{fmtCurrency(r.rsvImpact)}<div style={{fontSize:11,fontWeight:400,color:C.textMuted,marginTop:1}}>{fmtPct((r.rsvImpact/r.currentRSV)*100)}</div></td>
-                          <td style={{...s.td,color:C.green,fontWeight:600}}>{fmtCurrency(r.projectedSpendReduction)}</td>
+                          <td style={{...s.td,color:C.green,fontWeight:600}}>{fmtCurrency(r.spendReleased)}</td>
                           <td style={s.td}>
                             {!dec&&<Badge color="gray">Pending</Badge>}
                             {dec==="accepted"&&<Badge color="green">Accepted</Badge>}
@@ -1265,7 +1330,7 @@ export default function App() {
               </div>
               <div style={s.summaryRow}>
                 <span>{pauseAcceptedCount} accepted · {pauseDeclinedCount} declined · {PAUSE_RECS.length-pauseDecidedCount} pending</span>
-                {pauseSpendReduction>0&&<span style={{color:C.green,fontWeight:600}}>Projected spend reduction: {fmtCurrency(pauseSpendReduction)}</span>}
+                {releasedSpend>0&&<span style={{color:C.green,fontWeight:600}}>Spend released: {fmtCurrency(releasedSpend)}</span>}
               </div>
             </>
           )}
@@ -1275,9 +1340,15 @@ export default function App() {
             <>
               <div style={s.stepHead}>
                 <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>Step 2 — Ad Group Bid Recommendations</div>
-                <div style={{fontSize:12,color:C.textSub}}>Review recommended ad group bid changes and assess their projected spend, RSV, and ROAS impact.</div>
+                <div style={{fontSize:12,color:C.textSub}}>Review recommended ad group bid changes and allocate the spend released from accepted pauses.</div>
               </div>
-              <StepImpactSummary accepted={agAcceptedCount} spendChange={agAcceptedCount>0?agSpendChange:null} rsvLift={agAcceptedCount>0?agRSVLift:null} projROAS={agProjectedROAS}/>
+              <BudgetStrip items={[
+                {label:"Released from pauses",      value:releasedSpend,  color:C.green},
+                {label:"Savings from bid decreases",value:agSavings,      color:C.green},
+                {label:"Allocated to bid increases", value:agAllocated,    color:C.text},
+                {label:"Remaining available",        value:releasedSpend+agSavings-agAllocated, color:(releasedSpend+agSavings-agAllocated)>=0?C.green:C.red},
+              ]}/>
+              {agBudgetError&&<div style={s.errBanner}>These recommendations exceed the available reallocation budget by {fmtCurrency(agBudgetError)}.</div>}
               <TableToolbar allSelected={agAllSel} someSelected={agSomeSel} selSize={agSel.size} onToggleAll={agToggleAll} onAccept={agAccept} onDecline={agDecline} s={s}/>
               <div style={s.tableWrap}>
                 <table style={s.table}>
@@ -1304,9 +1375,9 @@ export default function App() {
                           <td style={{...s.td,color:bidChangePct>=0?C.blue:C.green,fontWeight:600}}>{fmtPct(bidChangePct)}</td>
                           <td style={s.td}>{fmtCurrency(r.baselineRSV)}</td>
                           <td style={{...s.td,color:C.purple,fontWeight:600}}>{fmtCurrency(r.optimizedRSV)}</td>
-                          <td style={{...s.td,color:isIncrease?C.orange:C.green,fontWeight:600}}>
+                          <td style={{...s.td,color:isIncrease?C.text:C.green,fontWeight:600}}>
                             {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
-                            <div style={{fontSize:10,color:C.textMuted,fontWeight:400,marginTop:1}}>{isIncrease?"projected increase":"projected reduction"}</div>
+                            <div style={{fontSize:10,color:C.textMuted,fontWeight:400,marginTop:1}}>{isIncrease?"additional allocation":"savings"}</div>
                           </td>
                           <td style={s.td}>{r.optimizedROAS.toFixed(1)}x</td>
                           <td style={s.td}>
@@ -1322,7 +1393,7 @@ export default function App() {
               </div>
               <div style={s.summaryRow}>
                 <span>{agAcceptedCount} accepted · {agDeclinedCount} declined · {AD_GROUP_RECS.length-agDecidedCount} pending</span>
-                {agAcceptedCount>0&&<span style={{color:agSpendChange<=0?C.green:C.orange,fontWeight:600}}>Projected spend change: {agSpendChange>=0?"+":""}{fmtCurrency(agSpendChange)}</span>}
+                {agSavings>0&&<span style={{color:C.green,fontWeight:600}}>Savings captured: {fmtCurrency(agSavings)}</span>}
               </div>
             </>
           )}
@@ -1332,9 +1403,15 @@ export default function App() {
             <>
               <div style={s.stepHead}>
                 <div style={{fontWeight:700,fontSize:14,marginBottom:4}}>Step 3 — Keyword Bid Recommendations</div>
-                <div style={{fontSize:12,color:C.textSub}}>Fine-tune keyword bids and review their projected spend, RSV, and ROAS impact.</div>
+                <div style={{fontSize:12,color:C.textSub}}>Fine-tune keyword bids using the budget carried forward from Ad Group recommendations.</div>
               </div>
-              <StepImpactSummary accepted={kwAcceptedCount} spendChange={kwAcceptedCount>0?kwSpendChange:null} rsvLift={kwAcceptedCount>0?kwRSVLift:null} projROAS={kwProjectedROAS}/>
+              <BudgetStrip items={[
+                {label:"Budget carried from Step 2",       value:budgetAfterAg,             color:budgetAfterAg>=0?C.green:C.red},
+                {label:"Savings from keyword bid decreases",value:kwSavings,                color:C.green},
+                {label:"Allocated to keyword bid increases",value:kwAllocated,              color:C.text},
+                {label:"Remaining available",              value:budgetAfterAg+kwSavings-kwAllocated, color:(budgetAfterAg+kwSavings-kwAllocated)>=0?C.green:C.red},
+              ]}/>
+              {kwBudgetError&&<div style={s.errBanner}>These recommendations exceed the available reallocation budget by {fmtCurrency(kwBudgetError)}.</div>}
               <TableToolbar allSelected={kwAllSel} someSelected={kwSomeSel} selSize={kwSel.size} onToggleAll={kwToggleAll} onAccept={kwAccept} onDecline={kwDecline} s={s}/>
               <div style={s.tableWrap}>
                 <table style={s.table}>
@@ -1363,9 +1440,9 @@ export default function App() {
                           <td style={{...s.td,fontWeight:600}}>{fmtBid(r.recommendedBid)}</td>
                           <td style={{...s.td,color:bidChangePct>=0?C.blue:C.green,fontWeight:600}}>{fmtPct(bidChangePct)}</td>
                           <td style={{...s.td,color:C.purple,fontWeight:600}}>{fmtCurrency(r.optimizedRSV)}</td>
-                          <td style={{...s.td,color:isIncrease?C.orange:C.green,fontWeight:600}}>
+                          <td style={{...s.td,color:isIncrease?C.text:C.green,fontWeight:600}}>
                             {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
-                            <div style={{fontSize:10,color:C.textMuted,fontWeight:400,marginTop:1}}>{isIncrease?"projected increase":"projected reduction"}</div>
+                            <div style={{fontSize:10,color:C.textMuted,fontWeight:400,marginTop:1}}>{isIncrease?"additional allocation":"savings"}</div>
                           </td>
                           <td style={s.td}>{r.optimizedROAS.toFixed(1)}x</td>
                           <td style={s.td}>
@@ -1381,81 +1458,246 @@ export default function App() {
               </div>
               <div style={s.summaryRow}>
                 <span>{kwAcceptedCount} accepted · {kwDeclinedCount} declined · {KEYWORD_RECS.length-kwDecidedCount} pending</span>
-                {kwAcceptedCount>0&&<span style={{color:kwSpendChange<=0?C.green:C.orange,fontWeight:600}}>Projected spend change: {kwSpendChange>=0?"+":""}{fmtCurrency(kwSpendChange)}</span>}
+                {kwSavings>0&&<span style={{color:C.green,fontWeight:600}}>Savings captured: {fmtCurrency(kwSavings)}</span>}
               </div>
             </>
           )}
 
           {/* ── STEP 4: REVIEW & PUSH ─────────────────────────────────────── */}
           {activeStep===4&&(()=>{
-            const pauseSpendChange=-pauseSpendReduction;
-            const netSpendChange=pauseSpendChange+agSpendChange+kwSpendChange;
-            const currentWeeklySpend=284000;
-            const optimizedWeeklySpend=currentWeeklySpend+netSpendChange;
-            const baselineRSV=1700000;
-            const optimizedRSV=baselineRSV+projectedRSVLift;
-            const card={background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,padding:"16px 18px",marginBottom:14};
-            const metric=(label,value,color)=><div><div style={{fontSize:11,color:C.textMuted,marginBottom:2}}>{label}</div><div style={{fontSize:22,fontWeight:800,color}}>{value}</div></div>;
+            // Derived values for Step 4 display
+            const netSpendChange = agAllocated + kwAllocated - releasedSpend - agSavings - kwSavings;
+            const baselineSpend  = 284000; // matches KPI card $284K
+            const baselineRSV    = 1700000; // $1.70M, last baseline forecast week
+            const optimizedSpend = baselineSpend + netSpendChange;
+            const optimizedRSV   = baselineRSV + projectedRSVLift;
+
+            // Bar chart helper — proportional width, max 100%
+            const barW = (val, max) => `${Math.min(100, Math.max(4, (val / max) * 100)).toFixed(1)}%`;
+            const spendMax  = Math.max(baselineSpend, optimizedSpend) * 1.05;
+            const rsvMax    = Math.max(baselineRSV, Math.abs(optimizedRSV)) * 1.05;
+
+            // Readiness
+            const readiness = budgetDeficit
+              ? { label:"Budget adjustment required", color:C.red,     bg:"#FFF1F1", border:C.red    }
+              : totalAccepted===0
+              ? { label:"No accepted changes",        color:C.textSub, bg:C.bg,      border:C.border }
+              : { label:"Ready to push",              color:C.green,   bg:"#F0FBF4", border:C.green  };
+
+            // One-line summaries
+            const pauseSummary  = `${pauseAcceptedCount} accepted · ${pauseDeclinedCount} declined · ${fmtCurrency(releasedSpend)} released · ${fmtCurrency(pauseRSVImpact)} RSV impact`;
+            const agSummary     = `${agAcceptedCount} accepted · ${agDeclinedCount} declined · ${fmtCurrency(agAllocated)} allocated · ${fmtCurrency(agRSVLift)} RSV lift`;
+            const kwSummary     = `${kwAcceptedCount} accepted · ${kwDeclinedCount} declined · ${fmtCurrency(kwAllocated)} allocated · ${fmtCurrency(kwRSVLift)} RSV lift`;
+
+            // Budget flow steps
+            const budgetFlow = [
+              { label:"Released from pauses",  sign:"+", value:releasedSpend,  color:C.green },
+              { label:"Ad Group savings",       sign:"+", value:agSavings,      color:C.green },
+              { label:"Keyword savings",        sign:"+", value:kwSavings,      color:C.green },
+              { label:"Ad Group allocations",   sign:"−", value:agAllocated,    color:C.textSub },
+              { label:"Keyword allocations",    sign:"−", value:kwAllocated,    color:C.textSub },
+            ];
+
+            // Shared inner styles (scoped to Step 4)
+            const sec = { marginBottom:20 };
+            const secTitle = { fontSize:11, fontWeight:700, color:C.textMuted, textTransform:"uppercase", letterSpacing:0.5, marginBottom:10 };
+            const card = { background:C.surface, border:`1px solid ${C.border}`, borderRadius:8, padding:"16px 18px", marginBottom:16 };
+            const detailRow = { display:"flex", justifyContent:"space-between", alignItems:"baseline", padding:"5px 0", borderBottom:`1px solid ${C.borderLight}` };
+            const detailLabel = { fontSize:12, color:C.textSub };
+            const detailVal = (color) => ({ fontSize:12, fontWeight:600, color:color||C.text });
+
             return (
-              <div style={{padding:"20px"}}>
-                {pushStatus==="success"?(
-                  <div style={{maxWidth:560,margin:"0 auto",padding:"28px 0"}}>
-                    <div style={{fontSize:18,fontWeight:800,color:C.green,marginBottom:6}}>Recommendations successfully pushed</div>
-                    <div style={{fontSize:13,color:C.textSub,marginBottom:18}}>{totalAccepted} accepted changes sent to <strong>Skai</strong> · {pushTimestamp}</div>
-                    <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:20,borderTop:`1px solid ${C.border}`,paddingTop:16}}>
-                      {metric("Net RSV lift",fmtCurrency(projectedRSVLift),projectedRSVLift>=0?C.green:C.red)}
-                      {metric("Net spend change",`${netSpendChange>=0?"+":""}${fmtCurrency(netSpendChange)}`,netSpendChange<=0?C.green:C.orange)}
-                      {metric("Optimized weekly spend",fmtCurrency(optimizedWeeklySpend),C.purple)}
+              <div style={{padding:"20px 20px 4px"}}>
+                {pushStatus==="success" ? (
+                  /* ── SUCCESS STATE ── */
+                  <div style={{padding:"28px 0 12px", maxWidth:480, margin:"0 auto"}}>
+                    <div style={{fontWeight:800, fontSize:17, color:C.green, marginBottom:6}}>Recommendations successfully pushed</div>
+                    <div style={{fontSize:13, color:C.textSub, marginBottom:16, lineHeight:1.6}}>
+                      {totalAccepted} accepted changes pushed to <strong>Skai</strong> · {pushTimestamp}
+                    </div>
+                    <div style={{display:"flex", gap:24, borderTop:`1px solid ${C.border}`, paddingTop:14}}>
+                      <div>
+                        <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Net RSV lift</div>
+                        <div style={{fontSize:16, fontWeight:700, color:projectedRSVLift>=0?C.green:C.red}}>{fmtCurrency(projectedRSVLift)}</div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Net spend change</div>
+                        <div style={{fontSize:16, fontWeight:700, color:netSpendChange<=0?C.green:"#D97706"}}>{netSpendChange>=0?"+":""}{fmtCurrency(netSpendChange)}</div>
+                      </div>
+                      <div>
+                        <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Remaining budget</div>
+                        <div style={{fontSize:16, fontWeight:700, color:globalRemaining>=0?C.green:C.red}}>{fmtCurrency(globalRemaining)}</div>
+                      </div>
                     </div>
                   </div>
-                ):(
+                ) : (
                   <>
-                    <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:16}}>
+                    {/* ── STEP HEADER + READINESS ── */}
+                    <div style={{display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:18}}>
                       <div>
-                        <div style={{fontSize:15,fontWeight:700,marginBottom:3}}>Review &amp; Push</div>
-                        <div style={{fontSize:12,color:C.textSub}}>Confirm the selected recommendations and their projected impact before sending changes to Skai.</div>
+                        <div style={{fontWeight:700, fontSize:15, color:C.text, marginBottom:3}}>Review &amp; Push</div>
+                        <div style={{fontSize:12, color:C.textSub}}>Review the final impact and budget allocation of the recommendations selected for this optimization package.</div>
                       </div>
-                      <Badge color={totalAccepted>0?"green":"gray"}>{totalAccepted>0?"Ready to push":"No accepted changes"}</Badge>
+                      <div style={{flexShrink:0, marginLeft:16, padding:"5px 12px", borderRadius:20, background:readiness.bg, border:`1px solid ${readiness.border}`, fontSize:11, fontWeight:700, color:readiness.color, whiteSpace:"nowrap"}}>
+                        {readiness.label}
+                        {budgetDeficit&&<span style={{fontWeight:400, marginLeft:6}}>— exceeds budget by {fmtCurrency(Math.abs(globalRemaining))}</span>}
+                        {!budgetDeficit&&totalAccepted===0&&<span style={{fontWeight:400, marginLeft:6}}>— accept at least one recommendation</span>}
+                      </div>
                     </div>
-                    <div style={{...card,borderColor:C.purple+"44"}}>
-                      <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>Net impact of selected recommendations</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:24}}>
+
+                    {/* ── 1. NET IMPACT CARD ── */}
+                    <div style={{...card, borderColor:C.purple+"44"}}>
+                      <div style={{marginBottom:12}}>
+                        <div style={{fontWeight:700, fontSize:13, color:C.text}}>Net impact of selected optimizations</div>
+                        <div style={{fontSize:11, color:C.textSub, marginTop:2}}>Combined weekly effect of all accepted recommendations.</div>
+                      </div>
+                      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:20}}>
+                        {/* Left: bar comparisons */}
                         <div>
-                          {[["Weekly spend",currentWeeklySpend,optimizedWeeklySpend],["Projected RSV",baselineRSV,optimizedRSV]].map(([label,current,optimized])=>(
-                            <div key={label} style={{marginBottom:14}}>
-                              <div style={{fontSize:11,color:C.textMuted,marginBottom:6}}>{label}</div>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:12,marginBottom:4}}><span style={{color:C.textSub}}>Current</span><strong>{fmtCurrency(current)}</strong></div>
-                              <div style={{display:"flex",justifyContent:"space-between",fontSize:12}}><span style={{color:C.purple}}>Optimized</span><strong style={{color:C.purple}}>{fmtCurrency(optimized)}</strong></div>
+                          {/* Weekly Spend */}
+                          <div style={{marginBottom:14}}>
+                            <div style={{fontSize:11, color:C.textMuted, marginBottom:6}}>Weekly spend</div>
+                            <div style={{marginBottom:5}}>
+                              <div style={{display:"flex", justifyContent:"space-between", marginBottom:3}}>
+                                <span style={{fontSize:11, color:C.textSub}}>Current</span>
+                                <span style={{fontSize:12, fontWeight:600, color:C.textSub}}>{fmtCurrency(baselineSpend)}</span>
+                              </div>
+                              <div style={{height:7, background:C.borderLight, borderRadius:4}}>
+                                <div style={{width:barW(baselineSpend, spendMax), height:"100%", background:C.textMuted, borderRadius:4}}/>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{display:"flex", justifyContent:"space-between", marginBottom:3}}>
+                                <span style={{fontSize:11, color:C.purple}}>Optimized</span>
+                                <span style={{fontSize:12, fontWeight:700, color:C.purple}}>{fmtCurrency(optimizedSpend)}</span>
+                              </div>
+                              <div style={{height:7, background:C.borderLight, borderRadius:4}}>
+                                <div style={{width:barW(Math.max(0,optimizedSpend), spendMax), height:"100%", background:C.purple, borderRadius:4}}/>
+                              </div>
+                            </div>
+                          </div>
+                          {/* Projected RSV */}
+                          <div>
+                            <div style={{fontSize:11, color:C.textMuted, marginBottom:6}}>Projected RSV</div>
+                            <div style={{marginBottom:5}}>
+                              <div style={{display:"flex", justifyContent:"space-between", marginBottom:3}}>
+                                <span style={{fontSize:11, color:C.textSub}}>Baseline</span>
+                                <span style={{fontSize:12, fontWeight:600, color:C.textSub}}>{fmtCurrency(baselineRSV)}</span>
+                              </div>
+                              <div style={{height:7, background:C.borderLight, borderRadius:4}}>
+                                <div style={{width:barW(baselineRSV, rsvMax), height:"100%", background:C.textMuted, borderRadius:4}}/>
+                              </div>
+                            </div>
+                            <div>
+                              <div style={{display:"flex", justifyContent:"space-between", marginBottom:3}}>
+                                <span style={{fontSize:11, color:C.purple}}>Optimized</span>
+                                <span style={{fontSize:12, fontWeight:700, color:C.purple}}>{fmtCurrency(optimizedRSV)}</span>
+                              </div>
+                              <div style={{height:7, background:C.borderLight, borderRadius:4}}>
+                                <div style={{width:barW(Math.max(0,optimizedRSV), rsvMax), height:"100%", background:C.purple, borderRadius:4}}/>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Right: three key outcomes */}
+                        <div style={{display:"flex", flexDirection:"column", justifyContent:"center", gap:14, borderLeft:`1px solid ${C.borderLight}`, paddingLeft:20}}>
+                          <div>
+                            <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Net RSV lift</div>
+                            <div style={{fontSize:26, fontWeight:800, color:projectedRSVLift>=0?C.green:C.red, letterSpacing:-0.5}}>{projectedRSVLift!==0?fmtCurrency(projectedRSVLift):"—"}</div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Net spend change</div>
+                            <div style={{fontSize:26, fontWeight:800, color:netSpendChange<=0?C.green:"#D97706", letterSpacing:-0.5}}>{netSpendChange>=0?"+":""}{fmtCurrency(netSpendChange)}</div>
+                          </div>
+                          <div>
+                            <div style={{fontSize:11, color:C.textMuted, marginBottom:2}}>Projected ROAS</div>
+                            <div style={{fontSize:26, fontWeight:800, color:C.purple, letterSpacing:-0.5}}>{projectedROAS?`${projectedROAS}x`:"—"}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── 2. PACKAGE SUMMARY ── */}
+                    <div style={{...card}}>
+                      <div style={{fontWeight:700, fontSize:13, color:C.text, marginBottom:12}}>Optimization package summary</div>
+                      <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:0}}>
+                        {/* Left: actions */}
+                        <div style={{paddingRight:18, borderRight:`1px solid ${C.borderLight}`}}>
+                          <div style={{fontSize:11, color:C.textMuted, fontWeight:600, marginBottom:8}}>Actions selected</div>
+                          {[
+                            ["Ad groups paused",       pauseAcceptedCount],
+                            ["Ad group bids updated",  agAcceptedCount],
+                            ["Keyword bids updated",   kwAcceptedCount],
+                            ["Total accepted changes", totalAccepted],
+                          ].map(([label, val], i) => (
+                            <div key={i} style={{...detailRow, borderBottom: i<3 ? `1px solid ${C.borderLight}` : "none"}}>
+                              <span style={{...detailLabel, fontWeight: i===3 ? 600 : 400, color: i===3 ? C.text : C.textSub}}>{label}</span>
+                              <span style={{...detailVal(i===3?C.text:undefined)}}>{val}</span>
                             </div>
                           ))}
                         </div>
-                        <div style={{display:"grid",gap:14,borderLeft:`1px solid ${C.borderLight}`,paddingLeft:20}}>
-                          {metric("Net RSV lift",fmtCurrency(projectedRSVLift),projectedRSVLift>=0?C.green:C.red)}
-                          {metric("Net spend change",`${netSpendChange>=0?"+":""}${fmtCurrency(netSpendChange)}`,netSpendChange<=0?C.green:C.orange)}
-                          {metric("Projected ROAS",projectedROAS?`${projectedROAS}x`:"—",C.purple)}
+                        {/* Right: impact */}
+                        <div style={{paddingLeft:18}}>
+                          <div style={{fontSize:11, color:C.textMuted, fontWeight:600, marginBottom:8}}>Net projected impact</div>
+                          {[
+                            ["Net RSV impact",              fmtCurrency(projectedRSVLift),  projectedRSVLift>=0?C.green:C.red ],
+                            ["Net spend impact",            `${netSpendChange>=0?"+":""}${fmtCurrency(netSpendChange)}`, netSpendChange<=0?C.green:"#D97706"],
+                            ["Projected ROAS",              projectedROAS?`${projectedROAS}x`:"—", C.purple],
+                            ["Remaining unallocated budget",fmtCurrency(globalRemaining),   globalRemaining>=0?C.green:C.red ],
+                          ].map(([label, val, color], i) => (
+                            <div key={i} style={{...detailRow, borderBottom: i<3 ? `1px solid ${C.borderLight}` : "none"}}>
+                              <span style={detailLabel}>{label}</span>
+                              <span style={detailVal(color)}>{val}</span>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                    <div style={card}>
-                      <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>Selected actions</div>
-                      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:12}}>
-                        {[["Ad groups paused",pauseAcceptedCount],["Ad group bids",agAcceptedCount],["Keyword bids",kwAcceptedCount],["Total changes",totalAccepted]].map(([label,value])=>(
-                          <div key={label}><div style={{fontSize:11,color:C.textMuted}}>{label}</div><div style={{fontSize:18,fontWeight:700,marginTop:2}}>{value}</div></div>
+
+                    {/* ── 3. BUDGET ALLOCATION FLOW ── */}
+                    <div style={{...card}}>
+                      <div style={{fontWeight:700, fontSize:13, color:C.text, marginBottom:14}}>Budget allocation</div>
+                      <div style={{display:"flex", flexDirection:"column", gap:0}}>
+                        {budgetFlow.map(({label, sign, value, color}, i) => (
+                          <div key={i} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 0", borderBottom:`1px solid ${C.borderLight}`}}>
+                            <div style={{display:"flex", alignItems:"center", gap:8}}>
+                              <span style={{width:16, fontSize:13, fontWeight:700, color, textAlign:"center"}}>{sign}</span>
+                              <span style={{fontSize:12, color:C.textSub}}>{label}</span>
+                            </div>
+                            <span style={{fontSize:13, fontWeight:600, color}}>{fmtCurrency(value)}</span>
+                          </div>
                         ))}
+                        {/* Final = remaining */}
+                        <div style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 0 2px"}}>
+                          <div style={{display:"flex", alignItems:"center", gap:8}}>
+                            <span style={{width:16, fontSize:13, fontWeight:700, color:globalRemaining>=0?C.green:C.red, textAlign:"center"}}>=</span>
+                            <span style={{fontSize:13, fontWeight:700, color:C.text}}>Remaining unallocated</span>
+                          </div>
+                          <span style={{fontSize:16, fontWeight:800, color:globalRemaining>=0?C.green:C.red}}>{fmtCurrency(globalRemaining)}</span>
+                        </div>
                       </div>
                     </div>
-                    <div style={card}>
-                      <div style={{fontSize:13,fontWeight:700,marginBottom:12}}>Impact contribution</div>
+
+                    {/* ── 4. OPERATIONAL DETAIL ── */}
+                    <div style={sec}>
+                      <div style={secTitle}>Decision detail</div>
                       {[
-                        ["Pause recommendations",pauseSpendChange,pauseRSVImpact,null],
-                        ["Ad group bids",agSpendChange,agRSVLift,agProjectedROAS],
-                        ["Keyword bids",kwSpendChange,kwRSVLift,kwProjectedROAS],
-                      ].map(([label,spend,rsv,roas],i)=>(
-                        <div key={label} style={{display:"grid",gridTemplateColumns:"1.5fr 1fr 1fr 0.8fr",gap:12,padding:"9px 0",borderTop:i?`1px solid ${C.borderLight}`:"none",alignItems:"center"}}>
-                          <div style={{fontSize:12,fontWeight:600}}>{label}</div>
-                          <div style={{fontSize:11,color:C.textSub}}>Spend <strong style={{color:spend<=0?C.green:C.orange}}>{spend>=0?"+":""}{fmtCurrency(spend)}</strong></div>
-                          <div style={{fontSize:11,color:C.textSub}}>RSV <strong style={{color:rsv>=0?C.green:C.red}}>{fmtCurrency(rsv)}</strong></div>
-                          <div style={{fontSize:11,color:C.textSub}}>ROAS <strong style={{color:C.purple}}>{roas?`${roas}x`:"—"}</strong></div>
+                        { title:"Pause recommendations",       summary:pauseSummary,  secondary:[["Pending", PAUSE_RECS.length-pauseDecidedCount],["Spend released",fmtCurrency(releasedSpend)],["RSV impact",fmtCurrency(pauseRSVImpact)]] },
+                        { title:"Ad group bid recommendations", summary:agSummary,    secondary:[["Pending", AD_GROUP_RECS.length-agDecidedCount],["Savings",fmtCurrency(agSavings)],["Allocation",fmtCurrency(agAllocated)],["RSV lift",fmtCurrency(agRSVLift)]] },
+                        { title:"Keyword bid recommendations",  summary:kwSummary,    secondary:[["Pending", KEYWORD_RECS.length-kwDecidedCount], ["Savings",fmtCurrency(kwSavings)], ["Allocation",fmtCurrency(kwAllocated)],["RSV lift",fmtCurrency(kwRSVLift)]] },
+                      ].map(({title, summary, secondary}, i) => (
+                        <div key={i} style={{borderBottom:`1px solid ${C.border}`, padding:"10px 0"}}>
+                          <div style={{fontSize:12, fontWeight:600, color:C.text, marginBottom:4}}>{title}</div>
+                          <div style={{fontSize:12, color:C.textSub, marginBottom:5}}>{summary}</div>
+                          <div style={{display:"flex", gap:16, flexWrap:"wrap"}}>
+                            {secondary.map(([label, val], j) => (
+                              <div key={j}>
+                                <span style={{fontSize:11, color:C.textMuted}}>{label}: </span>
+                                <span style={{fontSize:11, fontWeight:600, color:C.text}}>{val}</span>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>

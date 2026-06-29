@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Galileo Chart Playbook</title>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* Galileo chart tokens */
+  --spend: #FF9C40; --spend-a: #FFDDBD; --spend-b: #995E26;
+  --rsv:   #04AFFF; --rsv-a:   #9CDFFF; --rsv-b:   #025880;
+  --share: #0B5DA2; --share-a: #92BDE0; --share-b: #063257;
+  --attr:  #7DC50F; --attr-a:  #C2DC9A; --attr-b:  #3C5E07;
+  --incr:  #F740CE; --incr-a:  #FABBEC; --incr-b:  #912679;
+  --ai:    #7221B6;
+  --trail-mid: #9A86B1; --trail-dk: #5C4A6F;
+  --cat-pepsi: #3B0CF8; --cat-starry: #7DC50F; --cat-mtndew: #F70F74;
+  /* UI — cool, restrained */
+  --ink:   #1C1F26;
+  --ink-2: #4A4F5C;
+  --ink-3: #8B8F9A;
+  --ink-4: #C2C5CC;
+  --page:  #F5F6F8;
+  --white: #FFFFFF;
+  --line:  rgba(28,31,38,.09);
+  --line-md: rgba(28,31,38,.15);
+  --ui-accent: #2563EB;
+  --font: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink:   #E8EAF0; --ink-2: #9AA0AE; --ink-3: #5C6270; --ink-4: #353840;
+    --page:  #131518; --white: #1C1F26;
+    --line:  rgba(255,255,255,.07); --line-md: rgba(255,255,255,.13);
+    --ai: #00C9B7; --ui-accent: #60A5FA;
+  }
+}
+
+html { scroll-behavior: smooth; }
+body { font-family: var(--font); background: var(--page); color: var(--ink); font-size: 13px; line-height: 1.65; -webkit-font-smoothing: antialiased; }
+
+.page { max-width: 1100px; margin: 0 auto; padding: 72px 48px 120px; }
+@media(max-width:720px){ .page{padding:48px 24px 80px} }
+
+/* ── DIVIDER ── */
+hr { border: none; border-top: 1px solid var(--line); margin: 72px 0; }
+hr.tight { margin: 48px 0; }
+
+/* ── HERO ── */
+.hero { margin-bottom: 80px; }
+.hero-eyebrow { font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+.hero-eyebrow::before { content: ''; display: block; width: 24px; height: 1px; background: var(--line-md); }
+.hero h1 { font-family: var(--font-serif); font-size: 52px; font-weight: 400; letter-spacing: -.02em; line-height: 1.1; color: var(--ink); margin-bottom: 14px; }
+.hero-sub { font-size: 15px; color: var(--ink-2); max-width: 520px; line-height: 1.7; margin-bottom: 20px; }
+.hero-status { font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+
+/* ── SECTION LABEL ── */
+.sl { font-size: 10px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 32px; display: flex; align-items: center; gap: 12px; }
+.sl::after { content: ''; flex: 1; height: 1px; background: var(--line); }
+.sl-num { color: var(--ui-accent); }
+
+/* ── HERO MODEL ── */
+.model-statement { margin-bottom: 48px; }
+.model-line { font-family: var(--font-serif); font-size: 28px; font-weight: 400; line-height: 1.35; color: var(--ink); }
+.model-line span { color: var(--ink-3); }
+
+.model-visual { background: var(--white); border: 1px solid var(--line); border-radius: 12px; padding: 36px 40px; }
+.model-visual-title { font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 28px; }
+
+.family-row { display: flex; align-items: center; gap: 0; margin-bottom: 32px; }
+.family-swatches { display: flex; gap: 8px; align-items: center; }
+.family-swatch { border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding: 8px; gap: 4px; }
+.fs-label { font-size: 9px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: white; opacity: .85; }
+.fs-hex { font-size: 9px; color: white; opacity: .65; font-family: monospace; }
+.family-arrow { color: var(--ink-4); font-size: 18px; margin: 0 20px; }
+.treatment-rows { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.t-row { display: flex; align-items: center; gap: 12px; }
+.t-label { font-size: 11px; color: var(--ink-2); min-width: 130px; }
+.model-caption { font-size: 12px; color: var(--ink-3); text-align: center; margin-top: 24px; font-style: italic; }
+
+/* ── DECISION 1: THREE LARGE EXAMPLES ── */
+.d1-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 2px; background: var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.d1-panel { background: var(--white); padding: 28px 24px; }
+.d1-panel-label { font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 6px; }
+.d1-panel-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 20px; line-height: 1.4; }
+.d1-rule { font-size: 11px; color: var(--ink-2); margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); line-height: 1.5; }
+.d1-statement { font-size: 14px; color: var(--ink-2); text-align: center; font-style: italic; }
+@media(max-width:800px){ .d1-grid{grid-template-columns:1fr} }
+
+/* ── DECISION 2: MARK PANELS ── */
+.mark-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 2px; background: var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+.mark-panel { background: var(--white); padding: 24px; }
+.mark-title { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 16px; letter-spacing: -.01em; }
+.mark-rules { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+.mr { display: flex; gap: 8px; }
+.mr-label { font-size: 9px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; padding: 2px 6px; border-radius: 3px; flex-shrink: 0; margin-top: 1px; white-space: nowrap; }
+.mr-best  { background: rgba(37,99,235,.1); color: var(--ui-accent); }
+.mr-ctx   { background: rgba(28,31,38,.08); color: var(--ink-3); }
+.mr-avoid { background: rgba(239,68,68,.08); color: #DC2626; }
+@media(prefers-color-scheme:dark){ .mr-avoid{background:rgba(239,68,68,.15);color:#FCA5A5;} }
+.mr-text { font-size: 11px; color: var(--ink-2); line-height: 1.5; }
+@media(max-width:900px){ .mark-grid{grid-template-columns:1fr 1fr} }
+@media(max-width:560px){ .mark-grid{grid-template-columns:1fr} }
+
+/* ── DECISION 3: BEFORE / BETTER ── */
+.bb-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; background: var(--line); border-radius: 12px; overflow: hidden; }
+.bb-panel { background: var(--white); padding: 28px 32px; }
+.bb-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 16px; }
+.bb-label-before { color: #DC2626; }
+.bb-label-better { color: #16A34A; }
+.bb-statement { font-size: 22px; font-family: var(--font-serif); color: var(--ink); margin-top: 32px; line-height: 1.3; }
+.bb-sub { font-size: 12px; color: var(--ink-3); margin-top: 8px; font-style: italic; }
+@media(max-width:720px){ .bb-wrap{grid-template-columns:1fr} }
+
+/* ── APPLIED CASES ── */
+.case-full { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-bottom: 24px; }
+.case-full-head { background: var(--white); padding: 20px 28px; border-bottom: 1px solid var(--line); display: flex; align-items: baseline; gap: 16px; }
+.cf-num { font-size: 10px; font-weight: 700; color: var(--ink-3); letter-spacing: .1em; text-transform: uppercase; }
+.cf-title { font-size: 14px; font-weight: 500; color: var(--ink); }
+.cf-ctx { font-size: 12px; color: var(--ink-3); margin-left: auto; }
+.case-full-body { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+.cf-col { padding: 24px 28px; }
+.cf-col:first-child { border-right: 1px solid var(--line); background: var(--page); }
+.cf-col:last-child { background: var(--white); }
+.cf-col-label { font-size: 10px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+.cf-col-label.before { color: #DC2626; }
+.cf-col-label.better { color: #16A34A; }
+.cf-rule { font-size: 11px; color: var(--ink-2); margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--line); font-style: italic; line-height: 1.5; }
+@media(max-width:720px){ .case-full-body{grid-template-columns:1fr} .cf-col:first-child{border-right:none;border-bottom:1px solid var(--line)} }
+
+/* ── MATRIX ── */
+.matrix-wrap { background: var(--white); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.mx-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.mx-table th { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); padding: 10px 14px; background: var(--page); border-bottom: 1px solid var(--line); text-align: center; }
+.mx-table th:first-child { text-align: left; }
+.mx-table td { padding: 9px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; text-align: center; color: var(--ink-2); }
+.mx-table tr:last-child td { border-bottom: none; }
+.mx-table td:first-child { text-align: left; font-weight: 500; color: var(--ink); }
+.mx-rec   { font-size: 10px; font-weight: 600; color: var(--ui-accent); }
+.mx-ctx   { font-size: 10px; color: var(--ink-3); }
+.mx-avoid { font-size: 10px; color: #DC2626; }
+.mx-na    { font-size: 10px; color: var(--ink-4); }
+@media(prefers-color-scheme:dark){ .mx-avoid{color:#FCA5A5;} }
+
+/* ── COLOR REFERENCE ── */
+.color-ref { display: flex; gap: 0; background: var(--line); border-radius: 12px; overflow: hidden; }
+.cr-metric { flex: 1; background: var(--white); padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.cr-swatch-row { display: flex; align-items: center; gap: 10px; }
+.cr-dot { width: 28px; height: 28px; border-radius: 6px; flex-shrink: 0; }
+.cr-info { flex: 1; }
+.cr-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.cr-token { font-size: 10px; color: var(--ink-3); font-family: monospace; }
+.cr-family { background: var(--page); padding: 20px; min-width: 220px; }
+.cr-family-title { font-size: 10px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 14px; }
+.cr-ramp { display: flex; height: 32px; border-radius: 6px; overflow: hidden; margin-bottom: 10px; }
+.cr-ramp-seg { flex: 1; }
+.cr-family-note { font-size: 11px; color: var(--ink-3); line-height: 1.55; font-style: italic; }
+@media(max-width:800px){ .color-ref{flex-direction:column} .cr-family{min-width:0} }
+
+/* ── GLOSSARY ── */
+.gloss-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 0 40px; }
+.gloss-item { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); }
+.gloss-term { font-weight: 500; color: var(--ink); min-width: 100px; flex-shrink: 0; font-size: 12px; }
+.gloss-def  { font-size: 12px; color: var(--ink-2); line-height: 1.5; }
+@media(max-width:700px){ .gloss-2col{grid-template-columns:1fr} }
+
+/* ── FINAL CHECK ── */
+.check-list { list-style: none; counter-reset: check; }
+.check-list li { counter-increment: check; display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); align-items: flex-start; }
+.check-list li:last-child { border-bottom: none; }
+.check-num { font-size: 11px; font-weight: 700; color: var(--ink-3); min-width: 18px; margin-top: 1px; }
+.check-q { font-size: 13px; color: var(--ink); line-height: 1.5; }
+.check-box { width: 16px; height: 16px; min-width: 16px; border-radius: 4px; border: 1.5px solid var(--ink-4); cursor: pointer; position: relative; margin-top: 2px; transition: all .15s; }
+.check-box:hover { border-color: var(--ui-accent); }
+.check-box.checked { background: var(--ui-accent); border-color: var(--ui-accent); }
+.check-box.checked::after { content: ''; position: absolute; left: 4px; top: 2px; width: 6px; height: 4px; border-left: 1.5px solid #fff; border-bottom: 1.5px solid #fff; transform: rotate(-45deg); }
+
+/* ── FOOTER ── */
+.footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--line); font-size: 11px; color: var(--ink-3); line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ══ HERO ══ -->
+<div class="hero">
+  <div class="hero-eyebrow">Galileo · Chart guidance</div>
+  <h1>Chart Playbook</h1>
+  <p class="hero-sub">A practical guide for choosing color, tonal variants, and mark treatments.</p>
+  <p class="hero-status">Working design guidance &nbsp;·&nbsp; Exploratory &nbsp;·&nbsp; Not final specification</p>
+</div>
+
+<!-- ══ SECTION 1: CORE MODEL ══ -->
+<div class="sl"><span class="sl-num">01</span> The core model</div>
+
+<div class="model-statement">
+  <div class="model-line">Primary identifies.</div>
+  <div class="model-line">Primary-A and Primary-B <span>reinforce.</span></div>
+  <div class="model-line">Mark treatment <span>communicates secondary meaning.</span></div>
+</div>
+
+<div class="model-visual">
+  <div class="model-visual-title">Spend color family — three analytical states</div>
+  <div class="family-row">
+    <!-- Swatches -->
+    <div class="family-swatches">
+      <div class="family-swatch" style="background:#FF9C40;width:80px;height:80px">
+        <span class="fs-label">Primary</span>
+        <span class="fs-hex">#FF9C40</span>
+      </div>
+      <div class="family-swatch" style="background:#FFDDBD;width:64px;height:64px">
+        <span class="fs-label" style="color:#7A4000">Primary-A</span>
+        <span class="fs-hex" style="color:#7A4000">#FFDDBD</span>
+      </div>
+      <div class="family-swatch" style="background:#995E26;width:64px;height:64px">
+        <span class="fs-label">Primary-B</span>
+        <span class="fs-hex">#995E26</span>
+      </div>
+    </div>
+    <div class="family-arrow">→</div>
+    <!-- Treatment examples -->
+    <div class="treatment-rows">
+      <!-- Actual -->
+      <div class="t-row">
+        <span class="t-label" style="font-weight:500;color:var(--ink)">Spend Actual</span>
+        <svg width="160" height="16" style="flex-shrink:0">
+          <line x1="0" y1="8" x2="160" y2="8" stroke="#FF9C40" stroke-width="2.5"/>
+          <circle cx="0" cy="8" r="3" fill="#FF9C40"/>
+          <circle cx="53" cy="8" r="3" fill="#FF9C40"/>
+          <circle cx="106" cy="8" r="3" fill="#FF9C40"/>
+          <circle cx="160" cy="8" r="3" fill="#FF9C40"/>
+        </svg>
+        <span style="font-size:10px;color:var(--ink-3)">Primary · solid</span>
+      </div>
+      <!-- Forecast -->
+      <div class="t-row">
+        <span class="t-label" style="font-weight:500;color:var(--ink)">Spend Forecast</span>
+        <svg width="160" height="16" style="flex-shrink:0">
+          <line x1="0" y1="8" x2="160" y2="8" stroke="#FF9C40" stroke-width="1.8" stroke-dasharray="6 4"/>
+        </svg>
+        <span style="font-size:10px;color:var(--ink-3)">Primary · dashed</span>
+      </div>
+      <!-- Recommended -->
+      <div class="t-row">
+        <span class="t-label" style="font-weight:500;color:var(--ink)">Spend Recommended</span>
+        <svg width="160" height="16" style="flex-shrink:0">
+          <line x1="0" y1="8" x2="160" y2="8" stroke="#FF9C40" stroke-width="3.5"/>
+          <circle cx="0" cy="8" r="4" fill="none" stroke="#FF9C40" stroke-width="1.5"/>
+          <circle cx="53" cy="8" r="4" fill="none" stroke="#FF9C40" stroke-width="1.5"/>
+          <circle cx="106" cy="8" r="4" fill="none" stroke="#FF9C40" stroke-width="1.5"/>
+          <circle cx="160" cy="8" r="4" fill="none" stroke="#FF9C40" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:10px;color:var(--ink-3)">Primary · heavy + marker</span>
+      </div>
+      <!-- Primary-A attempt -->
+      <div class="t-row">
+        <span class="t-label" style="font-weight:500;color:var(--ink-3)">Primary-A as line</span>
+        <svg width="160" height="16" style="flex-shrink:0">
+          <line x1="0" y1="8" x2="160" y2="8" stroke="#FFDDBD" stroke-width="1.5"/>
+        </svg>
+        <span style="font-size:10px;color:#DC2626">Nearly invisible at 1.5 px</span>
+      </div>
+    </div>
+  </div>
+  <p class="model-caption">Same metric identity. Different analytical meaning.</p>
+</div>
+
+<hr>
+
+<!-- ══ SECTION 2: DECISION 1 ══ -->
+<div class="sl"><span class="sl-num">02</span> Decision 1 — what should Primary identify?</div>
+
+<div class="d1-grid">
+  <!-- A: Metrics -->
+  <div class="d1-panel">
+    <div class="d1-panel-label">A · Different metrics</div>
+    <div class="d1-panel-title">Spend · RSV · Share</div>
+    <svg width="100%" viewBox="0 0 200 90">
+      <line x1="0" y1="80" x2="200" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="58" x2="200" y2="58" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <line x1="0" y1="36" x2="200" y2="36" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <line x1="0" y1="14" x2="200" y2="14" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <!-- Spend #FF9C40 -->
+      <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="10,60 55,44 100,50 145,34 190,40"/>
+      <circle cx="10" cy="60" r="3" fill="#FF9C40"/>
+      <circle cx="55" cy="44" r="3" fill="#FF9C40"/>
+      <circle cx="100" cy="50" r="3" fill="#FF9C40"/>
+      <circle cx="145" cy="34" r="3" fill="#FF9C40"/>
+      <circle cx="190" cy="40" r="3" fill="#FF9C40"/>
+      <!-- RSV #04AFFF -->
+      <polyline fill="none" stroke="#04AFFF" stroke-width="2.5" points="10,70 55,56 100,62 145,48 190,54"/>
+      <circle cx="10" cy="70" r="3" fill="#04AFFF"/>
+      <circle cx="55" cy="56" r="3" fill="#04AFFF"/>
+      <circle cx="100" cy="62" r="3" fill="#04AFFF"/>
+      <circle cx="145" cy="48" r="3" fill="#04AFFF"/>
+      <circle cx="190" cy="54" r="3" fill="#04AFFF"/>
+      <!-- Share #0B5DA2 -->
+      <polyline fill="none" stroke="#0B5DA2" stroke-width="2.5" points="10,52 55,36 100,42 145,28 190,22"/>
+      <circle cx="10" cy="52" r="3" fill="#0B5DA2"/>
+      <circle cx="55" cy="36" r="3" fill="#0B5DA2"/>
+      <circle cx="100" cy="42" r="3" fill="#0B5DA2"/>
+      <circle cx="145" cy="28" r="3" fill="#0B5DA2"/>
+      <circle cx="190" cy="22" r="3" fill="#0B5DA2"/>
+      <!-- Labels -->
+      <text x="192" y="41" font-size="8" fill="#FF9C40" font-family="sans-serif">Spend</text>
+      <text x="192" y="24" font-size="8" fill="#0B5DA2" font-family="sans-serif">Share</text>
+      <text x="192" y="56" font-size="8" fill="#04AFFF" font-family="sans-serif">RSV</text>
+    </svg>
+    <div class="d1-rule">Primary color family identifies <strong>metric</strong>.</div>
+  </div>
+
+  <!-- B: Dimension -->
+  <div class="d1-panel" style="border-left:1px solid var(--line)">
+    <div class="d1-panel-label">B · One metric by dimension</div>
+    <div class="d1-panel-title">Spend by Brand</div>
+    <svg width="100%" viewBox="0 0 200 90">
+      <line x1="0" y1="80" x2="200" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="58" x2="200" y2="58" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <line x1="0" y1="36" x2="200" y2="36" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <!-- Pepsi bars -->
+      <rect x="10"  y="36" width="14" height="44" fill="#3B0CF8" rx="1.5"/>
+      <rect x="72"  y="26" width="14" height="54" fill="#3B0CF8" rx="1.5"/>
+      <rect x="134" y="32" width="14" height="48" fill="#3B0CF8" rx="1.5"/>
+      <!-- Starry bars -->
+      <rect x="26"  y="50" width="14" height="30" fill="#7DC50F" rx="1.5"/>
+      <rect x="88"  y="44" width="14" height="36" fill="#7DC50F" rx="1.5"/>
+      <rect x="150" y="48" width="14" height="32" fill="#7DC50F" rx="1.5"/>
+      <!-- MtnDew bars -->
+      <rect x="42"  y="44" width="14" height="36" fill="#F70F74" rx="1.5"/>
+      <rect x="104" y="38" width="14" height="42" fill="#F70F74" rx="1.5"/>
+      <rect x="166" y="40" width="14" height="40" fill="#F70F74" rx="1.5"/>
+      <!-- Labels -->
+      <rect x="10" y="6" width="8" height="8" rx="1.5" fill="#3B0CF8"/>
+      <text x="20" y="13" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Pepsi</text>
+      <rect x="52" y="6" width="8" height="8" rx="1.5" fill="#7DC50F"/>
+      <text x="62" y="13" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Starry</text>
+      <rect x="96" y="6" width="8" height="8" rx="1.5" fill="#F70F74"/>
+      <text x="106" y="13" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Mtn Dew</text>
+    </svg>
+    <div class="d1-rule">Primary color family identifies <strong>dimension member</strong>.</div>
+  </div>
+
+  <!-- C: Scenarios -->
+  <div class="d1-panel" style="border-left:1px solid var(--line)">
+    <div class="d1-panel-label">C · One metric, multiple scenarios</div>
+    <div class="d1-panel-title">Baseline vs Recommended</div>
+    <svg width="100%" viewBox="0 0 200 90">
+      <line x1="0" y1="80" x2="200" y2="80" stroke="var(--line-md)" stroke-width="0.5"/>
+      <line x1="0" y1="58" x2="200" y2="58" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <line x1="0" y1="36" x2="200" y2="36" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <line x1="0" y1="14" x2="200" y2="14" stroke="var(--line)" stroke-width="0.4" stroke-dasharray="2 4"/>
+      <!-- Historical actual — neutral -->
+      <polyline fill="none" stroke="#8B8F9A" stroke-width="1.5" points="10,62 55,50 100,55"/>
+      <circle cx="10" cy="62" r="2.5" fill="#8B8F9A"/>
+      <!-- Split -->
+      <line x1="100" y1="10" x2="100" y2="80" stroke="var(--line-md)" stroke-width="0.5" stroke-dasharray="3 3"/>
+      <!-- Baseline — gray dashed -->
+      <polyline fill="none" stroke="#C2C5CC" stroke-width="1.5" stroke-dasharray="5 3" points="100,55 145,52 190,56"/>
+      <!-- Recommended — AI emphasis -->
+      <polyline fill="none" stroke="#7221B6" stroke-width="3" points="100,55 145,36 190,24"/>
+      <circle cx="190" cy="24" r="4" fill="#7221B6"/>
+      <!-- Labels -->
+      <text x="104" y="12" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Forecast →</text>
+      <text x="153" y="22" font-size="8" fill="#7221B6" font-family="sans-serif" font-weight="600">Recommended</text>
+      <text x="130" y="58" font-size="8" fill="#C2C5CC" font-family="sans-serif">Baseline</text>
+    </svg>
+    <div class="d1-rule">Scenario may control <strong>emphasis</strong> when it is the primary comparison.</div>
+  </div>
+</div>
+
+<p class="d1-statement">Primary should have one main responsibility within a chart.</p>
+
+<hr>
+
+<!-- ══ SECTION 3: DECISION 2 ══ -->
+<div class="sl"><span class="sl-num">03</span> Decision 2 — which mark are you using?</div>
+
+<div class="mark-grid">
+
+  <!-- LINE -->
+  <div class="mark-panel">
+    <div class="mark-title">Line</div>
+    <svg width="100%" viewBox="0 0 160 80">
+      <line x1="0" y1="70" x2="160" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+      <line x1="0" y1="50" x2="160" y2="50" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="30" x2="160" y2="30" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <!-- Solid primary -->
+      <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="4,56 40,38 80,44 120,28 156,34"/>
+      <circle cx="4" cy="56" r="2.5" fill="#FF9C40"/>
+      <circle cx="40" cy="38" r="2.5" fill="#FF9C40"/>
+      <circle cx="80" cy="44" r="2.5" fill="#FF9C40"/>
+      <circle cx="120" cy="28" r="2.5" fill="#FF9C40"/>
+      <circle cx="156" cy="34" r="2.5" fill="#FF9C40"/>
+      <!-- Dashed primary -->
+      <polyline fill="none" stroke="#FF9C40" stroke-width="1.6" stroke-dasharray="5 4" points="4,62 40,46 80,52 120,38 156,44"/>
+      <!-- Label -->
+      <text x="158" y="35" font-size="7.5" fill="#FF9C40" font-family="sans-serif">Actual</text>
+      <text x="158" y="45" font-size="7.5" fill="#FF9C40" opacity=".6" font-family="sans-serif">Forecast</text>
+    </svg>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Primary stroke · dash · stroke weight · marker · direct label</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Primary-A · opacity</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Two-color line patterns · very light tone as the only distinction</span></div>
+    </div>
+  </div>
+
+  <!-- BAR -->
+  <div class="mark-panel" style="border-left:1px solid var(--line)">
+    <div class="mark-title">Bar</div>
+    <svg width="100%" viewBox="0 0 160 80">
+      <line x1="0" y1="70" x2="160" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+      <!-- Actual bars — solid fill -->
+      <rect x="6"  y="30" width="18" height="40" fill="#FF9C40" rx="2"/>
+      <rect x="46" y="20" width="18" height="50" fill="#FF9C40" rx="2"/>
+      <rect x="86" y="36" width="18" height="34" fill="#FF9C40" rx="2"/>
+      <rect x="126" y="26" width="18" height="44" fill="#FF9C40" rx="2"/>
+      <!-- Forecast bars — outline -->
+      <rect x="26"  y="38" width="18" height="32" fill="none" stroke="#FF9C40" stroke-width="1.5" rx="2"/>
+      <rect x="66"  y="30" width="18" height="40" fill="none" stroke="#FF9C40" stroke-width="1.5" rx="2"/>
+      <rect x="106" y="42" width="18" height="28" fill="none" stroke="#FF9C40" stroke-width="1.5" rx="2"/>
+      <!-- Labels -->
+      <text x="8" y="26" font-size="7.5" fill="#FF9C40" font-family="sans-serif">Actual</text>
+      <text x="28" y="35" font-size="7.5" fill="#FF9C40" opacity=".7" font-family="sans-serif">Forecast</text>
+    </svg>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Primary fill · Primary-A or B · outline · grouping and spacing</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Restrained pattern · opacity</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Dense texture · too many similar tonal variants</span></div>
+    </div>
+  </div>
+
+  <!-- AREA -->
+  <div class="mark-panel" style="border-left:1px solid var(--line)">
+    <div class="mark-title">Area</div>
+    <svg width="100%" viewBox="0 0 160 80">
+      <line x1="0" y1="70" x2="160" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+      <!-- Area fill - Share (back) -->
+      <path d="M4,50 40,38 80,44 120,30 156,36 156,70 4,70 Z" fill="#0B5DA2" opacity=".15"/>
+      <polyline fill="none" stroke="#0B5DA2" stroke-width="1.5" points="4,50 40,38 80,44 120,30 156,36"/>
+      <!-- Area fill - Spend (front) -->
+      <path d="M4,58 40,46 80,52 120,40 156,44 156,70 4,70 Z" fill="#FF9C40" opacity=".25"/>
+      <polyline fill="none" stroke="#FF9C40" stroke-width="1.5" points="4,58 40,46 80,52 120,40 156,44"/>
+      <text x="60" y="66" font-size="7.5" fill="#FF9C40" font-family="sans-serif">Spend</text>
+      <text x="100" y="42" font-size="7.5" fill="#0B5DA2" font-family="sans-serif">Share</text>
+    </svg>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Fill · opacity · outline · layering order</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Primary-A and Primary-B fills</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Opaque overlapping fills · pattern-heavy treatment</span></div>
+    </div>
+  </div>
+
+  <!-- POINT -->
+  <div class="mark-panel" style="border-left:1px solid var(--line)">
+    <div class="mark-title">Point</div>
+    <svg width="100%" viewBox="0 0 160 80">
+      <line x1="0" y1="70" x2="160" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+      <!-- Various point treatments -->
+      <circle cx="20" cy="55" r="6" fill="#FF9C40"/>
+      <circle cx="45" cy="40" r="6" fill="#0B5DA2"/>
+      <circle cx="70" cy="50" r="6" fill="none" stroke="#FF9C40" stroke-width="2"/>
+      <circle cx="95" cy="35" r="6" fill="none" stroke="#0B5DA2" stroke-width="2"/>
+      <!-- Diamond shape -->
+      <polygon points="120,28 126,35 120,42 114,35" fill="#7DC50F"/>
+      <!-- Square -->
+      <rect x="136" y="28" width="12" height="12" rx="2" fill="#F740CE"/>
+      <!-- Labels -->
+      <text x="12" y="68" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">fill</text>
+      <text x="62" y="68" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">outline</text>
+      <text x="112" y="68" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">shape</text>
+    </svg>
+    <div class="mark-rules">
+      <div class="mr"><span class="mr-label mr-best">Best</span><span class="mr-text">Shape · fill · border · direct label</span></div>
+      <div class="mr"><span class="mr-label mr-ctx">Context</span><span class="mr-text">Size when it represents meaningful data</span></div>
+      <div class="mr"><span class="mr-label mr-avoid">Avoid</span><span class="mr-text">Color-only differentiation for very small points</span></div>
+    </div>
+  </div>
+
+</div>
+
+<hr>
+
+<!-- ══ SECTION 4: DECISION 3 ══ -->
+<div class="sl"><span class="sl-num">04</span> Decision 3 — can the chart still be decoded?</div>
+
+<div class="bb-wrap">
+  <!-- BEFORE -->
+  <div class="bb-panel">
+    <div class="bb-label bb-label-before">Before — more encoding</div>
+    <svg width="100%" viewBox="0 0 380 120">
+      <line x1="0" y1="110" x2="380" y2="110" stroke="var(--line)" stroke-width="0.5"/>
+      <line x1="0" y1="80" x2="380" y2="80" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="50" x2="380" y2="50" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="20" x2="380" y2="20" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <!-- 9 overlapping series — chaos -->
+      <polyline fill="none" stroke="#FF9C40" stroke-width="2"   points="8,82 80,62 152,70 224,50 296,58 368,45"/>
+      <polyline fill="none" stroke="#FFDDBD" stroke-width="1.5" stroke-dasharray="4 3" points="8,86 80,66 152,74 224,54 296,62 368,49"/>
+      <polyline fill="none" stroke="#995E26" stroke-width="1.5" points="8,84 80,64 152,72 224,52 296,60 368,47"/>
+      <polyline fill="none" stroke="#04AFFF" stroke-width="2"   points="8,72 80,52 152,60 224,38 296,46 368,35"/>
+      <polyline fill="none" stroke="#9CDFFF" stroke-width="1.5" stroke-dasharray="4 3" points="8,75 80,55 152,63 224,41 296,49 368,38"/>
+      <polyline fill="none" stroke="#0B5DA2" stroke-width="2"   points="8,65 80,46 152,54 224,32 296,40 368,28"/>
+      <polyline fill="none" stroke="#7DC50F" stroke-width="1.5" stroke-dasharray="3 2" points="8,90 80,74 152,80 224,62 296,68 368,55"/>
+      <polyline fill="none" stroke="#F740CE" stroke-width="1.5" points="8,95 80,80 152,86 224,68 296,74 368,63"/>
+      <polyline fill="none" stroke="#7221B6" stroke-width="2.5" stroke-dasharray="5 2" points="8,78 80,58 152,64 224,44 296,50 368,40"/>
+    </svg>
+    <p style="font-size:11px;color:var(--ink-3);margin-top:10px;font-style:italic">9 series. Color, tone, dash, and pattern all in use. Legend required to decode every line.</p>
+  </div>
+  <!-- BETTER -->
+  <div class="bb-panel" style="border-left:1px solid var(--line)">
+    <div class="bb-label bb-label-better">Better — clearer structure</div>
+    <svg width="100%" viewBox="0 0 380 120">
+      <line x1="0" y1="110" x2="380" y2="110" stroke="var(--line)" stroke-width="0.5"/>
+      <line x1="0" y1="80" x2="380" y2="80" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="50" x2="380" y2="50" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <line x1="0" y1="20" x2="380" y2="20" stroke="var(--line)" stroke-width="0.3" stroke-dasharray="2 4"/>
+      <!-- De-emphasized context lines -->
+      <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,82 80,62 152,70 224,50 296,58 368,45"/>
+      <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,72 80,52 152,60 224,38 296,46 368,35"/>
+      <polyline fill="none" stroke="#C2C5CC" stroke-width="1"   points="8,90 80,74 152,80 224,62 296,68 368,55"/>
+      <!-- Highlighted series -->
+      <polyline fill="none" stroke="#FF9C40" stroke-width="3"   points="8,65 80,46 152,54 224,32 296,40 368,28"/>
+      <circle cx="8" cy="65" r="3.5" fill="#FF9C40"/>
+      <circle cx="80" cy="46" r="3.5" fill="#FF9C40"/>
+      <circle cx="152" cy="54" r="3.5" fill="#FF9C40"/>
+      <circle cx="224" cy="32" r="3.5" fill="#FF9C40"/>
+      <circle cx="296" cy="40" r="3.5" fill="#FF9C40"/>
+      <circle cx="368" cy="28" r="3.5" fill="#FF9C40"/>
+      <!-- Inline label -->
+      <rect x="288" y="18" width="54" height="14" rx="4" fill="rgba(255,156,64,.15)"/>
+      <text x="315" y="27" text-anchor="middle" font-size="8" fill="#FF9C40" font-weight="600" font-family="sans-serif">Spend Actual</text>
+    </svg>
+    <p style="font-size:11px;color:var(--ink-3);margin-top:10px;font-style:italic">One series highlighted. Context lines recede. No legend needed to find the focus.</p>
+  </div>
+</div>
+
+<div style="margin-top:36px;text-align:center">
+  <div class="bb-statement">Simplify before adding more encoding.</div>
+  <div class="bb-sub">If the legend must rescue the chart, reconsider the structure.</div>
+</div>
+
+<hr>
+
+<!-- ══ SECTION 5: CASES IN ACTION ══ -->
+<div class="sl"><span class="sl-num">05</span> Galileo cases in action</div>
+
+<!-- Case 1 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 1</span>
+    <span class="cf-title">Spend Actual vs Forecast</span>
+    <span class="cf-ctx">One metric · two value natures</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col">
+      <div class="cf-col-label before">Before</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <polyline fill="none" stroke="#FF9C40" stroke-width="1.5" points="8,52 70,38 140,44 210,30 272,36"/>
+        <polyline fill="none" stroke="#FFDDBD" stroke-width="1.5" points="8,56 70,42 140,48 210,34 272,40"/>
+        <polyline fill="none" stroke="#995E26" stroke-width="1.5" stroke-dasharray="4 3" points="8,54 70,40 140,46 210,32 272,38"/>
+        <text x="10" y="16" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Three orange series — hard to distinguish at 1.5 px</text>
+      </svg>
+      <div class="cf-rule">Primary-A (#FFDDBD) is nearly invisible on white at thin stroke weights.</div>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <!-- Actual — solid bold -->
+        <polyline fill="none" stroke="#FF9C40" stroke-width="2.5" points="8,52 70,38 140,44 210,30 272,36"/>
+        <circle cx="8" cy="52" r="3" fill="#FF9C40"/>
+        <circle cx="140" cy="44" r="3" fill="#FF9C40"/>
+        <circle cx="272" cy="36" r="3" fill="#FF9C40"/>
+        <!-- Forecast — dashed same color -->
+        <polyline fill="none" stroke="#FF9C40" stroke-width="1.8" stroke-dasharray="6 4" points="8,58 70,44 140,50 210,36 272,42"/>
+        <text x="188" y="30" font-size="8" fill="#FF9C40" font-family="sans-serif">Actual</text>
+        <text x="188" y="50" font-size="8" fill="#FF9C40" opacity=".7" font-family="sans-serif">Forecast</text>
+      </svg>
+      <div class="cf-rule"><em>Primary = metric identity. Line treatment = value nature.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 2 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 2</span>
+    <span class="cf-title">Spend by Brand</span>
+    <span class="cf-ctx">One metric · dimension breakdown</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col">
+      <div class="cf-col-label before">Before</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <!-- All orange families for each brand — collision -->
+        <rect x="8"  y="28" width="16" height="42" fill="#FF9C40" rx="1"/>
+        <rect x="28" y="36" width="16" height="34" fill="#FFDDBD" rx="1"/>
+        <rect x="48" y="32" width="16" height="38" fill="#995E26" rx="1"/>
+        <rect x="88" y="24" width="16" height="46" fill="#FF9C40" rx="1"/>
+        <rect x="108" y="32" width="16" height="38" fill="#FFDDBD" rx="1"/>
+        <rect x="128" y="28" width="16" height="42" fill="#995E26" rx="1"/>
+        <text x="10" y="18" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Same orange family — Brand A, B, C are indistinguishable</text>
+      </svg>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <!-- Pepsi actual + forecast -->
+        <rect x="8"  y="28" width="16" height="42" fill="#3B0CF8" rx="1"/>
+        <rect x="28" y="36" width="16" height="34" fill="none" stroke="#3B0CF8" stroke-width="1.5" rx="1"/>
+        <!-- Starry actual + forecast -->
+        <rect x="68" y="24" width="16" height="46" fill="#7DC50F" rx="1"/>
+        <rect x="88" y="32" width="16" height="38" fill="none" stroke="#7DC50F" stroke-width="1.5" rx="1"/>
+        <!-- Mtn Dew actual + forecast -->
+        <rect x="128" y="30" width="16" height="40" fill="#F70F74" rx="1"/>
+        <rect x="148" y="38" width="16" height="32" fill="none" stroke="#F70F74" stroke-width="1.5" rx="1"/>
+        <!-- Legend -->
+        <rect x="180" y="20" width="8" height="8" rx="1" fill="#3B0CF8"/>
+        <text x="190" y="27" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Pepsi</text>
+        <rect x="180" y="32" width="8" height="8" rx="1" fill="#7DC50F"/>
+        <text x="190" y="39" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Starry</text>
+        <rect x="180" y="44" width="8" height="8" rx="1" fill="#F70F74"/>
+        <text x="190" y="51" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">Mtn Dew</text>
+        <text x="220" y="27" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">■ Actual</text>
+        <text x="220" y="39" font-size="7.5" fill="var(--ink-3)" font-family="sans-serif">□ Forecast</text>
+      </svg>
+      <div class="cf-rule"><em>Color = dimension member. Secondary treatment = value nature.</em></div>
+    </div>
+  </div>
+</div>
+
+<!-- Case 3 -->
+<div class="case-full">
+  <div class="case-full-head">
+    <span class="cf-num">Case 3</span>
+    <span class="cf-title">Line + bar combination</span>
+    <span class="cf-ctx">Spend bars · Share line</span>
+  </div>
+  <div class="case-full-body">
+    <div class="cf-col">
+      <div class="cf-col-label before">Before</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <!-- Heavy orange bars -->
+        <rect x="8"   y="22" width="28" height="48" fill="#FF9C40" rx="1"/>
+        <rect x="78"  y="16" width="28" height="54" fill="#FF9C40" rx="1"/>
+        <rect x="148" y="28" width="28" height="42" fill="#FF9C40" rx="1"/>
+        <rect x="218" y="20" width="28" height="50" fill="#FF9C40" rx="1"/>
+        <!-- Thin share line barely visible -->
+        <polyline fill="none" stroke="#0B5DA2" stroke-width="1.2" points="22,50 92,38 162,44 232,32"/>
+        <text x="10" y="14" font-size="8" fill="var(--ink-3)" font-family="sans-serif">Bars dominate — Share line is hard to find</text>
+      </svg>
+    </div>
+    <div class="cf-col">
+      <div class="cf-col-label better">Better</div>
+      <svg width="100%" viewBox="0 0 280 80">
+        <line x1="0" y1="70" x2="280" y2="70" stroke="var(--line)" stroke-width="0.5"/>
+        <!-- Lighter bars, reduced visual weight -->
+        <rect x="8"   y="28" width="24" height="42" fill="#FF9C40" opacity=".55" rx="1"/>
+        <rect x="74"  y="22" width="24" height="48" fill="#FF9C40" opacity=".55" rx="1"/>
+        <rect x="140" y="32" width="24" height="38" fill="#FF9C40" opacity=".55" rx="1"/>
+        <rect x="206" y="26" width="24" height="44" fill="#FF9C40" opacity=".55" rx="1"/>
+        <!-- Bolder share line with markers -->
+        <polyline fill="none" stroke="#0B5DA2" stroke-width="2.5" points="20,46 86,34 152,40 218,28"/>
+        <circle cx="20"  cy="46" r="3.5" fill="#0B5DA2"/>
+        <circle cx="86"  cy="34" r="3.5" fill="#0B5DA2"/>
+        <circle cx="152" cy="40" r="3.5" fill="#0B5DA2"/>
+        <circle cx="218" cy="28" r="3.5" fill="#0B5DA2"/>
+        <!-- Direct labels -->
+        <text x="222" y="25" font-size="8" fill="#0B5DA2" font-weight="600" font-family="sans-serif">Share</text>
+        <text x="222" y="60" font-size="8" fill="#FF9C40" font-family="sans-serif">Spend</text>
+      </svg>
+      <div class="cf-rule"><em>Balance visual hierarchy across marks.</em></div>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<!-- ══ SECTION 6: MATRIX ══ -->
+<div class="sl"><span class="sl-num">06</span> Quick mark matrix</div>
+
+<div class="matrix-wrap">
+  <table class="mx-table">
+    <thead>
+      <tr>
+        <th style="width:130px">Treatment</th>
+        <th>Line</th>
+        <th>Bar</th>
+        <th>Area</th>
+        <th>Point</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Primary</td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+      </tr>
+      <tr>
+        <td>Primary-A</td>
+        <td><span class="mx-avoid">Avoid as sole distinction</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+      </tr>
+      <tr>
+        <td>Primary-B</td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+      </tr>
+      <tr>
+        <td>Dash</td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+      </tr>
+      <tr>
+        <td>Pattern</td>
+        <td><span class="mx-avoid">Avoid</span></td>
+        <td><span class="mx-ctx">Restrained</span></td>
+        <td><span class="mx-avoid">Avoid</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+      </tr>
+      <tr>
+        <td>Opacity</td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+      </tr>
+      <tr>
+        <td>Stroke weight</td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+      </tr>
+      <tr>
+        <td>Marker</td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+        <td><span class="mx-na">Not applicable</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+      </tr>
+      <tr>
+        <td>Direct label</td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+        <td><span class="mx-ctx">Context dependent</span></td>
+        <td><span class="mx-rec">Recommended</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="tight">
+
+<!-- ══ SECTION 7: COLOR REFERENCE ══ -->
+<div class="sl"><span class="sl-num">07</span> Galileo color reference</div>
+
+<div class="color-ref">
+  <div class="cr-metric">
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#FF9C40"></div><div class="cr-info"><div class="cr-name">Spend</div><div class="cr-token">charts-cat-2 · #FF9C40</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#04AFFF"></div><div class="cr-info"><div class="cr-name">RSV</div><div class="cr-token">charts-cat-5 · #04AFFF</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#0B5DA2"></div><div class="cr-info"><div class="cr-name">Share</div><div class="cr-token">charts-cat-9 · #0B5DA2</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#7DC50F"></div><div class="cr-info"><div class="cr-name">Attributed Sales</div><div class="cr-token">charts-cat-3 · #7DC50F</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#F740CE"></div><div class="cr-info"><div class="cr-name">Incremental Sales</div><div class="cr-token">charts-cat-20 · #F740CE</div></div></div>
+    <div class="cr-swatch-row"><div class="cr-dot" style="background:#7221B6"></div><div class="cr-info"><div class="cr-name">AI accent</div><div class="cr-token">ai-accent-bg · #7221B6</div></div></div>
+  </div>
+  <div class="cr-family">
+    <div class="cr-family-title">Spend family</div>
+    <div class="cr-ramp">
+      <div class="cr-ramp-seg" style="background:#FFDDBD"></div>
+      <div class="cr-ramp-seg" style="background:#FF9C40"></div>
+      <div class="cr-ramp-seg" style="background:#995E26"></div>
+    </div>
+    <div style="display:flex;gap:4px;margin-bottom:12px">
+      <div style="flex:1;font-size:9px;color:var(--ink-3);text-align:center">Primary-A</div>
+      <div style="flex:1;font-size:9px;color:var(--ink-3);text-align:center">Primary</div>
+      <div style="flex:1;font-size:9px;color:var(--ink-3);text-align:center">Primary-B</div>
+    </div>
+    <div class="cr-family-note">Primary-A and Primary-B are tonal resources. They do not inherently mean Forecast, Attributed, Recommended, or another analytical state.</div>
+  </div>
+</div>
+
+<hr class="tight">
+
+<!-- ══ SECTION 8: GLOSSARY ══ -->
+<div class="sl"><span class="sl-num">08</span> Glossary</div>
+
+<div class="gloss-2col">
+  <div>
+    <div class="gloss-item"><span class="gloss-term">Metric</span><span class="gloss-def">The value being measured.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Dimension</span><span class="gloss-def">The field used to group a metric.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Dimension member</span><span class="gloss-def">One value inside a dimension.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Series</span><span class="gloss-def">A related set of values shown in a chart.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Mark</span><span class="gloss-def">The visual form representing data.</span></div>
+  </div>
+  <div>
+    <div class="gloss-item"><span class="gloss-term">Value nature</span><span class="gloss-def">Whether a value is observed or estimated.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Time window</span><span class="gloss-def">The period used to calculate a value.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Scenario</span><span class="gloss-def">A possible outcome under assumptions.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Method</span><span class="gloss-def">How a value was calculated or assigned.</span></div>
+    <div class="gloss-item"><span class="gloss-term">Provenance</span><span class="gloss-def">Where a value or recommendation came from.</span></div>
+  </div>
+</div>
+
+<hr class="tight">
+
+<!-- ══ SECTION 9: FINAL CHECK ══ -->
+<div class="sl"><span class="sl-num">09</span> Final check</div>
+
+<ul class="check-list" style="max-width:680px">
+  <li>
+    <div class="check-box" onclick="this.classList.toggle('checked')"></div>
+    <span class="check-num">1</span>
+    <span class="check-q">What is the primary comparison?</span>
+  </li>
+  <li>
+    <div class="check-box" onclick="this.classList.toggle('checked')"></div>
+    <span class="check-num">2</span>
+    <span class="check-q">What does Primary identify in this chart?</span>
+  </li>
+  <li>
+    <div class="check-box" onclick="this.classList.toggle('checked')"></div>
+    <span class="check-num">3</span>
+    <span class="check-q">Which secondary meaning must be shown?</span>
+  </li>
+  <li>
+    <div class="check-box" onclick="this.classList.toggle('checked')"></div>
+    <span class="check-num">4</span>
+    <span class="check-q">Which treatment works best for this mark?</span>
+  </li>
+  <li>
+    <div class="check-box" onclick="this.classList.toggle('checked')"></div>
+    <span class="check-num">5</span>
+    <span class="check-q">Should the chart be simplified?</span>
+  </li>
+</ul>
+
+<!-- FOOTER -->
+<div class="footer">
+  Guidance will be refined through review of real Galileo charts and product use cases.
+</div>
+
+</div>
+</body>
+</html>

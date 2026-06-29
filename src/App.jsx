@@ -896,24 +896,23 @@ export default function App() {
                       <tbody>
                         {PAUSE_RECS.map(r=>{
                           const dec=pauseDec[r.id];
-                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                            <tr key={r.id} className="hover:bg-base-200/50 transition-colors">
                               <td className="text-center">
                                 <input type="checkbox" className="checkbox checkbox-xs" checked={pauseSel.has(r.id)} onChange={()=>pauseToggleRow(r.id)}/>
                               </td>
                               <td className="text-sm font-medium text-base-content">{r.campaign}</td>
                               <td className="text-sm text-base-content/70">{r.adGroup}</td>
-                              <td className="text-sm">{fmtCurrency(r.currentSpend)}</td>
-                              <td className="text-sm">{fmtCurrency(r.currentRSV)}</td>
-                              <td className="text-sm font-semibold text-error">{r.currentROAS.toFixed(1)}x</td>
+                              <td className="text-sm text-base-content">{fmtCurrency(r.currentSpend)}</td>
+                              <td className="text-sm text-base-content">{fmtCurrency(r.currentRSV)}</td>
+                              <td className="text-sm text-base-content">{r.currentROAS.toFixed(1)}x</td>
                               <td className="text-sm font-semibold text-error">
                                 {fmtCurrency(r.rsvImpact)}
                                 <div className="text-xs font-normal text-base-content/40 mt-0.5">{fmtPct((r.rsvImpact/r.currentRSV)*100)}</div>
                               </td>
                               <td className="text-sm font-semibold text-success">{fmtCurrency(r.projectedSpendReduction)}</td>
                               <td>
-                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {!dec&&<span className="badge badge-sm badge-neutral">Pending</span>}
                                 {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
                                 {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
@@ -924,17 +923,15 @@ export default function App() {
                     </table>
                   </div>
                   <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
-                    <span className="font-medium text-success">{pauseAcceptedCount} accepted</span>
+                    <span className="font-medium text-base-content/70">{pauseAcceptedCount} accepted</span>
                     <span>·</span>
-                    <span className="font-medium text-error">{pauseDeclinedCount} declined</span>
+                    <span className="font-medium text-base-content/70">{pauseDeclinedCount} declined</span>
                     <span>·</span>
                     <span>{PAUSE_RECS.length-pauseDecidedCount} pending</span>
                     {pauseSpendReduction>0&&(
-                      <>
-                        <span className="ml-auto font-semibold text-success">
-                          Projected spend reduction: {fmtCurrency(pauseSpendReduction)}
-                        </span>
-                      </>
+                      <span className="ml-auto font-semibold text-success">
+                        Projected spend reduction: {fmtCurrency(pauseSpendReduction)}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -992,25 +989,24 @@ export default function App() {
                           const dec=agDec[r.id];
                           const bidChangePct=((r.recommendedBid-r.currentBid)/r.currentBid)*100;
                           const isIncrease=r.spendChange>0;
-                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                            <tr key={r.id} className="hover:bg-base-200/50 transition-colors">
                               <td className="text-center">
                                 <input type="checkbox" className="checkbox checkbox-xs" checked={agSel.has(r.id)} onChange={()=>agToggleRow(r.id)}/>
                               </td>
                               <td className="text-sm font-medium text-base-content">{r.campaign}</td>
                               <td className="text-sm text-base-content/70">{r.adGroup}</td>
-                              <td className="text-sm text-base-content/70">{fmtBid(r.currentBid)}</td>
-                              <td className="text-sm font-semibold text-primary">{fmtBid(r.recommendedBid)}</td>
-                              <td className={`text-sm font-semibold ${bidChangePct>=0?"text-info":"text-success"}`}>{fmtPct(bidChangePct)}</td>
-                              <td className="text-sm text-base-content/70">{fmtCurrency(r.baselineRSV)}</td>
-                              <td className="text-sm font-semibold text-primary">{fmtCurrency(r.optimizedRSV)}</td>
+                              <td className="text-sm text-base-content">{fmtBid(r.currentBid)}</td>
+                              <td className="text-sm font-semibold text-base-content">{fmtBid(r.recommendedBid)}</td>
+                              <td className="text-sm font-semibold text-base-content">{fmtPct(bidChangePct)}</td>
+                              <td className="text-sm text-base-content">{fmtCurrency(r.baselineRSV)}</td>
+                              <td className="text-sm font-semibold text-success">{fmtCurrency(r.optimizedRSV)}</td>
                               <td className={`text-sm font-semibold ${isIncrease?"text-warning":"text-success"}`}>
                                 {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
                               </td>
-                              <td className="text-sm">{r.optimizedROAS.toFixed(1)}x</td>
+                              <td className="text-sm text-base-content">{r.optimizedROAS.toFixed(1)}x</td>
                               <td>
-                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {!dec&&<span className="badge badge-sm badge-neutral">Pending</span>}
                                 {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
                                 {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
@@ -1021,9 +1017,9 @@ export default function App() {
                     </table>
                   </div>
                   <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
-                    <span className="font-medium text-success">{agAcceptedCount} accepted</span>
+                    <span className="font-medium text-base-content/70">{agAcceptedCount} accepted</span>
                     <span>·</span>
-                    <span className="font-medium text-error">{agDeclinedCount} declined</span>
+                    <span className="font-medium text-base-content/70">{agDeclinedCount} declined</span>
                     <span>·</span>
                     <span>{AD_GROUP_RECS.length-agDecidedCount} pending</span>
                     {agAcceptedCount>0&&(
@@ -1088,9 +1084,8 @@ export default function App() {
                           const dec=kwDec[r.id];
                           const bidChangePct=((r.recommendedBid-r.currentBid)/r.currentBid)*100;
                           const isIncrease=r.spendChange>0;
-                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                            <tr key={r.id} className="hover:bg-base-200/50 transition-colors">
                               <td className="text-center">
                                 <input type="checkbox" className="checkbox checkbox-xs" checked={kwSel.has(r.id)} onChange={()=>kwToggleRow(r.id)}/>
                               </td>
@@ -1098,16 +1093,16 @@ export default function App() {
                               <td className="text-sm text-base-content/70">{r.adGroup}</td>
                               <td className="text-sm text-base-content/70">{r.keyword}</td>
                               <td><span className="badge badge-sm badge-ghost">{r.matchType}</span></td>
-                              <td className="text-sm text-base-content/70">{fmtBid(r.currentBid)}</td>
-                              <td className="text-sm font-semibold text-primary">{fmtBid(r.recommendedBid)}</td>
-                              <td className={`text-sm font-semibold ${bidChangePct>=0?"text-info":"text-success"}`}>{fmtPct(bidChangePct)}</td>
-                              <td className="text-sm font-semibold text-primary">{fmtCurrency(r.optimizedRSV)}</td>
+                              <td className="text-sm text-base-content">{fmtBid(r.currentBid)}</td>
+                              <td className="text-sm font-semibold text-base-content">{fmtBid(r.recommendedBid)}</td>
+                              <td className="text-sm font-semibold text-base-content">{fmtPct(bidChangePct)}</td>
+                              <td className="text-sm font-semibold text-success">{fmtCurrency(r.optimizedRSV)}</td>
                               <td className={`text-sm font-semibold ${isIncrease?"text-warning":"text-success"}`}>
                                 {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
                               </td>
-                              <td className="text-sm">{r.optimizedROAS.toFixed(1)}x</td>
+                              <td className="text-sm text-base-content">{r.optimizedROAS.toFixed(1)}x</td>
                               <td>
-                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {!dec&&<span className="badge badge-sm badge-neutral">Pending</span>}
                                 {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
                                 {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
@@ -1118,9 +1113,9 @@ export default function App() {
                     </table>
                   </div>
                   <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
-                    <span className="font-medium text-success">{kwAcceptedCount} accepted</span>
+                    <span className="font-medium text-base-content/70">{kwAcceptedCount} accepted</span>
                     <span>·</span>
-                    <span className="font-medium text-error">{kwDeclinedCount} declined</span>
+                    <span className="font-medium text-base-content/70">{kwDeclinedCount} declined</span>
                     <span>·</span>
                     <span>{KEYWORD_RECS.length-kwDecidedCount} pending</span>
                     {kwAcceptedCount>0&&(

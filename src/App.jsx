@@ -112,12 +112,12 @@ function TableToolbar({ allSelected, someSelected, selSize, onToggleAll, onAccep
           {selSize>0?`${selSize} row${selSize>1?"s":""} selected`:"No rows selected"}
         </span>
         <button
-          className={`btn btn-xs btn-success ${!selSize?"btn-disabled opacity-40":""}`}
+          className={`btn btn-sm btn-success ${!selSize?"btn-disabled opacity-40":""}`}
           disabled={!selSize}
           onClick={onAccept}
         >Accept</button>
         <button
-          className={`btn btn-xs btn-error btn-outline ${!selSize?"btn-disabled opacity-40":""}`}
+          className={`btn btn-sm btn-error ${!selSize?"btn-disabled opacity-40":""}`}
           disabled={!selSize}
           onClick={onDecline}
         >Decline</button>
@@ -234,24 +234,36 @@ function GuidedStepper({ active, visitedMax, pauseReviewed, agReviewed, kwReview
 
 // ── SCENARIO IMPACT STRIP ─────────────────────────────────────────────────────
 function ScenarioImpactStrip({ modelMetrics, acceptedMetrics, reviewedCount, pendingCount }) {
+  /* Maps legacy C.* colors to Tailwind semantic classes for metric values */
+  const colorClass = (hex) => {
+    if (!hex) return "text-base-content";
+    if (hex === C.green)  return "text-success";
+    if (hex === C.red)    return "text-error";
+    if (hex === C.yellow) return "text-warning";
+    return "text-base-content"; /* purple/blue → neutral; chart colors stay in charts */
+  };
   return (
-    <div style={{background:C.surface,border:`1px solid ${C.border}`,borderRadius:8,marginBottom:14,padding:"14px 16px"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+    <div className="bg-base-100 border border-base-300 rounded-lg mb-4 px-4 py-3">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-3">
         <div>
-          <div style={{fontSize:12,fontWeight:700,color:C.text}}>Scenario impact</div>
-          <div style={{fontSize:11,color:C.textMuted,marginTop:2}}>Updates after you accept or decline recommendations.</div>
+          <div className="text-xs font-semibold text-base-content">Scenario impact</div>
+          <div className="text-xs text-base-content/40 mt-0.5">Updates after you accept or decline recommendations.</div>
         </div>
-        <div style={{fontSize:11,color:C.textSub}}>{reviewedCount} reviewed · {pendingCount} pending</div>
+        <div className="text-xs text-base-content/50">{reviewedCount} reviewed · {pendingCount} pending</div>
       </div>
-      <div style={{display:"grid",gridTemplateColumns:"1.2fr 1fr 1fr",columnGap:14,rowGap:0}}>
-        <div style={{fontSize:10,color:C.textMuted,padding:"0 0 7px"}}>Metric</div>
-        <div style={{fontSize:10,fontWeight:700,color:C.purple,padding:"0 0 7px"}}>Model scenario</div>
-        <div style={{fontSize:10,fontWeight:700,color:C.blue,padding:"0 0 7px"}}>Your accepted scenario</div>
+      {/* Grid: Metric | Model scenario | Your accepted scenario */}
+      <div className="grid gap-0" style={{gridTemplateColumns:"1.2fr 1fr 1fr"}}>
+        {/* Column headers */}
+        <div className="text-xs text-base-content/40 pb-2">Metric</div>
+        <div className="text-xs font-semibold text-base-content/60 pb-2">Model scenario</div>
+        <div className="text-xs font-semibold text-base-content/60 pb-2">Your accepted scenario</div>
+        {/* Rows */}
         {modelMetrics.map((metric,i)=>(
           <>
-            <div key={`l-${i}`} style={{fontSize:11,color:C.textSub,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{metric.label}</div>
-            <div key={`m-${i}`} style={{fontSize:12,fontWeight:700,color:metric.color||C.purple,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{metric.value}</div>
-            <div key={`a-${i}`} style={{fontSize:12,fontWeight:700,color:acceptedMetrics[i].color||C.blue,padding:"7px 0",borderTop:`1px solid ${C.borderLight}`}}>{acceptedMetrics[i].value}</div>
+            <div key={`l-${i}`} className="text-xs text-base-content/50 py-1.5 border-t border-base-200">{metric.label}</div>
+            <div key={`m-${i}`} className={`text-xs font-semibold py-1.5 border-t border-base-200 ${colorClass(metric.color)}`}>{metric.value}</div>
+            <div key={`a-${i}`} className={`text-xs font-semibold py-1.5 border-t border-base-200 ${colorClass(acceptedMetrics[i].color)}`}>{acceptedMetrics[i].value}</div>
           </>
         ))}
       </div>
@@ -814,28 +826,28 @@ export default function App() {
                 {[
                   { title:"Pause Recommendations", count:PAUSE_RECS.length,
                     metrics:[
-                      {label:"Projected spend reduction", value:fmtCurrency(modelPauseSpendReduction), color:C.green},
-                      {label:"Projected RSV impact",      value:fmtCurrency(modelPauseRSVImpact),      color:C.red},
+                      {label:"Projected spend reduction", value:fmtCurrency(modelPauseSpendReduction), cls:"text-success"},
+                      {label:"Projected RSV impact",      value:fmtCurrency(modelPauseRSVImpact),      cls:"text-error"},
                     ]},
                   { title:"Ad Group Bid Recommendations", count:AD_GROUP_RECS.length,
                     metrics:[
-                      {label:"Projected spend change", value:(modelAgSpendChange>=0?"+":"")+fmtCurrency(modelAgSpendChange), color:modelAgSpendChange>0?C.yellow:C.green},
-                      {label:"Projected RSV lift",     value:"+"+fmtCurrency(modelAgRSVLift), color:C.green},
+                      {label:"Projected spend change", value:(modelAgSpendChange>=0?"+":"")+fmtCurrency(modelAgSpendChange), cls:modelAgSpendChange>0?"text-warning":"text-success"},
+                      {label:"Projected RSV lift",     value:"+"+fmtCurrency(modelAgRSVLift), cls:"text-success"},
                     ]},
                   { title:"Keyword Bid Recommendations", count:KEYWORD_RECS.length,
                     metrics:[
-                      {label:"Projected spend change", value:(modelKwSpendChange>=0?"+":"")+fmtCurrency(modelKwSpendChange), color:modelKwSpendChange>0?C.yellow:C.green},
-                      {label:"Projected RSV lift",     value:"+"+fmtCurrency(modelKwRSVLift), color:C.green},
+                      {label:"Projected spend change", value:(modelKwSpendChange>=0?"+":"")+fmtCurrency(modelKwSpendChange), cls:modelKwSpendChange>0?"text-warning":"text-success"},
+                      {label:"Projected RSV lift",     value:"+"+fmtCurrency(modelKwRSVLift), cls:"text-success"},
                     ]},
                 ].map((cat,i)=>(
                   <div key={i} className="card bg-base-100 border border-base-300 shadow-sm">
                     <div className="card-body p-4">
-                      <div className="text-xs font-bold text-base-content/50 uppercase tracking-wide mb-1">{cat.title}</div>
+                      <div className="text-xs font-medium text-base-content/50 uppercase tracking-wide mb-1">{cat.title}</div>
                       <div className="text-xl font-bold text-base-content mb-3">{cat.count} recommendations</div>
                       {cat.metrics.map((m,j)=>(
                         <div key={j} className="flex justify-between items-baseline border-t border-base-200 pt-2 mt-2">
                           <span className="text-xs text-base-content/50">{m.label}</span>
-                          <span className="text-xs font-bold" style={{color:m.color}}>{m.value}</span>
+                          <span className={`text-xs font-semibold ${m.cls}`}>{m.value}</span>
                         </div>
                       ))}
                     </div>

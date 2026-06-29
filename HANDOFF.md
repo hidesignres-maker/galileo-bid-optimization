@@ -13,7 +13,20 @@
 **Semana prototipada:** WK12 (Mar 17–23, 2026)  
 **Retailer mock:** Walmart – US – Total Walmart  
 **Usuario ficticio:** Shirley Chisholm  
-**Stack:** React 18 + Vite (sin router, sin librerías externas)
+**Stack:** React 18 + Vite 5 + Tailwind CSS 4 + DaisyUI 5.6.5 (sin router, sin librerías de estado externas)
+
+### Estado de implementación actual (post-Phase 6)
+
+| Área | Estado |
+|------|--------|
+| Tailwind CSS 4 + DaisyUI 5 | ✅ Instalado y activo |
+| Tema `galileo` (DS tokens) | ✅ Activo en `src/theme/galileo.css` |
+| Landing page (Recommendations) | ✅ Migrada a DaisyUI |
+| Guided detail — shell/layout | ✅ Migrado a DaisyUI (top bar, stepper, footer) |
+| Guided detail — tablas Steps 1–3 | ✅ Migradas a DaisyUI (`table table-sm`, badges, toolbar) |
+| Guided detail — Review & Push | ✅ Migrado a DaisyUI (grid, colores semánticos) |
+| Charts (ForecastChart) | ⏸ Intencionalmente sin tocar — SVG puro, diferido |
+| Option A (Contained Review) | ⏸ Intencionalmente sin tocar — usa inline styles heredados |
 
 ---
 
@@ -21,19 +34,33 @@
 
 ```
 Claude/
-├── HANDOFF.md                        ← este archivo
+├── HANDOFF.md                        ← este archivo (fuente de verdad)
+├── DESIGN_DECISIONS.md               ← decisiones de producto/UX durables
+├── ARCHITECTURE-AUDIT.md             ← HISTÓRICO / DESACTUALIZADO — ignorar
 ├── index.html                        ← entry point HTML para Vite
-├── package.json                      ← dependencias: React 18, Vite
-├── vite.config.js                    ← configuración Vite con plugin React
-├── campaign-bid-optimization.jsx     ← archivo original / referencia
+├── package.json                      ← React 18 + Vite + Tailwind 4 + DaisyUI 5
+├── vite.config.js                    ← Vite con plugins React + Tailwind
+├── campaign-bid-optimization.jsx     ← archivo original / referencia (no tocar)
 └── src/
     ├── main.jsx                      ← monta <App /> en #root
-    └── App.jsx                       ← prototipo completo (archivo activo)
+    ├── index.css                     ← @import tailwindcss + galileo.css + daisyui plugin
+    ├── App.jsx                       ← prototipo completo (archivo activo, ~1700 líneas)
+    ├── theme/
+    │   ├── galileo.css               ← tema DaisyUI con tokens del DS de Galileo
+    │   └── formatters.js             ← fmtCurrency, fmtPct, fmtBid
+    ├── ui/
+    │   ├── AppShell.jsx              ← navbar + wrapper con data-theme="galileo"
+    │   ├── StatusBadge.jsx           ← badge de 8 estados (DaisyUI)
+    │   └── KpiStats.jsx              ← stats strip (DaisyUI)
+    └── design/
+        └── design-principles.md      ← 20 reglas de diseño para este prototipo
 ```
 
 **Archivo activo:** `src/App.jsx`  
 **Repositorio GitHub:** https://github.com/hidesignres-maker/galileo-bid-optimization  
 **Deploy:** Vercel (configurar Framework Preset = Vite para que funcione)
+
+> **Nota para IA:** `ARCHITECTURE-AUDIT.md` está desactualizado. No lo uses como referencia del estado actual. La fuente de verdad es este archivo + `DESIGN_DECISIONS.md`.
 
 ---
 
@@ -249,6 +276,15 @@ Limpieza hecha por GPT sobre v2:
 ## 10. Limitación conocida
 
 En el `ScenarioImpactStrip` del paso Pause (Option B), el ROAS de "Your accepted scenario" usa `modelPauseROAS` en vez del ROAS calculado solo de filas aceptadas. Es un descuido menor — si se quiere corregir, hay que calcular `acceptedPauseROAS` filtrando `PAUSE_RECS` por `pauseDec[r.id] === "accepted"` y pasarlo como prop.
+
+---
+
+### v5 — Phase 6: Guided tables fully migrated to DaisyUI (2026-06-29)
+- **Step 2 (Ad Groups):** `TableToolbar daisy`, `table table-sm`, `checkbox checkbox-xs`, row bg `bg-success/5`/`bg-error/5`, `badge badge-sm` decision badges, colored spend change (`text-warning`/`text-success`), updated footer with accepted/declined/pending counts + projected spend change. Copy: "Review recommended bid changes for active ad groups before applying updates in Skai."
+- **Step 3 (Keywords):** Same pattern as Step 2. Match Type column now uses `badge badge-sm badge-ghost` chip instead of `<Badge color="gray">`. Copy: "Review keyword-level bid changes designed to improve the selected optimization target."
+- **Step 4 (Review & Push):** Selected actions + Impact contribution tables migrated from `style={{...C.*}}` inline styles to Tailwind grid + `border-base-200` dividers + semantic color classes (`text-success`, `text-warning`, `text-primary`, `text-error`). Header copy: "Confirm accepted recommendations and push approved changes to Skai."
+- **Option A:** Untouched. `TableToolbar` `daisy=false` default preserved.
+- **Build:** 216KB JS + 79KB CSS, 1.43s clean. Pushed to GitHub `master` (commit 191623a).
 
 ---
 

@@ -1,7 +1,11 @@
 # Galileo Prototype Framework — Architecture Audit
 ## Bid Optimization as Reference Implementation
 
-> Status: Audit complete. Awaiting review before any implementation begins.
+> ⚠️ HISTORICAL — As of 2026-06-29 (Phase 6 complete), this audit is outdated.
+> The prototype has been substantially updated. Do not use this as a guide to the current codebase.
+> See HANDOFF.md (section 9, v4–v5) and DESIGN_DECISIONS.md for the current state.
+
+> Original status: Audit complete. Awaiting review before any implementation begins.
 > No files were created or modified during this audit.
 
 ---

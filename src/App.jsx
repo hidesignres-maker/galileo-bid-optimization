@@ -94,7 +94,36 @@ const KpiCard = ({ label, value, sub }) => (
   </div>
 );
 
-function TableToolbar({ allSelected, someSelected, selSize, onToggleAll, onAccept, onDecline, s }) {
+function TableToolbar({ allSelected, someSelected, selSize, onToggleAll, onAccept, onDecline, s, daisy=false }) {
+  if (daisy) {
+    return (
+      <div className="flex items-center gap-3 px-4 py-2 border-b border-base-300 bg-base-100">
+        <label className="flex items-center gap-2 cursor-pointer text-xs text-base-content/70 select-none">
+          <input
+            type="checkbox"
+            className="checkbox checkbox-xs"
+            checked={allSelected}
+            ref={el=>{if(el)el.indeterminate=someSelected;}}
+            onChange={onToggleAll}
+          />
+          Select all
+        </label>
+        <span className="flex-1 text-xs text-base-content/40">
+          {selSize>0?`${selSize} row${selSize>1?"s":""} selected`:"No rows selected"}
+        </span>
+        <button
+          className={`btn btn-xs btn-success ${!selSize?"btn-disabled opacity-40":""}`}
+          disabled={!selSize}
+          onClick={onAccept}
+        >Accept</button>
+        <button
+          className={`btn btn-xs btn-error btn-outline ${!selSize?"btn-disabled opacity-40":""}`}
+          disabled={!selSize}
+          onClick={onDecline}
+        >Decline</button>
+      </div>
+    );
+  }
   return (
     <div style={s.toolRow}>
       <label style={{display:"flex",alignItems:"center",gap:6,cursor:"pointer",fontSize:12}}>
@@ -845,34 +874,48 @@ export default function App() {
               {/* Table card */}
               <div className="card bg-base-100 border border-base-300 shadow-sm">
                 <div className="card-body p-0">
-                  <TableToolbar allSelected={pauseAllSel} someSelected={pauseSomeSel} selSize={pauseSel.size} onToggleAll={pauseToggleAll} onAccept={pauseAccept} onDecline={pauseDecline} s={s}/>
-                  <div style={s.tableWrap}>
-                    <table style={s.table}>
-                      <thead><tr>
-                        <th style={{...s.th,width:36}}></th>
-                        <th style={s.th}>Campaign</th><th style={s.th}>Ad Group</th>
-                        <th style={s.th}>Current Spend</th><th style={s.th}>Current RSV</th>
-                        <th style={s.th}>Current ROAS<div style={{fontSize:10,color:C.textMuted,fontWeight:400,textTransform:"none",letterSpacing:0,marginTop:1}}>Target ≥ 2.8x</div></th>
-                        <th style={s.th}>Projected RSV Impact</th><th style={s.th}>Projected Spend Reduction</th><th style={s.th}>Decision</th>
-                      </tr></thead>
+                  <TableToolbar daisy allSelected={pauseAllSel} someSelected={pauseSomeSel} selSize={pauseSel.size} onToggleAll={pauseToggleAll} onAccept={pauseAccept} onDecline={pauseDecline} s={s}/>
+                  <div className="overflow-x-auto">
+                    <table className="table table-sm w-full">
+                      <thead>
+                        <tr className="text-xs font-semibold text-base-content/50 uppercase tracking-wide bg-base-200">
+                          <th className="w-9"></th>
+                          <th>Campaign</th>
+                          <th>Ad Group</th>
+                          <th>Current Spend</th>
+                          <th>Current RSV</th>
+                          <th>
+                            Current ROAS
+                            <div className="text-xs font-normal normal-case tracking-normal text-base-content/40 mt-0.5">Target ≥ 2.8x</div>
+                          </th>
+                          <th>Projected RSV Impact</th>
+                          <th>Projected Spend Reduction</th>
+                          <th>Decision</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {PAUSE_RECS.map(r=>{
                           const dec=pauseDec[r.id];
-                          const rowBg=dec==="accepted"?C.greenLight:dec==="declined"?C.redLight:"#fff";
+                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id} style={{background:rowBg}}>
-                              <td style={{...s.td,textAlign:"center"}}><input type="checkbox" checked={pauseSel.has(r.id)} onChange={()=>pauseToggleRow(r.id)} style={{width:14,height:14,cursor:"pointer",accentColor:C.blue}}/></td>
-                              <td style={s.td}><div style={{fontWeight:500}}>{r.campaign}</div></td>
-                              <td style={s.td}>{r.adGroup}</td>
-                              <td style={s.td}>{fmtCurrency(r.currentSpend)}</td>
-                              <td style={s.td}>{fmtCurrency(r.currentRSV)}</td>
-                              <td style={{...s.td,color:C.red}}>{r.currentROAS.toFixed(1)}x</td>
-                              <td style={{...s.td,color:C.red,fontWeight:600}}>{fmtCurrency(r.rsvImpact)}<div style={{fontSize:11,fontWeight:400,color:C.textMuted,marginTop:1}}>{fmtPct((r.rsvImpact/r.currentRSV)*100)}</div></td>
-                              <td style={{...s.td,color:C.green,fontWeight:600}}>{fmtCurrency(r.projectedSpendReduction)}</td>
-                              <td style={s.td}>
-                                {!dec&&<Badge color="gray">Pending</Badge>}
-                                {dec==="accepted"&&<Badge color="green">Accepted</Badge>}
-                                {dec==="declined"&&<Badge color="red">Declined</Badge>}
+                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                              <td className="text-center">
+                                <input type="checkbox" className="checkbox checkbox-xs" checked={pauseSel.has(r.id)} onChange={()=>pauseToggleRow(r.id)}/>
+                              </td>
+                              <td className="text-sm font-medium text-base-content">{r.campaign}</td>
+                              <td className="text-sm text-base-content/70">{r.adGroup}</td>
+                              <td className="text-sm">{fmtCurrency(r.currentSpend)}</td>
+                              <td className="text-sm">{fmtCurrency(r.currentRSV)}</td>
+                              <td className="text-sm font-semibold text-error">{r.currentROAS.toFixed(1)}x</td>
+                              <td className="text-sm font-semibold text-error">
+                                {fmtCurrency(r.rsvImpact)}
+                                <div className="text-xs font-normal text-base-content/40 mt-0.5">{fmtPct((r.rsvImpact/r.currentRSV)*100)}</div>
+                              </td>
+                              <td className="text-sm font-semibold text-success">{fmtCurrency(r.projectedSpendReduction)}</td>
+                              <td>
+                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
+                                {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
                             </tr>
                           );
@@ -880,8 +923,19 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50">
-                    {pauseReviewedCount} reviewed · {PAUSE_RECS.length-pauseReviewedCount} pending
+                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
+                    <span className="font-medium text-success">{pauseAcceptedCount} accepted</span>
+                    <span>·</span>
+                    <span className="font-medium text-error">{pauseDeclinedCount} declined</span>
+                    <span>·</span>
+                    <span>{PAUSE_RECS.length-pauseDecidedCount} pending</span>
+                    {pauseSpendReduction>0&&(
+                      <>
+                        <span className="ml-auto font-semibold text-success">
+                          Projected spend reduction: {fmtCurrency(pauseSpendReduction)}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -893,7 +947,7 @@ export default function App() {
             <div>
               <div className="mb-4">
                 <h2 className="text-base font-bold text-base-content mb-1">Ad Group Bid Recommendations</h2>
-                <p className="text-xs text-base-content/50">Review recommended Ad Group bid changes and evaluate their projected performance impact.</p>
+                <p className="text-xs text-base-content/50">Review recommended bid changes for active ad groups before applying updates in Skai.</p>
               </div>
 
               <ScenarioImpactStrip
@@ -915,40 +969,50 @@ export default function App() {
 
               <div className="card bg-base-100 border border-base-300 shadow-sm">
                 <div className="card-body p-0">
-                  <TableToolbar allSelected={agAllSel} someSelected={agSomeSel} selSize={agSel.size} onToggleAll={agToggleAll} onAccept={agAccept} onDecline={agDecline} s={s}/>
-                  <div style={s.tableWrap}>
-                    <table style={s.table}>
-                      <thead><tr>
-                        <th style={{...s.th,width:36}}></th>
-                        <th style={s.th}>Campaign</th><th style={s.th}>Ad Group</th>
-                        <th style={s.th}>Current Bid</th><th style={s.th}>Recommended Bid</th>
-                        <th style={s.th}>Bid Change</th><th style={s.th}>Baseline RSV</th>
-                        <th style={s.th}>Optimized RSV</th><th style={s.th}>Spend Change</th>
-                        <th style={s.th}>Opt. ROAS</th><th style={s.th}>Decision</th>
-                      </tr></thead>
+                  <TableToolbar daisy allSelected={agAllSel} someSelected={agSomeSel} selSize={agSel.size} onToggleAll={agToggleAll} onAccept={agAccept} onDecline={agDecline} s={s}/>
+                  <div className="overflow-x-auto">
+                    <table className="table table-sm w-full">
+                      <thead>
+                        <tr className="text-xs font-semibold text-base-content/50 uppercase tracking-wide bg-base-200">
+                          <th className="w-9"></th>
+                          <th>Campaign</th>
+                          <th>Ad Group</th>
+                          <th>Current Bid</th>
+                          <th>Recommended Bid</th>
+                          <th>Bid Change</th>
+                          <th>Baseline RSV</th>
+                          <th>Optimized RSV</th>
+                          <th>Spend Change</th>
+                          <th>Opt. ROAS</th>
+                          <th>Decision</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {AD_GROUP_RECS.map(r=>{
                           const dec=agDec[r.id];
                           const bidChangePct=((r.recommendedBid-r.currentBid)/r.currentBid)*100;
                           const isIncrease=r.spendChange>0;
+                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id}>
-                              <td style={{...s.td,textAlign:"center"}}><input type="checkbox" checked={agSel.has(r.id)} onChange={()=>agToggleRow(r.id)} style={{width:14,height:14,cursor:"pointer",accentColor:C.blue}}/></td>
-                              <td style={s.td}><div style={{fontWeight:500}}>{r.campaign}</div></td>
-                              <td style={s.td}>{r.adGroup}</td>
-                              <td style={s.td}>{fmtBid(r.currentBid)}</td>
-                              <td style={{...s.td,fontWeight:600}}>{fmtBid(r.recommendedBid)}</td>
-                              <td style={{...s.td,color:bidChangePct>=0?C.blue:C.green,fontWeight:600}}>{fmtPct(bidChangePct)}</td>
-                              <td style={s.td}>{fmtCurrency(r.baselineRSV)}</td>
-                              <td style={{...s.td,color:C.purple,fontWeight:600}}>{fmtCurrency(r.optimizedRSV)}</td>
-                              <td style={{...s.td,color:isIncrease?C.text:C.green,fontWeight:600}}>
+                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                              <td className="text-center">
+                                <input type="checkbox" className="checkbox checkbox-xs" checked={agSel.has(r.id)} onChange={()=>agToggleRow(r.id)}/>
+                              </td>
+                              <td className="text-sm font-medium text-base-content">{r.campaign}</td>
+                              <td className="text-sm text-base-content/70">{r.adGroup}</td>
+                              <td className="text-sm text-base-content/70">{fmtBid(r.currentBid)}</td>
+                              <td className="text-sm font-semibold text-primary">{fmtBid(r.recommendedBid)}</td>
+                              <td className={`text-sm font-semibold ${bidChangePct>=0?"text-info":"text-success"}`}>{fmtPct(bidChangePct)}</td>
+                              <td className="text-sm text-base-content/70">{fmtCurrency(r.baselineRSV)}</td>
+                              <td className="text-sm font-semibold text-primary">{fmtCurrency(r.optimizedRSV)}</td>
+                              <td className={`text-sm font-semibold ${isIncrease?"text-warning":"text-success"}`}>
                                 {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
                               </td>
-                              <td style={s.td}>{r.optimizedROAS.toFixed(1)}x</td>
-                              <td style={s.td}>
-                                {!dec&&<Badge color="gray">Pending</Badge>}
-                                {dec==="accepted"&&<Badge color="green">Accepted</Badge>}
-                                {dec==="declined"&&<Badge color="red">Declined</Badge>}
+                              <td className="text-sm">{r.optimizedROAS.toFixed(1)}x</td>
+                              <td>
+                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
+                                {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
                             </tr>
                           );
@@ -956,8 +1020,17 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50">
-                    {agReviewedCount} reviewed · {AD_GROUP_RECS.length-agReviewedCount} pending
+                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
+                    <span className="font-medium text-success">{agAcceptedCount} accepted</span>
+                    <span>·</span>
+                    <span className="font-medium text-error">{agDeclinedCount} declined</span>
+                    <span>·</span>
+                    <span>{AD_GROUP_RECS.length-agDecidedCount} pending</span>
+                    {agAcceptedCount>0&&(
+                      <span className={`ml-auto font-semibold ${agSpendChange<=0?"text-success":"text-warning"}`}>
+                        Projected spend change: {agSpendChange>=0?"+":""}{fmtCurrency(agSpendChange)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -969,7 +1042,7 @@ export default function App() {
             <div>
               <div className="mb-4">
                 <h2 className="text-base font-bold text-base-content mb-1">Keyword Bid Recommendations</h2>
-                <p className="text-xs text-base-content/50">Review granular keyword bid changes and evaluate their projected performance impact.</p>
+                <p className="text-xs text-base-content/50">Review keyword-level bid changes designed to improve the selected optimization target.</p>
               </div>
 
               <ScenarioImpactStrip
@@ -991,42 +1064,52 @@ export default function App() {
 
               <div className="card bg-base-100 border border-base-300 shadow-sm">
                 <div className="card-body p-0">
-                  <TableToolbar allSelected={kwAllSel} someSelected={kwSomeSel} selSize={kwSel.size} onToggleAll={kwToggleAll} onAccept={kwAccept} onDecline={kwDecline} s={s}/>
-                  <div style={s.tableWrap}>
-                    <table style={s.table}>
-                      <thead><tr>
-                        <th style={{...s.th,width:36}}></th>
-                        <th style={s.th}>Campaign</th><th style={s.th}>Ad Group</th>
-                        <th style={s.th}>Keyword</th><th style={s.th}>Match Type</th>
-                        <th style={s.th}>Current Bid</th><th style={s.th}>Recommended Bid</th>
-                        <th style={s.th}>Bid Change</th><th style={s.th}>Optimized RSV</th>
-                        <th style={s.th}>Spend Change</th><th style={s.th}>Opt. ROAS</th>
-                        <th style={s.th}>Decision</th>
-                      </tr></thead>
+                  <TableToolbar daisy allSelected={kwAllSel} someSelected={kwSomeSel} selSize={kwSel.size} onToggleAll={kwToggleAll} onAccept={kwAccept} onDecline={kwDecline} s={s}/>
+                  <div className="overflow-x-auto">
+                    <table className="table table-sm w-full">
+                      <thead>
+                        <tr className="text-xs font-semibold text-base-content/50 uppercase tracking-wide bg-base-200">
+                          <th className="w-9"></th>
+                          <th>Campaign</th>
+                          <th>Ad Group</th>
+                          <th>Keyword</th>
+                          <th>Match Type</th>
+                          <th>Current Bid</th>
+                          <th>Recommended Bid</th>
+                          <th>Bid Change</th>
+                          <th>Optimized RSV</th>
+                          <th>Spend Change</th>
+                          <th>Opt. ROAS</th>
+                          <th>Decision</th>
+                        </tr>
+                      </thead>
                       <tbody>
                         {KEYWORD_RECS.map(r=>{
                           const dec=kwDec[r.id];
                           const bidChangePct=((r.recommendedBid-r.currentBid)/r.currentBid)*100;
                           const isIncrease=r.spendChange>0;
+                          const rowCls=dec==="accepted"?"bg-success/5":dec==="declined"?"bg-error/5":"";
                           return (
-                            <tr key={r.id}>
-                              <td style={{...s.td,textAlign:"center"}}><input type="checkbox" checked={kwSel.has(r.id)} onChange={()=>kwToggleRow(r.id)} style={{width:14,height:14,cursor:"pointer",accentColor:C.blue}}/></td>
-                              <td style={s.td}><div style={{fontWeight:500}}>{r.campaign}</div></td>
-                              <td style={s.td}>{r.adGroup}</td>
-                              <td style={s.td}>{r.keyword}</td>
-                              <td style={s.td}><Badge color="gray">{r.matchType}</Badge></td>
-                              <td style={s.td}>{fmtBid(r.currentBid)}</td>
-                              <td style={{...s.td,fontWeight:600}}>{fmtBid(r.recommendedBid)}</td>
-                              <td style={{...s.td,color:bidChangePct>=0?C.blue:C.green,fontWeight:600}}>{fmtPct(bidChangePct)}</td>
-                              <td style={{...s.td,color:C.purple,fontWeight:600}}>{fmtCurrency(r.optimizedRSV)}</td>
-                              <td style={{...s.td,color:isIncrease?C.text:C.green,fontWeight:600}}>
+                            <tr key={r.id} className={`${rowCls} hover:bg-base-200/50 transition-colors`}>
+                              <td className="text-center">
+                                <input type="checkbox" className="checkbox checkbox-xs" checked={kwSel.has(r.id)} onChange={()=>kwToggleRow(r.id)}/>
+                              </td>
+                              <td className="text-sm font-medium text-base-content">{r.campaign}</td>
+                              <td className="text-sm text-base-content/70">{r.adGroup}</td>
+                              <td className="text-sm text-base-content/70">{r.keyword}</td>
+                              <td><span className="badge badge-sm badge-ghost">{r.matchType}</span></td>
+                              <td className="text-sm text-base-content/70">{fmtBid(r.currentBid)}</td>
+                              <td className="text-sm font-semibold text-primary">{fmtBid(r.recommendedBid)}</td>
+                              <td className={`text-sm font-semibold ${bidChangePct>=0?"text-info":"text-success"}`}>{fmtPct(bidChangePct)}</td>
+                              <td className="text-sm font-semibold text-primary">{fmtCurrency(r.optimizedRSV)}</td>
+                              <td className={`text-sm font-semibold ${isIncrease?"text-warning":"text-success"}`}>
                                 {isIncrease?"+":""}{fmtCurrency(r.spendChange)}
                               </td>
-                              <td style={s.td}>{r.optimizedROAS.toFixed(1)}x</td>
-                              <td style={s.td}>
-                                {!dec&&<Badge color="gray">Pending</Badge>}
-                                {dec==="accepted"&&<Badge color="green">Accepted</Badge>}
-                                {dec==="declined"&&<Badge color="red">Declined</Badge>}
+                              <td className="text-sm">{r.optimizedROAS.toFixed(1)}x</td>
+                              <td>
+                                {!dec&&<span className="badge badge-sm badge-ghost">Pending</span>}
+                                {dec==="accepted"&&<span className="badge badge-sm badge-success">Accepted</span>}
+                                {dec==="declined"&&<span className="badge badge-sm badge-error">Declined</span>}
                               </td>
                             </tr>
                           );
@@ -1034,8 +1117,17 @@ export default function App() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50">
-                    {kwReviewedCount} reviewed · {KEYWORD_RECS.length-kwReviewedCount} pending
+                  <div className="px-4 py-2 bg-base-200 border-t border-base-300 text-xs text-base-content/50 flex items-center gap-3">
+                    <span className="font-medium text-success">{kwAcceptedCount} accepted</span>
+                    <span>·</span>
+                    <span className="font-medium text-error">{kwDeclinedCount} declined</span>
+                    <span>·</span>
+                    <span>{KEYWORD_RECS.length-kwDecidedCount} pending</span>
+                    {kwAcceptedCount>0&&(
+                      <span className={`ml-auto font-semibold ${kwSpendChange<=0?"text-success":"text-warning"}`}>
+                        Projected spend change: {kwSpendChange>=0?"+":""}{fmtCurrency(kwSpendChange)}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1077,7 +1169,7 @@ export default function App() {
                   <div className="flex items-start justify-between mb-4">
                     <div>
                       <h2 className="text-base font-bold text-base-content mb-1">Review &amp; Push</h2>
-                      <p className="text-xs text-base-content/50">Review the net impact of your accepted scenario before pushing to Skai.</p>
+                      <p className="text-xs text-base-content/50">Confirm accepted recommendations and push approved changes to Skai.</p>
                     </div>
                     <span className={`badge badge-sm ml-4 shrink-0 ${readyToPush ? "badge-success" : "badge-ghost"}`}>
                       {readyToPush ? "Ready to push" : "No accepted changes"}
@@ -1122,31 +1214,31 @@ export default function App() {
                   <div className="card bg-base-100 border border-base-300 shadow-sm mb-4">
                     <div className="card-body p-4">
                       <div className="text-sm font-bold text-base-content mb-3">Selected actions</div>
-                      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:0}}>
-                        <div style={{paddingRight:18,borderRight:`1px solid ${C.borderLight}`}}>
-                          <div style={{fontSize:11,color:C.textMuted,fontWeight:600,marginBottom:8}}>Actions</div>
+                      <div className="grid grid-cols-2 gap-0">
+                        <div className="pr-5 border-r border-base-300">
+                          <div className="text-xs font-semibold text-base-content/40 uppercase tracking-wide mb-2">Actions</div>
                           {[["Ad groups paused",pauseAcceptedCount],["Ad group bids updated",agAcceptedCount],["Keyword bids updated",kwAcceptedCount],["Total accepted changes",totalAccepted]].map(([label,val],i)=>(
-                            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:i<3?`1px solid ${C.borderLight}`:"none"}}>
-                              <span style={{fontSize:12,color:i===3?C.text:C.textSub,fontWeight:i===3?600:400}}>{label}</span>
-                              <span style={{fontSize:12,fontWeight:600,color:C.text}}>{val}</span>
+                            <div key={i} className={`flex justify-between py-1.5 ${i<3?"border-b border-base-200":""}`}>
+                              <span className={`text-xs ${i===3?"font-semibold text-base-content":"text-base-content/60"}`}>{label}</span>
+                              <span className="text-xs font-semibold text-base-content">{val}</span>
                             </div>
                           ))}
                         </div>
-                        <div style={{paddingLeft:18}}>
-                          <div style={{fontSize:11,color:C.textMuted,fontWeight:600,marginBottom:8}}>Impact contribution</div>
+                        <div className="pl-5">
+                          <div className="text-xs font-semibold text-base-content/40 uppercase tracking-wide mb-2">Impact contribution</div>
                           {[
-                            ["Pause spend change",    fmtCurrency(-pauseSpendReduction),C.green],
-                            ["Pause RSV impact",      fmtCurrency(pauseRSVImpact),              pauseRSVImpact>=0?C.green:C.red],
-                            ["Ad Group spend change", (agSpendChange>=0?"+":"")+fmtCurrency(agSpendChange), agSpendChange>0?C.yellow:C.green],
-                            ["Ad Group RSV lift",     agAcceptedCount>0?"+"+fmtCurrency(agRSVLift):"—", C.green],
-                            ["Ad Group ROAS",         agProjectedROAS?`${agProjectedROAS}x`:"—", C.purple],
-                            ["Keyword spend change",  (kwSpendChange>=0?"+":"")+fmtCurrency(kwSpendChange), kwSpendChange>0?C.yellow:C.green],
-                            ["Keyword RSV lift",      kwAcceptedCount>0?"+"+fmtCurrency(kwRSVLift):"—", C.green],
-                            ["Keyword ROAS",          kwProjectedROAS?`${kwProjectedROAS}x`:"—", C.purple],
-                          ].map(([label,val,color],i)=>(
-                            <div key={i} style={{display:"flex",justifyContent:"space-between",padding:"5px 0",borderBottom:i<7?`1px solid ${C.borderLight}`:"none"}}>
-                              <span style={{fontSize:12,color:C.textSub}}>{label}</span>
-                              <span style={{fontSize:12,fontWeight:600,color}}>{val}</span>
+                            ["Pause spend change",    fmtCurrency(-pauseSpendReduction),"text-success"],
+                            ["Pause RSV impact",      fmtCurrency(pauseRSVImpact),      pauseRSVImpact>=0?"text-success":"text-error"],
+                            ["Ad Group spend change", (agSpendChange>=0?"+":"")+fmtCurrency(agSpendChange), agSpendChange>0?"text-warning":"text-success"],
+                            ["Ad Group RSV lift",     agAcceptedCount>0?"+"+fmtCurrency(agRSVLift):"—", "text-success"],
+                            ["Ad Group ROAS",         agProjectedROAS?`${agProjectedROAS}x`:"—", "text-primary"],
+                            ["Keyword spend change",  (kwSpendChange>=0?"+":"")+fmtCurrency(kwSpendChange), kwSpendChange>0?"text-warning":"text-success"],
+                            ["Keyword RSV lift",      kwAcceptedCount>0?"+"+fmtCurrency(kwRSVLift):"—", "text-success"],
+                            ["Keyword ROAS",          kwProjectedROAS?`${kwProjectedROAS}x`:"—", "text-primary"],
+                          ].map(([label,val,colorCls],i)=>(
+                            <div key={i} className={`flex justify-between py-1.5 ${i<7?"border-b border-base-200":""}`}>
+                              <span className="text-xs text-base-content/60">{label}</span>
+                              <span className={`text-xs font-semibold ${colorCls}`}>{val}</span>
                             </div>
                           ))}
                         </div>

@@ -252,6 +252,16 @@ En el `ScenarioImpactStrip` del paso Pause (Option B), el ROAS de "Your accepted
 
 ---
 
+### v4 — Galileo Prototype Framework — Phases 0–4 (2026-06-29)
+- **Phase 0:** Baseline build verified (Vite 5, 653ms, clean)
+- **Phase 1:** Tailwind CSS 4 + DaisyUI 5 installed; `package.json` `"type":"module"` added to fix ESM-only `@tailwindcss/vite` error
+- **Phase 2:** `src/theme/galileo.css` — DaisyUI `galileo` theme created from DS tokens. Semantic role mapping: `--ai` purple → primary (AI accent only), RSV cyan → secondary, spend orange → accent/warning, attr green → success, incr pink → error, share blue → info
+- **Phase 3:** `src/theme/formatters.js` (fmtCurrency/fmtPct/fmtBid), `src/ui/AppShell.jsx`, `src/ui/StatusBadge.jsx`, `src/ui/KpiStats.jsx`, `src/design/design-principles.md` (20 rules)
+- **Phase 4:** `RecommendationsPage` migrated to DaisyUI (navbar, stats strip, card, table, badges). All behavior preserved: WK12 click navigates, wk12Status reactive to pushStatus, all data intact. `const C` and legacy styles untouched in Option A/B
+- **Build output:** 211KB JS + 63KB CSS (galileo theme active, DaisyUI 5.6.5)
+
+---
+
 ## 11. Próximas revisiones sugeridas
 
 - [ ] Revisión visual: Overview B, paso Ad Groups, paso Review — ¿el ScenarioImpactStrip ocupa demasiado espacio?

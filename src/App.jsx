@@ -112,12 +112,12 @@ function TableToolbar({ allSelected, someSelected, selSize, onToggleAll, onAccep
           {selSize>0?`${selSize} row${selSize>1?"s":""} selected`:"No rows selected"}
         </span>
         <button
-          className={`btn btn-sm btn-success ${!selSize?"btn-disabled opacity-40":""}`}
+          className={`btn btn-sm btn-primary ${!selSize?"btn-disabled opacity-40":""}`}
           disabled={!selSize}
           onClick={onAccept}
         >Accept</button>
         <button
-          className={`btn btn-sm btn-error ${!selSize?"btn-disabled opacity-40":""}`}
+          className={`btn btn-sm btn-ghost ${!selSize?"btn-disabled opacity-40":""}`}
           disabled={!selSize}
           onClick={onDecline}
         >Decline</button>

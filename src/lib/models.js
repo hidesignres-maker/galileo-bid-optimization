@@ -69,6 +69,13 @@ export function createRequest(partial = {}) {
  * different date semantics (Viz ID/Innovation lean on launchDate, Brand
  * Request on a due/launch date) — a row only needs to populate the one that
  * applies to its own requestType.
+ *
+ * upc/customerId/productTitle/brand/startShipDate/onSaleDate/ecommPackDetails
+ * only apply to Innovation rows (mirrors the combined CSV template, where
+ * these columns are simply left blank for Viz ID / Brand Request rows).
+ *
+ * `issueReason` is set when status is "issue", so Review can explain why a
+ * row needs attention instead of just flagging it.
  */
 export function createBulkRow(partial = {}) {
   return {
@@ -80,7 +87,16 @@ export function createBulkRow(partial = {}) {
     dueDate: null,
     contentType: null,
     retailer: null,
+    // Innovation-only fields (blank for Viz ID / Brand Request rows):
+    upc: null,
+    customerId: null,
+    productTitle: null,
+    brand: null,
+    startShipDate: null,
+    onSaleDate: null,
+    ecommPackDetails: null,
     status: "ready", // "ready" | "issue"
+    issueReason: null,
     willCreateRequest: true,
     ...partial,
   };
@@ -121,17 +137,39 @@ export function isDueThisPeriod(dateStr, today = new Date()) {
  * Convert one BulkRow + its batch into a real placeholder Request.
  * Placeholder because assignee/assets/etc. are expected to be filled in
  * later, closer to the work date (see Bulk purpose in the product spec).
+ *
+ * Viz ID rows create Viz ID requests, Brand Request rows create Brand
+ * Request requests, Innovation rows create Innovation requests — driven
+ * entirely by row.requestType, never assumed from the batch.
  */
 export function bulkRowToRequest(row, batchId) {
+  const isInnovation = row.requestType === "innovation";
+  const displayTitle = row.title || row.productTitle || "Untitled request";
+
   return createRequest({
     requestType: row.requestType,
     creationMethod: "bulkCsv",
-    title: row.title,
+    title: displayTitle,
     description: row.description,
     launchDate: row.launchDate,
     dueDate: row.dueDate ?? row.launchDate,
     contentTypes: row.contentType ? [row.contentType] : [],
     retailers: row.retailer ? [row.retailer] : [],
+    itemInputs:
+      isInnovation && row.upc
+        ? [
+            {
+              upc: row.upc,
+              retailer: row.retailer,
+              customerId: row.customerId ?? "",
+              productTitle: row.productTitle || displayTitle,
+              brand: row.brand ?? "",
+              startShipDate: row.startShipDate ?? "",
+              onSaleDate: row.onSaleDate ?? row.launchDate ?? "",
+              ecommPackDetails: row.ecommPackDetails ?? "",
+            },
+          ]
+        : [],
     status: REQUEST_STATUS.NEEDS_ACTION,
     isPlaceholder: true,
     sourceBatchId: batchId,

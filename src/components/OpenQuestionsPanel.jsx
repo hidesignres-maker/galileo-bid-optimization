@@ -7,6 +7,7 @@ import { ExclamationTriangleIcon, CheckCircleIcon } from "@heroicons/react/24/ou
  * renders inside BulkCsvWizard rather than every flow.
  */
 const OPEN_QUESTIONS = [
+  "Which fields are required per request type inside the mixed bulk CSV template?",
   "In Bulk CSV, does each row always create one request, or can rows be grouped?",
   "How are assets/links handled in Bulk — per row URLs, later in detail view, or batch-level upload?",
   "Which request types support Bulk in MVP?",
@@ -18,7 +19,7 @@ const OPEN_QUESTIONS = [
 // Kept visible for traceability — confirms what used to be open and is now
 // settled, so it isn't re-litigated or mistaken for still-undecided.
 const RESOLVED_QUESTIONS = [
-  "Request type is per-row (Request_Type column), not selected once for the whole batch. A single upload can mix Viz ID Change, Brand Request, and Innovation rows.",
+  "Confirmed: Bulk CSV supports request type per row (request_type column). A single upload can mix Viz ID Change, Brand Request, and Innovation rows — there is no batch-level request type.",
 ];
 
 export function OpenQuestionsPanel() {

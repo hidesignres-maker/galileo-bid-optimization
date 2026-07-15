@@ -1,5 +1,9 @@
 @import "tailwindcss";
-@import "./theme/galileo.css";
+@import "./theme/corporate.css";
 @plugin "daisyui" {
-  themes: galileo;
+  themes: corporate;
+}
+
+body {
+  font-family: var(--font-primary);
 }

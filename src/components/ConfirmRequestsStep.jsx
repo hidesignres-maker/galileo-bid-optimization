@@ -46,6 +46,11 @@ export function ConfirmRequestsStep({ rows, onConfirm }) {
           later, closer to the work date.
         </p>
 
+        <p className="text-xs text-base-content/50">
+          Bulk references are carried into each created request. Files can be attached later in
+          the request detail view.
+        </p>
+
         <Button
           variant="success"
           className="self-start"

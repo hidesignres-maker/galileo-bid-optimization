@@ -12,6 +12,11 @@ import { createBulkRow } from "../lib/models";
  *
  * Each row becomes ONE future request/task, shown in BulkReviewStep as a
  * request preview, not a product row.
+ *
+ * A few rows below include referenceLinks / assetLinks / contentNotes, to
+ * demonstrate the per-row supporting-content columns (reference_links,
+ * asset_links, content_notes in the CSV template). At least one row is left
+ * with none of the three, so Review's References column shows both cases.
  */
 export const mockBulkRows = [
   createBulkRow({
@@ -21,6 +26,7 @@ export const mockBulkRows = [
     launchDate: "2026-10-05",
     contentType: "images",
     retailer: "KR",
+    referenceLinks: "https://sharepoint.example.com/viz-id-q4-calendar",
     status: "ready",
   }),
   createBulkRow({
@@ -48,6 +54,7 @@ export const mockBulkRows = [
     dueDate: "2026-10-15",
     contentType: "copy",
     retailer: "AMZ",
+    assetLinks: "https://brand-assets.example.com/a-plus-refresh",
     status: "ready",
   }),
   createBulkRow({
@@ -73,6 +80,7 @@ export const mockBulkRows = [
     brand: "Fresh Fields",
     onSaleDate: "2026-11-02",
     ecommPackDetails: "New pack graphics, ingredient callout front panel",
+    contentNotes: "Includes new pack graphics and front-panel ingredient callout.",
     status: "ready",
   }),
   createBulkRow({

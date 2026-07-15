@@ -8,6 +8,24 @@ import { fmtDate } from "../lib/format";
 const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
 
 /**
+ * Compact per-row summary of supporting-content references (referenceLinks
+ * / assetLinks / contentNotes), for the References column below. Kept
+ * intentionally short — the CSV columns themselves may hold full URLs or
+ * longer notes, but the table only needs to signal presence/absence at a
+ * glance. See the business rule comment in models.js / csvTemplate.js:
+ * these are per-row links/notes, not real uploaded files.
+ */
+function getReferencesSummary(row) {
+  const linkCount = (row.referenceLinks ? 1 : 0) + (row.assetLinks ? 1 : 0);
+  const hasNotes = Boolean(row.contentNotes);
+
+  if (linkCount === 0 && !hasNotes) return "No references";
+  if (linkCount > 0 && hasNotes) return `${linkCount} link${linkCount === 1 ? "" : "s"} · Notes`;
+  if (linkCount > 0) return `${linkCount} link${linkCount === 1 ? "" : "s"}`;
+  return "Notes added";
+}
+
+/**
  * BulkReviewStep — rows are reviewed as the requests/tasks they will
  * become, not as products. Copy deliberately says "requests"/"tasks",
  * never "products imported" (stakeholder correction).
@@ -57,7 +75,8 @@ export function BulkReviewStep({ rows }) {
                 <th>Retailer</th>
                 <th>Date</th>
                 <th>Content Type</th>
-                <th>Notes / Issues</th>
+                <th>References</th>
+                <th>Issues</th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +104,7 @@ export function BulkReviewStep({ rows }) {
                       {fmtDate(row.requestType === "brandRequest" ? row.dueDate : row.launchDate)}
                     </td>
                     <td className="text-base-content/70">{row.contentType ?? "—"}</td>
+                    <td className="text-base-content/70">{getReferencesSummary(row)}</td>
                     <td className="text-base-content/70">
                       {row.issueReason ?? (row.status === "issue" ? "Needs attention" : "—")}
                     </td>

@@ -47,6 +47,18 @@ export function createRequest(partial = {}) {
     products: [],
     itemInputs: [],
     assets: [],
+    // contentRequirements — supporting-content references for this request.
+    // `files` stays empty here: no real file upload exists anywhere in this
+    // prototype. For Bulk-created requests, referenceLinks/assetLinks/
+    // contentNotes come straight from the row's CSV columns (see
+    // bulkRowToRequest below). Actual file attachments are expected to be
+    // added later, in a request detail view that doesn't exist yet.
+    contentRequirements: {
+      files: [],
+      referenceLinks: "",
+      assetLinks: "",
+      contentNotes: "",
+    },
     isPlaceholder: false,
     sourceBatchId: null,
     createdAt: new Date().toISOString().slice(0, 10),
@@ -76,6 +88,16 @@ export function createRequest(partial = {}) {
  *
  * `issueReason` is set when status is "issue", so Review can explain why a
  * row needs attention instead of just flagging it.
+ *
+ * referenceLinks / assetLinks / contentNotes — per-row supporting-content
+ * references (mirror the CSV's reference_links / asset_links /
+ * content_notes columns). These are plain text (URLs or notes typed into
+ * the CSV), not real uploaded files — there is no file upload anywhere in
+ * Bulk CSV. A global batch-level uploader is intentionally avoided because
+ * each row creates its own separate request, so it would be ambiguous
+ * whether an uploaded file belongs to all rows, one row, or several. Actual
+ * file attachments are expected to be added later, per request, in a
+ * request detail view (not built yet in this prototype).
  */
 export function createBulkRow(partial = {}) {
   return {
@@ -95,6 +117,10 @@ export function createBulkRow(partial = {}) {
     startShipDate: null,
     onSaleDate: null,
     ecommPackDetails: null,
+    // Per-row supporting-content references — see comment above.
+    referenceLinks: "",
+    assetLinks: "",
+    contentNotes: "",
     status: "ready", // "ready" | "issue"
     issueReason: null,
     willCreateRequest: true,
@@ -192,6 +218,14 @@ export function bulkRowToRequest(row, batchId) {
             },
           ]
         : [],
+    // Per-row references carry straight into the created request. No real
+    // files here — see the comment on createRequest/createBulkRow above.
+    contentRequirements: {
+      files: [],
+      referenceLinks: row.referenceLinks || "",
+      assetLinks: row.assetLinks || "",
+      contentNotes: row.contentNotes || "",
+    },
     status: REQUEST_STATUS.NEEDS_ACTION,
     isPlaceholder: true,
     sourceBatchId: batchId,

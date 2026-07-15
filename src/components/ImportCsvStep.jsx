@@ -114,11 +114,20 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
               ))}
             </div>
             <p className="text-xs text-base-content/50 mt-2">
-              Only fill in the columns that apply to each row's <code>request_type</code>. A single
-              file can mix Viz ID Change, Brand Request, and Innovation rows.
+              Use one row per request. Fill only the fields that apply to each row's request type.
+              Add links or notes per row when supporting content is available.
             </p>
           </div>
         </div>
+
+        {/* Business rule: for Bulk CSV, supporting content is captured per
+            row as links/notes. Global file upload is intentionally avoided
+            because each row creates a separate request. Actual file
+            attachments can be added later in the request detail view. */}
+        <InfoBanner variant="info">
+          Files can be attached later in the request detail view. For Bulk, use links/notes in the
+          CSV to avoid ambiguous batch-level uploads.
+        </InfoBanner>
 
         {status === "processing" && (
           <div className="flex items-center gap-2 text-sm text-base-content/60 py-6 justify-center">

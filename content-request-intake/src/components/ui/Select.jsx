@@ -1,0 +1,46 @@
+/**
+ * Select — labeled select input, Galileo style
+ * options: [{ value, label }]
+ */
+export function Select({
+  label,
+  hint,
+  error,
+  required,
+  options = [],
+  placeholder = "Select…",
+  className = "",
+  containerClassName = "",
+  ...props
+}) {
+  return (
+    <div className={`form-control w-full ${containerClassName}`}>
+      {label && (
+        <label className="label pb-1">
+          <span className="label-text text-sm font-semibold text-base-content">
+            {label}
+            {required && <span className="text-error ml-0.5">*</span>}
+          </span>
+        </label>
+      )}
+      <select
+        className={`select select-bordered w-full ${error ? "select-error" : ""} ${className}`}
+        {...props}
+      >
+        <option value="" disabled>
+          {placeholder}
+        </option>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+      {error ? (
+        <span className="text-xs text-error mt-1">{error}</span>
+      ) : hint ? (
+        <span className="text-xs text-base-content/50 mt-1">{hint}</span>
+      ) : null}
+    </div>
+  );
+}

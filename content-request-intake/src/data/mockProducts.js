@@ -1,0 +1,86 @@
+/**
+ * mockProducts — product catalog for ProductLookupTable (Viz ID Change, Brand Request)
+ * Searchable by name / brand / UPC / EAN / retailer.
+ */
+export const mockProducts = [
+  {
+    id: "P-1001",
+    description: "GreenValley Organic Trail Mix, 12oz",
+    brand: "GreenValley Snacks",
+    upc: "041220012349",
+    ean: "8410045678231",
+    retailers: ["WMT", "TGT", "KR"],
+  },
+  {
+    id: "P-1002",
+    description: "GreenValley Organic Trail Mix, Family Size 24oz",
+    brand: "GreenValley Snacks",
+    upc: "041220012356",
+    ean: "8410045678248",
+    retailers: ["WMT", "CSCO"],
+  },
+  {
+    id: "P-1003",
+    description: "Nordic Naturals Omega-3 Fish Oil, 60ct",
+    brand: "Nordic Naturals",
+    upc: "768990123456",
+    ean: "7350053850019",
+    retailers: ["AMZ", "TGT"],
+  },
+  {
+    id: "P-1004",
+    description: "Nordic Naturals Kids DHA Gummies, 30ct",
+    brand: "Nordic Naturals",
+    upc: "768990123463",
+    ean: "7350053850026",
+    retailers: ["AMZ", "WMT", "ICART"],
+  },
+  {
+    id: "P-1005",
+    description: "SunBrew Cold Brew Coffee Concentrate, 32oz",
+    brand: "SunBrew Coffee",
+    upc: "852001234567",
+    ean: "4006381333931",
+    retailers: ["KR", "ICART", "TGT"],
+  },
+  {
+    id: "P-1006",
+    description: "SunBrew Espresso Roast Whole Bean, 2lb",
+    brand: "SunBrew Coffee",
+    upc: "852001234574",
+    ean: "4006381333948",
+    retailers: ["WMT", "CSCO", "SAMS"],
+  },
+  {
+    id: "P-1007",
+    description: "Fresh Fields Cold-Pressed Green Juice, 6-pack",
+    brand: "Fresh Fields",
+    upc: "071720098765",
+    ean: "5000112637922",
+    retailers: ["ICART", "WMT"],
+  },
+  {
+    id: "P-1008",
+    description: "PureCare Sensitive Skin Body Wash, 16oz",
+    brand: "PureCare",
+    upc: "301870055512",
+    ean: "3017620422003",
+    retailers: ["TGT", "AMZ", "KR"],
+  },
+  {
+    id: "P-1009",
+    description: "PureCare Fragrance-Free Lotion, 12oz",
+    brand: "PureCare",
+    upc: "301870055529",
+    ean: "3017620422010",
+    retailers: ["TGT", "WMT"],
+  },
+  {
+    id: "P-1010",
+    description: "GreenValley Sea Salt Almonds, 16oz",
+    brand: "GreenValley Snacks",
+    upc: "041220012370",
+    ean: "8410045678255",
+    retailers: ["SAMS", "CSCO", "WMT"],
+  },
+];

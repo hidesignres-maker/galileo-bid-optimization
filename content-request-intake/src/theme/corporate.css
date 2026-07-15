@@ -1,0 +1,61 @@
+/* ============================================================
+   Corporate — DaisyUI v5 custom theme
+   Source of truth: d).tokens.json (Figma "Corporate" mode export)
+   Token architecture mirrors galileo.css (bid optimization):
+     1. Global raw tokens (text/surfaces not covered by DaisyUI semantics)
+     2. Semantic UI (DaisyUI --color-* roles)
+     3. Shape (radius / border width)
+   ============================================================ */
+
+/* ============================================================
+   GLOBAL TOKENS
+   ============================================================ */
+:root {
+  --font-primary: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-code: "Roboto Mono", ui-monospace, monospace;
+}
+
+/* ============================================================
+   SEMANTIC UI (DaisyUI v5 "corporate" theme)
+   1:1 mapping from d).tokens.json theme(01).color
+   ============================================================ */
+@plugin "daisyui/theme" {
+  name: "corporate";
+  default: true;
+
+  /* ── Primary & Secondary ── */
+  --color-primary:         #0082CE;
+  --color-primary-content: #FFFFFF;
+
+  --color-secondary:         #61738D;
+  --color-secondary-content: #FFFFFF;
+
+  /* ── Semantic status ── */
+  --color-success:         #00A43B;
+  --color-success-content: #FFFFFF;
+
+  --color-warning:         #FDC700;
+  --color-warning-content: #000000;
+
+  --color-error:         #FF6266;
+  --color-error-content: #000000;
+
+  --color-info:         #0090B5;
+  --color-info-content: #FFFFFF;
+
+  /* ── Base surfaces ── */
+  --color-base-100:     #FFFFFF;
+  --color-base-200:     #E8E8E8;
+  --color-base-300:     #D1D1D1;
+  --color-base-content: #181A2A;
+
+  /* ── Neutral ── */
+  --color-neutral:         #000000;
+  --color-neutral-content: #FFFFFF;
+
+  /* ── Radius & border — theme(01).radius / border (width) ── */
+  --radius-selector: 0.25rem; /* sm — 4px, checkboxes/radios */
+  --radius-field:    0.5rem;  /* md — 8px, inputs/buttons */
+  --radius-box:      1rem;    /* lg — 16px, cards */
+  --border:          1px;
+}

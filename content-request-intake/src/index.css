@@ -1,0 +1,9 @@
+@import "tailwindcss";
+@import "./theme/corporate.css";
+@plugin "daisyui" {
+  themes: corporate;
+}
+
+body {
+  font-family: var(--font-primary);
+}

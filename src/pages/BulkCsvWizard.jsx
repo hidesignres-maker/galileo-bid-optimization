@@ -21,7 +21,6 @@ const BULK_STEPS = ["Download Template", "Upload Template", "Review", "Confirm"]
  */
 export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [requestType, setRequestType] = useState("vizId");
   const [rows, setRows] = useState([]);
   const [batch, setBatch] = useState(null);
 
@@ -29,10 +28,10 @@ export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
 
   const handleUploadComplete = (uploadedRows) => {
     setRows(uploadedRows);
+    // No batch-level requestType — rows carry their own. Kept here only as
+    // a display convenience for "this batch contains: Viz ID, Innovation…".
     setBatch(
       createBulkBatch({
-        requestType,
-        templateName: `${requestType}-request-template.csv`,
         rowCount: uploadedRows.length,
       })
     );
@@ -56,9 +55,7 @@ export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
 
       <WizardStepper steps={BULK_STEPS} currentStep={currentStep} furthestStep={BULK_STEPS.length - 1} />
 
-      {stepName === "Download Template" && (
-        <CsvTemplateStep requestType={requestType} onRequestTypeChange={setRequestType} />
-      )}
+      {stepName === "Download Template" && <CsvTemplateStep />}
 
       {stepName === "Upload Template" && <CsvUploadStep onUploadComplete={handleUploadComplete} />}
 

@@ -1,5 +1,5 @@
 /**
- * mockRetailers — retailer list used across Step 3 (RetailerDateGroups)
+ * mockRetailers — retailer list used across Step 3 (RetailerDatesStep)
  * `code` drives conditional logic (e.g. AMZ requires Start Ship Date in Innovation).
  */
 export const mockRetailers = [

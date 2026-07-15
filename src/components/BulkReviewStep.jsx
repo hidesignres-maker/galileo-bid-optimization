@@ -15,6 +15,7 @@ const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name
 export function BulkReviewStep({ rows }) {
   const willCreateCount = rows.filter((r) => r.willCreateRequest && r.status !== "issue").length;
   const issueCount = rows.filter((r) => r.status === "issue").length;
+  const types = Array.from(new Set(rows.map((r) => r.requestType).filter(Boolean)));
 
   return (
     <Card title="Review">
@@ -25,6 +26,12 @@ export function BulkReviewStep({ rows }) {
           Review requests before confirming.
         </InfoBanner>
 
+        {types.length > 1 && (
+          <p className="text-xs text-base-content/50">
+            This upload mixes request types: {types.map((t) => REQUEST_TYPE_LABELS[t] ?? t).join(", ")}.
+          </p>
+        )}
+
         {rows.length === 0 ? (
           <p className="text-sm text-base-content/50 text-center py-8">No rows to review.</p>
         ) : (
@@ -33,7 +40,7 @@ export function BulkReviewStep({ rows }) {
               <tr>
                 <th>Title</th>
                 <th>Request Type</th>
-                <th>Launch Date</th>
+                <th>Date</th>
                 <th>Content Type</th>
                 <th>Retailer</th>
                 <th>Status</th>
@@ -46,7 +53,9 @@ export function BulkReviewStep({ rows }) {
                   <td className="text-base-content/70">
                     {REQUEST_TYPE_LABELS[row.requestType] ?? row.requestType}
                   </td>
-                  <td className="text-base-content/70">{fmtDate(row.launchDate)}</td>
+                  <td className="text-base-content/70">
+                    {fmtDate(row.requestType === "brandRequest" ? row.dueDate : row.launchDate)}
+                  </td>
                   <td className="text-base-content/70">{row.contentType ?? "—"}</td>
                   <td className="text-base-content/70">
                     {row.retailer ? retailerLabel(row.retailer) : "—"}

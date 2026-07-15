@@ -56,16 +56,28 @@ export function createRequest(partial = {}) {
 
 /**
  * BulkRow — one CSV row, reviewed as a future request/task (not a product).
+ *
+ * Confirmed product rule: each row carries its OWN requestType. A single
+ * Bulk CSV upload can mix Viz ID Change, Brand Request, and Innovation rows
+ * — do not assume one upload = one request type. `requestType` here is the
+ * source of truth per row; there is no batch-level request type.
+ *
  * `willCreateRequest` exists so a later "group rows into one request" option
  * (Open Question #1) can flip specific rows off without changing the shape.
+ *
+ * Both `launchDate` and `dueDate` exist because different request types use
+ * different date semantics (Viz ID/Innovation lean on launchDate, Brand
+ * Request on a due/launch date) — a row only needs to populate the one that
+ * applies to its own requestType.
  */
 export function createBulkRow(partial = {}) {
   return {
     id: nextId("ROW"),
+    requestType: "vizId", // "vizId" | "brandRequest" | "innovation" — per row
     title: "",
     description: "",
-    requestType: "vizId",
     launchDate: null,
+    dueDate: null,
     contentType: null,
     retailer: null,
     status: "ready", // "ready" | "issue"
@@ -76,12 +88,14 @@ export function createBulkRow(partial = {}) {
 
 /**
  * BulkBatch — the upload event that produced a set of BulkRows / Requests.
+ * No single `requestType` here on purpose — a batch can (and typically
+ * will) contain mixed request types across its rows. Use
+ * `distinctRequestTypes(rows)` below when a summary is needed.
  */
 export function createBulkBatch(partial = {}) {
   return {
     id: nextId("BATCH"),
-    requestType: "vizId",
-    templateName: "",
+    templateName: "bulk-request-template.csv",
     uploadedAt: new Date().toISOString().slice(0, 10),
     rowCount: 0,
     createdRequestCount: 0,
@@ -89,6 +103,11 @@ export function createBulkBatch(partial = {}) {
     rows: [],
     ...partial,
   };
+}
+
+/** Distinct request types present across a set of rows, for summary copy. */
+export function distinctRequestTypes(rows) {
+  return Array.from(new Set(rows.map((r) => r.requestType).filter(Boolean)));
 }
 
 /** Very simple "due this period" check — current calendar month. */
@@ -110,7 +129,7 @@ export function bulkRowToRequest(row, batchId) {
     title: row.title,
     description: row.description,
     launchDate: row.launchDate,
-    dueDate: row.launchDate,
+    dueDate: row.dueDate ?? row.launchDate,
     contentTypes: row.contentType ? [row.contentType] : [],
     retailers: row.retailer ? [row.retailer] : [],
     status: REQUEST_STATUS.NEEDS_ACTION,

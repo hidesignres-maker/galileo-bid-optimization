@@ -37,6 +37,14 @@ export function BulkReviewStep({ rows }) {
           </p>
         )}
 
+        {/* Partial-success behavior is kept as-is for this pass — flagged
+            here rather than silently assumed, since it hasn't been
+            confirmed with product yet. */}
+        <p className="text-xs text-base-content/50 italic">
+          Assumption: ready rows will be created and rows with issues will be skipped. Validate
+          partial import behavior with Gowri.
+        </p>
+
         {rows.length === 0 ? (
           <p className="text-sm text-base-content/50 text-center py-8">No rows to review.</p>
         ) : (

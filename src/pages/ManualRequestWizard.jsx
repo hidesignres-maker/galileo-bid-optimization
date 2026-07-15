@@ -11,7 +11,7 @@ import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { InfoBanner } from "../components/ui/InfoBanner";
 import { mockProducts } from "../data/mockProducts";
-import { getDetailsValidationErrors } from "../lib/businessRules";
+import { getDetailsValidationErrors, isItemRowValid } from "../lib/businessRules";
 import { groupProductsByRetailer } from "../lib/groupByRetailer";
 import { createRequest } from "../lib/models";
 
@@ -39,9 +39,17 @@ const initialFormData = {
  * steps → Create Request. Request Type used to be folded into Step 1 of one
  * generic wizard; it's now its own screen, since it determines which steps
  * exist at all (Innovation's step list is a different length).
+ *
+ * `initialRequestType` — optional. CreateRequestLauncher (the Queue's "New
+ * Request" modal) now collects Request Type up front for Manual, since
+ * Manual creates exactly one request and the type can't be deferred. When
+ * provided, the in-page type gate below is skipped entirely and the correct
+ * step list renders immediately. When omitted (e.g. this component is used
+ * directly, or the launcher is bypassed), the old gate remains as a
+ * fallback so the component still works on its own.
  */
-export function ManualRequestWizard({ onCreateRequest, onCancel }) {
-  const [requestType, setRequestType] = useState(null);
+export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestType = null }) {
+  const [requestType, setRequestType] = useState(initialRequestType);
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState(initialFormData);
   const [products, setProducts] = useState([]);
@@ -98,6 +106,16 @@ export function ManualRequestWizard({ onCreateRequest, onCancel }) {
   const handleNext = () => {
     if (steps[currentStep] === "Details" || steps[currentStep] === "Details & Item Inputs") {
       const validationErrors = getDetailsValidationErrors(formData, { requireDate: !isInnovation });
+
+      // Blocking validation for Innovation item inputs — UPC, Retailer,
+      // Customer ID, Product Title, Brand, On Sale Date always required;
+      // Start Ship Date required when Retailer is AMZ (isItemRowValid,
+      // businessRules.js). A single invalid row blocks Continue to Review.
+      if (isInnovation && itemInputs.some((item) => !isItemRowValid(item))) {
+        validationErrors.items =
+          "Some item inputs are missing required fields. Complete all required fields before continuing.";
+      }
+
       setErrors(validationErrors);
       if (Object.keys(validationErrors).length > 0) return;
     }
@@ -165,7 +183,10 @@ export function ManualRequestWizard({ onCreateRequest, onCancel }) {
               showDate={!isInnovation}
             />
             {isInnovation && (
-              <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
+              <>
+                <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
+                {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
+              </>
             )}
           </div>
         </Card>

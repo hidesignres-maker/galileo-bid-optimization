@@ -1,16 +1,15 @@
 import { useState } from "react";
 import { ArrowLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { ContentRequestQueue } from "./pages/ContentRequestQueue";
-import { NewRequestEntry } from "./pages/NewRequestEntry";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
 import { BulkCsvWizard } from "./pages/BulkCsvWizard";
+import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
 import { mockRequests } from "./data/mockRequests";
 
 const BREADCRUMB_BY_VIEW = {
   queue: [["Content Request Queue"]],
-  entry: [["Content Request", "queue"], ["New Request"]],
-  manual: [["Content Request", "queue"], ["New Request", "entry"], ["Build Manually"]],
-  bulk: [["Content Request", "queue"], ["New Request", "entry"], ["Bulk CSV Import"]],
+  manual: [["Content Request", "queue"], ["New Request", "queue"], ["Build Manually"]],
+  bulk: [["Content Request", "queue"], ["New Request", "queue"], ["Bulk CSV Import"]],
 };
 
 /**
@@ -18,11 +17,21 @@ const BREADCRUMB_BY_VIEW = {
  * Holds the in-memory "requests database" so requests created by either
  * wizard immediately show up back in the Queue.
  *
- * queue -> entry -> manual | bulk -> (create) -> back to queue
+ * queue -> (New Request opens CreateRequestLauncher modal) -> manual | bulk
+ *   -> (create) -> back to queue
+ *
+ * The old separate "entry" page (NewRequestEntry) has been replaced by the
+ * CreateRequestLauncher modal, which now also collects Manual's Request
+ * Type up front (Manual creates exactly one request, so the type can't be
+ * deferred). Bulk CSV never asks for a request type here — each CSV row
+ * carries its own Request_Type column, so Bulk goes straight to
+ * BulkCsvWizard once "Bulk CSV import" is chosen.
  */
 export default function App() {
   const [view, setView] = useState("queue");
   const [requests, setRequests] = useState(mockRequests);
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [initialManualRequestType, setInitialManualRequestType] = useState(null);
 
   const goTo = (v) => setView(v);
 
@@ -36,6 +45,17 @@ export default function App() {
     setView("queue");
   };
 
+  const handleLauncherContinue = (method, requestType) => {
+    if (method === "manual") {
+      setInitialManualRequestType(requestType);
+      setView("manual");
+    } else {
+      setInitialManualRequestType(null);
+      setView("bulk");
+    }
+    setIsCreateModalOpen(false);
+  };
+
   const crumbs = BREADCRUMB_BY_VIEW[view];
 
   return (
@@ -46,7 +66,7 @@ export default function App() {
             <button
               type="button"
               className="mr-0.5"
-              onClick={() => goTo(view === "manual" || view === "bulk" ? "entry" : "queue")}
+              onClick={() => goTo("queue")}
               aria-label="Back"
             >
               <ArrowLeftIcon className="w-4 h-4" />
@@ -69,24 +89,18 @@ export default function App() {
         {view === "queue" && (
           <>
             <h1 className="text-2xl font-bold text-base-content mb-6">Content Request Queue</h1>
-            <ContentRequestQueue requests={requests} onNewRequest={() => goTo("entry")} />
-          </>
-        )}
-
-        {view === "entry" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">New Request</h1>
-            <NewRequestEntry
-              onChooseMethod={(method) => goTo(method === "manual" ? "manual" : "bulk")}
-              onCancel={() => goTo("queue")}
-            />
+            <ContentRequestQueue requests={requests} onNewRequest={() => setIsCreateModalOpen(true)} />
           </>
         )}
 
         {view === "manual" && (
           <>
             <h1 className="text-2xl font-bold text-base-content mb-6">Build Manually</h1>
-            <ManualRequestWizard onCreateRequest={handleRequestCreated} onCancel={() => goTo("queue")} />
+            <ManualRequestWizard
+              initialRequestType={initialManualRequestType}
+              onCreateRequest={handleRequestCreated}
+              onCancel={() => goTo("queue")}
+            />
           </>
         )}
 
@@ -97,6 +111,13 @@ export default function App() {
           </>
         )}
       </main>
+
+      {isCreateModalOpen && (
+        <CreateRequestLauncher
+          onCancel={() => setIsCreateModalOpen(false)}
+          onContinue={handleLauncherContinue}
+        />
+      )}
     </div>
   );
 }

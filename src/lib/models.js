@@ -134,6 +134,28 @@ export function isDueThisPeriod(dateStr, today = new Date()) {
 }
 
 /**
+ * Best available "Due / Launch" date for a Request, for display in the
+ * Queue table. Manually-created Innovation requests never populate
+ * dueDate/launchDate at the request level (those dates live per item, in
+ * itemInputs[].onSaleDate — see ManualRequestWizard.handleCreateRequest),
+ * which previously left the Queue's Due/Launch column blank for them.
+ *
+ * Order: request.dueDate → request.launchDate → earliest
+ * itemInputs[].onSaleDate → null. ISO date strings (YYYY-MM-DD) sort
+ * correctly as plain strings, so no Date parsing is needed to find the
+ * earliest one.
+ */
+export function getRequestDisplayDate(request) {
+  if (request.dueDate) return request.dueDate;
+  if (request.launchDate) return request.launchDate;
+  const onSaleDates = (request.itemInputs ?? [])
+    .map((item) => item.onSaleDate)
+    .filter(Boolean)
+    .sort();
+  return onSaleDates[0] ?? null;
+}
+
+/**
  * Convert one BulkRow + its batch into a real placeholder Request.
  * Placeholder because assignee/assets/etc. are expected to be filled in
  * later, closer to the work date (see Bulk purpose in the product spec).

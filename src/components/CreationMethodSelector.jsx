@@ -2,12 +2,12 @@ const OPTIONS = [
   {
     value: "manual",
     title: "Build manually",
-    description: "Create one request. Search products or enter item inputs directly.",
+    description: "Create one request by completing a form.",
   },
   {
     value: "bulkCsv",
     title: "Bulk CSV import",
-    description: "Upload a CSV to create many requests at once — e.g. a Q4 Viz ID calendar.",
+    description: "Create multiple requests from a spreadsheet. Each row becomes one request.",
   },
 ];
 

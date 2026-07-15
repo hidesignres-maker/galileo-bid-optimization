@@ -6,6 +6,7 @@ import { Button } from "../components/ui/Button";
 import { mockRetailers } from "../data/mockRetailers";
 import { REQUEST_TYPE_LABELS } from "../data/formOptions";
 import { fmtDate } from "../lib/format";
+import { getRequestDisplayDate } from "../lib/models";
 
 const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
 
@@ -70,7 +71,7 @@ export function ContentRequestQueue({ requests, onNewRequest }) {
                 <td className="text-base-content/70">
                   {req.assignee || <span className="text-base-content/40">Unassigned</span>}
                 </td>
-                <td className="text-base-content/70">{fmtDate(req.dueDate)}</td>
+                <td className="text-base-content/70">{fmtDate(getRequestDisplayDate(req))}</td>
                 <td className="text-base-content/70">
                   {(req.retailers ?? []).map(retailerLabel).join(", ") || "—"}
                 </td>

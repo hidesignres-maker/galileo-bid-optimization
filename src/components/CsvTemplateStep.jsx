@@ -8,7 +8,7 @@ import { InfoBanner } from "./ui/InfoBanner";
 // columns are blank on a Viz ID row, and vice versa for launch_date vs.
 // due_date). This is what makes mixed-type uploads possible: one file, one
 // column set, a type column per row telling the app how to read the rest.
-const COMBINED_TEMPLATE_COLUMNS = [
+export const COMBINED_TEMPLATE_COLUMNS = [
   "request_type", // vizId | brandRequest | innovation — required, per row
   "title",
   "description",

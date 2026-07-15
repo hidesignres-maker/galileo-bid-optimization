@@ -3,7 +3,7 @@ import { createBulkRow } from "../lib/models";
 /**
  * mockBulkRows — simulates what a mixed-type "Q4 planning calendar" CSV
  * upload would look like once parsed. No real CSV parsing happens anywhere
- * — this fixed array stands in for the parsed result after CsvUploadStep.
+ * — this fixed array stands in for the parsed result after ImportCsvStep's upload.
  *
  * Confirmed product rule: a single upload can mix Viz ID Change, Brand
  * Request, and Innovation rows — each row carries its own requestType.

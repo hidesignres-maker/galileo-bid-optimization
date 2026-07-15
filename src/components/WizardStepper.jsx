@@ -7,7 +7,7 @@ import { CheckIcon } from "@heroicons/react/24/solid";
  * are genuinely different flows with different step counts/labels:
  *   Manual, Viz ID/Brand Request: Details, Products, Retailers, Review
  *   Manual, Innovation:           Details & Item Inputs, Review
- *   Bulk CSV:                     Download Template, Upload Template, Review, Confirm
+ *   Bulk CSV:                     Import CSV, Review, Confirm
  * Reusing one fixed 4-label stepper for all of these was the bug in the
  * previous version — Innovation was forced through a "Retailers" step it
  * doesn't need, and Bulk was jammed into the Manual wizard's step 2.

@@ -14,7 +14,7 @@ import { RequestTypeSelector } from "./RequestTypeSelector";
  *    required up front (it becomes ManualRequestWizard's initialRequestType,
  *    skipping its old in-page type gate).
  *  - Bulk CSV creates MANY requests, one per row, and each row carries its
- *    own Request_Type column (see CsvTemplateStep / bulkRowToRequest) — so
+ *    own Request_Type column (see ImportCsvStep / bulkRowToRequest) — so
  *    there is no batch-level type to choose here. Selecting Bulk shows
  *    informational copy instead of a required selector.
  *

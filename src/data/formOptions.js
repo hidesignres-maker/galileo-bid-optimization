@@ -29,8 +29,11 @@ export const mockAssignees = [
   { value: "jordan.lee", label: "Jordan Lee" },
 ];
 
+// Display label only — the enum value stays "vizId" everywhere in code
+// (createRequest/createBulkRow/STEPS_BY_TYPE/etc.); only this label changed
+// from "Viz ID Change" to "VizID Change" for copy consistency.
 export const REQUEST_TYPE_LABELS = {
-  vizId: "Viz ID Change",
+  vizId: "VizID Change",
   brandRequest: "Brand Request",
   innovation: "Innovation",
 };

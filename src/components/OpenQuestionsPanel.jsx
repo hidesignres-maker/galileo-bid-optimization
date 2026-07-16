@@ -19,7 +19,7 @@ const OPEN_QUESTIONS = [
 // Kept visible for traceability — confirms what used to be open and is now
 // settled, so it isn't re-litigated or mistaken for still-undecided.
 const RESOLVED_QUESTIONS = [
-  "Confirmed: Bulk CSV supports request type per row (request_type column). A single upload can mix Viz ID Change, Brand Request, and Innovation rows — there is no batch-level request type.",
+  "Confirmed: Bulk CSV supports request type per row (request_type column). A single upload can mix VizID Change, Brand Request, and Innovation rows — there is no batch-level request type.",
 ];
 
 export function OpenQuestionsPanel() {

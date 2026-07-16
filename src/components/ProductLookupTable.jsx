@@ -9,7 +9,7 @@ import { mockRetailers } from "../data/mockRetailers";
 const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
 
 /**
- * ProductLookupTable — shared by Viz ID Change and Brand Request manual mode.
+ * ProductLookupTable — shared by VizID Change and Brand Request manual mode.
  * Search by name / brand / UPC / EAN / retailer. Selected rows are added to
  * `products` in wizard state via onAddSelected.
  *

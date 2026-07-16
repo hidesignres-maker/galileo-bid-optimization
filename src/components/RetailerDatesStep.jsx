@@ -18,7 +18,7 @@ const DATE_COLUMN_LABEL = {
 };
 
 /**
- * RetailerDatesStep — Viz ID Change / Brand Request only. Innovation never
+ * RetailerDatesStep — VizID Change / Brand Request only. Innovation never
  * reaches this step: it captures retailer per item in
  * InnovationItemInputForm, so re-reviewing retailers here would be
  * redundant (and was the previous prototype's bug).

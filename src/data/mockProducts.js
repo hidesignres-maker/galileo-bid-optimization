@@ -1,5 +1,5 @@
 /**
- * mockProducts — product catalog for ProductLookupTable (Viz ID Change, Brand Request)
+ * mockProducts — product catalog for ProductLookupTable (VizID Change, Brand Request)
  * Searchable by name / brand / UPC / EAN / retailer.
  */
 export const mockProducts = [

@@ -16,12 +16,12 @@ import { groupProductsByRetailer } from "../lib/groupByRetailer";
 import { createRequest } from "../lib/models";
 
 const STEPS_BY_TYPE = {
-  vizId: ["Details", "Products", "Retailers", "Review"],
-  brandRequest: ["Details", "Products", "Retailers", "Review"],
+  vizId: ["Details", "Products", "Retailers", "Review & Create"],
+  brandRequest: ["Details", "Products", "Retailers", "Review & Create"],
   // Innovation skips Retailers entirely — retailer is captured per item in
   // the Details & Item Inputs step. Reaching a separate Retailers step here
   // was the previous prototype's bug (explicit stakeholder feedback).
-  innovation: ["Details & Item Inputs", "Review"],
+  innovation: ["Details & Item Inputs", "Review & Create"],
 };
 
 const initialFormData = {
@@ -230,7 +230,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         />
       )}
 
-      {stepName === "Review" && (
+      {stepName === "Review & Create" && (
         <ManualReviewStep
           requestType={requestType}
           formData={formData}
@@ -251,7 +251,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
             </Button>
           )}
         </div>
-        {stepName === "Review" ? (
+        {stepName === "Review & Create" ? (
           <Button variant="success" onClick={handleCreateRequest}>
             Create Request
           </Button>

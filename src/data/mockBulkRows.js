@@ -5,7 +5,7 @@ import { createBulkRow } from "../lib/models";
  * upload would look like once parsed. No real CSV parsing happens anywhere
  * — this fixed array stands in for the parsed result after ImportCsvStep's upload.
  *
- * Confirmed product rule: a single upload can mix Viz ID Change, Brand
+ * Confirmed product rule: a single upload can mix VizID Change, Brand
  * Request, and Innovation rows — each row carries its own requestType.
  * This mock deliberately includes all three so Review/Confirm demonstrate
  * mixed-type handling, not a single-type batch.

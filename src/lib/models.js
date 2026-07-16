@@ -80,7 +80,7 @@ export function createRequest(partial = {}) {
  * BulkRow — one CSV row, reviewed as a future request/task (not a product).
  *
  * Confirmed product rule: each row carries its OWN requestType. A single
- * Bulk CSV upload can mix Viz ID Change, Brand Request, and Innovation rows
+ * Bulk CSV upload can mix VizID Change, Brand Request, and Innovation rows
  * — do not assume one upload = one request type. `requestType` here is the
  * source of truth per row; there is no batch-level request type.
  *

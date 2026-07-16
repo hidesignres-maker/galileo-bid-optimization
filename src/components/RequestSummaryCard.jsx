@@ -16,8 +16,15 @@ function contentTypeLabels(requestType, values) {
  * is something to show, per "prefer not to make Review too heavy." Returns
  * null (renders nothing) when no files were added and no reference link was
  * entered, rather than showing an empty "No supporting content added" line.
+ * Never shows the actual URL — just "Added" — and never breaks files/links
+ * out per item (contentRequirements is request-level/shared, not per item).
+ *
+ * `sectionLabel` is optional — Innovation passes "Supporting materials" so
+ * Review groups these two rows under that heading (matches the section
+ * name shown during creation); VizID Change / Brand Request omit it,
+ * unchanged from before.
  */
-function ContentRequirementsRows({ contentRequirements }) {
+function ContentRequirementsRows({ contentRequirements, sectionLabel }) {
   const fileCount = contentRequirements?.files?.length ?? 0;
   const hasLink = Boolean(contentRequirements?.referenceLink);
 
@@ -25,6 +32,13 @@ function ContentRequirementsRows({ contentRequirements }) {
 
   return (
     <>
+      {sectionLabel && (
+        <div className="pt-2">
+          <span className="text-xs font-semibold text-base-content/50 uppercase tracking-wide">
+            {sectionLabel}
+          </span>
+        </div>
+      )}
       {fileCount > 0 && (
         <SummaryRow label="Files">
           {fileCount} file{fileCount === 1 ? "" : "s"} added
@@ -88,7 +102,10 @@ export function RequestSummaryCard({
           {distinctRetailerCodes.map(retailerLabel).join(", ") || "—"}
         </SummaryRow>
         <SummaryRow label="Assignee">{formData.assignee || "Unassigned"}</SummaryRow>
-        <ContentRequirementsRows contentRequirements={formData.contentRequirements} />
+        <ContentRequirementsRows
+          contentRequirements={formData.contentRequirements}
+          sectionLabel="Supporting materials"
+        />
       </Card>
     );
   }

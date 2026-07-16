@@ -5,6 +5,7 @@ import { RequestTypeSelector } from "../components/RequestTypeSelector";
 import { ManualDetailsForm } from "../components/ManualDetailsForm";
 import { ProductLookupTable } from "../components/ProductLookupTable";
 import { InnovationItemInputForm, makeBlankItem } from "../components/InnovationItemInputForm";
+import { ContentRequirementsSection } from "../components/ContentRequirementsSection";
 import { RetailerDatesStep } from "../components/RetailerDatesStep";
 import { ManualReviewStep } from "../components/ManualReviewStep";
 import { Card } from "../components/ui/Card";
@@ -195,11 +196,26 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
               errors={errors}
               onFieldChange={patchField}
               showDate={!isInnovation}
+              showContentRequirements={!isInnovation}
             />
             {isInnovation && (
               <>
                 <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
                 {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
+
+                {/* TEMP ASSUMPTION: Manual Innovation keeps multiple item
+                    inputs grouped in one request, and supporting materials
+                    are shared at request level until product confirms
+                    whether item-level attachments or one-ticket-per-item
+                    behavior is required. Rendered here (after Item Inputs,
+                    not inside ManualDetailsForm) because item inputs are
+                    Innovation's primary object — users should enter items
+                    before adding shared supporting materials. */}
+                <ContentRequirementsSection
+                  requestType={requestType}
+                  value={formData.contentRequirements}
+                  onChange={(next) => patchField("contentRequirements", next)}
+                />
               </>
             )}
           </div>

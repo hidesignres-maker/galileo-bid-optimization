@@ -1,25 +1,32 @@
 /**
  * formOptions — static dropdown options for Step 1 Details.
- * Content type options differ slightly by request type per the spec.
+ *
+ * Content type options: previously differed by request type (e.g.
+ * Innovation had "New Item Setup" / "Enhanced Content" / "A+ Content"),
+ * which read like request categories or deliverable packages rather than
+ * actual content types — confusing copy. Standardized to one simple,
+ * flow-independent list: Images / Copy / Video / Product data. These are
+ * genuine content formats, so the same four apply regardless of request
+ * type (VizID Change, Brand Request, or Innovation).
+ *
+ * Note: this required new option values (images/copy/video/product_data),
+ * not just relabeled ones — the old values (enhanced_content, a_plus,
+ * lifestyle_images, brand_store, new_item_setup) don't correspond 1:1 to
+ * the new copy, so a label-only change wasn't possible here. Bulk CSV is
+ * unaffected: its contentType is a free-text CSV column, never looked up
+ * against this list (see BulkReviewStep / ImportCsvStep).
  */
+const CONTENT_TYPE_OPTIONS = [
+  { value: "images", label: "Images" },
+  { value: "copy", label: "Copy" },
+  { value: "video", label: "Video" },
+  { value: "product_data", label: "Product data" },
+];
+
 export const CONTENT_TYPE_OPTIONS_BY_FLOW = {
-  vizId: [
-    { value: "enhanced_content", label: "Enhanced Content" },
-    { value: "a_plus", label: "A+ Content" },
-    { value: "lifestyle_images", label: "Lifestyle Images" },
-    { value: "video", label: "Video" },
-  ],
-  brandRequest: [
-    { value: "enhanced_content", label: "Enhanced Content" },
-    { value: "a_plus", label: "A+ Content" },
-    { value: "brand_store", label: "Brand Store Update" },
-    { value: "video", label: "Video" },
-  ],
-  innovation: [
-    { value: "new_item_setup", label: "New Item Setup" },
-    { value: "enhanced_content", label: "Enhanced Content" },
-    { value: "a_plus", label: "A+ Content" },
-  ],
+  vizId: CONTENT_TYPE_OPTIONS,
+  brandRequest: CONTENT_TYPE_OPTIONS,
+  innovation: CONTENT_TYPE_OPTIONS,
 };
 
 export const mockAssignees = [

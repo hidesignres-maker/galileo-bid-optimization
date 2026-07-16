@@ -11,6 +11,30 @@ function contentTypeLabels(requestType, values) {
   return (values ?? []).map((v) => options.find((o) => o.value === v)?.label ?? v);
 }
 
+/**
+ * Compact, conditional content-requirements rows — only rendered when there
+ * is something to show, per "prefer not to make Review too heavy." Returns
+ * null (renders nothing) when no files were added and no reference link was
+ * entered, rather than showing an empty "No supporting content added" line.
+ */
+function ContentRequirementsRows({ contentRequirements }) {
+  const fileCount = contentRequirements?.files?.length ?? 0;
+  const hasLink = Boolean(contentRequirements?.referenceLink);
+
+  if (fileCount === 0 && !hasLink) return null;
+
+  return (
+    <>
+      {fileCount > 0 && (
+        <SummaryRow label="Files">
+          {fileCount} file{fileCount === 1 ? "" : "s"} added
+        </SummaryRow>
+      )}
+      {hasLink && <SummaryRow label="Reference link">Added</SummaryRow>}
+    </>
+  );
+}
+
 function SummaryRow({ label, children }) {
   return (
     <div className="flex items-start justify-between gap-4 py-1.5 border-b border-base-300/60 last:border-b-0">
@@ -64,6 +88,7 @@ export function RequestSummaryCard({
           {distinctRetailerCodes.map(retailerLabel).join(", ") || "—"}
         </SummaryRow>
         <SummaryRow label="Assignee">{formData.assignee || "Unassigned"}</SummaryRow>
+        <ContentRequirementsRows contentRequirements={formData.contentRequirements} />
       </Card>
     );
   }
@@ -85,6 +110,7 @@ export function RequestSummaryCard({
         {distinctRetailerCodes.map(retailerLabel).join(", ") || "—"}
       </SummaryRow>
       <SummaryRow label="Assignee">{formData.assignee || "Unassigned"}</SummaryRow>
+      <ContentRequirementsRows contentRequirements={formData.contentRequirements} />
     </Card>
   );
 }

@@ -48,13 +48,23 @@ export function createRequest(partial = {}) {
     itemInputs: [],
     assets: [],
     // contentRequirements — supporting-content references for this request.
-    // `files` stays empty here: no real file upload exists anywhere in this
-    // prototype. For Bulk-created requests, referenceLinks/assetLinks/
-    // contentNotes come straight from the row's CSV columns (see
-    // bulkRowToRequest below). Actual file attachments are expected to be
-    // added later, in a request detail view that doesn't exist yet.
+    // Shape is a superset shared by both creation paths, since they collect
+    // different fields:
+    //   - Manual: `files` (mocked — see ManualDetailsForm) + `referenceLink`
+    //     (one link, typed at creation time, per Gowri's clarification that
+    //     Manual should support this at creation, not only in detail view).
+    //   - Bulk CSV: `referenceLinks` / `assetLinks` / `contentNotes`, mapped
+    //     straight from the row's CSV columns (see bulkRowToRequest below).
+    //     Bulk never populates `files` or `referenceLink` — there is no
+    //     global file uploader in Bulk (see csvTemplate.js / ImportCsvStep):
+    //     one CSV upload creates many separate requests, so a batch-level
+    //     file would be ambiguous about which row it belongs to.
+    // No real file upload anywhere in this prototype. Actual file
+    // attachments are expected to be added later, in a request detail view
+    // that doesn't exist yet.
     contentRequirements: {
       files: [],
+      referenceLink: "",
       referenceLinks: "",
       assetLinks: "",
       contentNotes: "",
@@ -220,8 +230,10 @@ export function bulkRowToRequest(row, batchId) {
         : [],
     // Per-row references carry straight into the created request. No real
     // files here — see the comment on createRequest/createBulkRow above.
+    // referenceLink (singular, Manual's field) stays empty for Bulk rows.
     contentRequirements: {
       files: [],
+      referenceLink: "",
       referenceLinks: row.referenceLinks || "",
       assetLinks: row.assetLinks || "",
       contentNotes: row.contentNotes || "",

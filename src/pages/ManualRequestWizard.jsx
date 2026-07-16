@@ -30,6 +30,9 @@ const initialFormData = {
   defaultDate: "",
   contentTypes: [],
   assignee: "",
+  // Content requirements — Manual-only (see ManualDetailsForm). No notes
+  // field by design: Task description already covers task context.
+  contentRequirements: { files: [], referenceLink: "" },
 };
 
 /**
@@ -141,6 +144,17 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
       retailers: distinctRetailers,
       products: isInnovation ? [] : products,
       itemInputs: isInnovation ? itemInputs : [],
+      // Content requirements collected at creation time (Gowri's
+      // clarification) — files/referenceLink are Manual's own fields;
+      // referenceLinks/assetLinks/contentNotes stay empty here since those
+      // are Bulk CSV's per-row fields (see bulkRowToRequest in models.js).
+      contentRequirements: {
+        files: formData.contentRequirements.files,
+        referenceLink: formData.contentRequirements.referenceLink,
+        referenceLinks: "",
+        assetLinks: "",
+        contentNotes: "",
+      },
       status: "needs_action",
     });
     onCreateRequest(request);

@@ -10,7 +10,7 @@ const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name
  * ManualReviewStep — final review before "Create Request" (always exactly
  * one request in the manual flow).
  *
- * Viz ID / Brand Request: summary + retailer launch groups (from Products +
+ * VizID Change / Brand Request: summary + retailer launch groups (from Products +
  * Retailers steps).
  * Innovation: summary + a flat item-input list — no retailer grouping table,
  * since retailer/dates are already visible per item and there's no separate

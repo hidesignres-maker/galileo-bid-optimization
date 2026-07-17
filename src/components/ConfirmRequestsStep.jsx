@@ -10,11 +10,12 @@ import { REQUEST_TYPE_LABELS } from "../data/formOptions";
  * (see "Bulk purpose" in the product spec).
  *
  * The per-type breakdown below exists to make mixed-type uploads visible:
- * a single confirm can create Viz ID, Brand Request, and Innovation
+ * a single confirm can create VizID, Brand Request, and Innovation
  * requests together, since requestType is per row, not per batch.
  */
 export function ConfirmRequestsStep({ rows, onConfirm }) {
   const readyRows = rows.filter((r) => r.willCreateRequest && r.status !== "issue");
+  const excludedRows = rows.filter((r) => !r.willCreateRequest || r.status === "issue");
 
   const countsByType = readyRows.reduce((acc, r) => {
     acc[r.requestType] = (acc[r.requestType] ?? 0) + 1;
@@ -25,9 +26,17 @@ export function ConfirmRequestsStep({ rows, onConfirm }) {
     <Card title="Confirm">
       <div className="flex flex-col gap-4">
         <InfoBanner variant="info">
-          Confirming will create {readyRows.length} placeholder request
-          {readyRows.length === 1 ? "" : "s"} in the queue. Rows with issues are skipped and can
-          be re-uploaded later.
+          <div>
+            {rows.length} row{rows.length === 1 ? "" : "s"} uploaded · {readyRows.length} request
+            {readyRows.length === 1 ? "" : "s"} ready to create
+            {excludedRows.length > 0 &&
+              ` · ${excludedRows.length} row${excludedRows.length === 1 ? "" : "s"} excluded (needs attention)`}
+          </div>
+          <div className="mt-1">
+            Confirming will create {readyRows.length} placeholder request
+            {readyRows.length === 1 ? "" : "s"} in the queue. Rows with issues are skipped and can
+            be re-uploaded later.
+          </div>
         </InfoBanner>
 
         {Object.keys(countsByType).length > 0 && (

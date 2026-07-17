@@ -5,7 +5,7 @@
  * combinations" rule — Step 3 and Step 4 both consume its output.
  */
 
-// Viz ID / Brand Request: group by (retailer, launchDate) using each
+// VizID / Brand Request: group by (retailer, launchDate) using each
 // product's own retailers list and the request's default date (or the
 // product's own launchDate when imported via CSV).
 export function groupProductsByRetailer(products, defaultDate) {

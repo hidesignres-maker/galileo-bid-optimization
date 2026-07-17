@@ -25,6 +25,16 @@ function getReferencesSummary(row) {
   return "Notes added";
 }
 
+/** Retailer + content type, combined into one compact "Key details" cell —
+ * the table summarizes rows as future requests/tasks, not a full CSV
+ * column dump. */
+function getKeyDetails(row) {
+  const parts = [];
+  if (row.retailer) parts.push(retailerLabel(row.retailer));
+  if (row.contentType) parts.push(row.contentType);
+  return parts.length ? parts.join(" · ") : "—";
+}
+
 /**
  * BulkReviewStep — rows are reviewed as the requests/tasks they will
  * become, not as products. Copy deliberately says "requests"/"tasks",
@@ -70,12 +80,11 @@ export function BulkReviewStep({ rows }) {
             <thead>
               <tr>
                 <th>Status</th>
-                <th>Request Type</th>
-                <th>Title</th>
-                <th>Retailer</th>
-                <th>Date</th>
-                <th>Content Type</th>
-                <th>References</th>
+                <th>Request type</th>
+                <th>Request title</th>
+                <th>Key details</th>
+                <th>Due / Launch date</th>
+                <th>Supporting content</th>
                 <th>Issues</th>
               </tr>
             </thead>
@@ -97,13 +106,10 @@ export function BulkReviewStep({ rows }) {
                       {REQUEST_TYPE_LABELS[row.requestType] ?? row.requestType}
                     </td>
                     <td className="text-base-content">{displayTitle}</td>
-                    <td className="text-base-content/70">
-                      {row.retailer ? retailerLabel(row.retailer) : "—"}
-                    </td>
+                    <td className="text-base-content/70">{getKeyDetails(row)}</td>
                     <td className="text-base-content/70">
                       {fmtDate(row.requestType === "brandRequest" ? row.dueDate : row.launchDate)}
                     </td>
-                    <td className="text-base-content/70">{row.contentType ?? "—"}</td>
                     <td className="text-base-content/70">{getReferencesSummary(row)}</td>
                     <td className="text-base-content/70">
                       {row.issueReason ?? (row.status === "issue" ? "Needs attention" : "—")}

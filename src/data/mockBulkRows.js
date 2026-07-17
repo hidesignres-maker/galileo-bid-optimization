@@ -20,7 +20,7 @@ import { createBulkRow } from "../lib/models";
  */
 export const mockBulkRows = [
   createBulkRow({
-    title: "SunBrew Coffee — Viz ID refresh (Kroger)",
+    title: "SunBrew Coffee — VizID refresh (Kroger)",
     description: "Planned Q4 packaging callout removal.",
     requestType: "vizId",
     launchDate: "2026-10-05",
@@ -30,7 +30,7 @@ export const mockBulkRows = [
     status: "ready",
   }),
   createBulkRow({
-    title: "SunBrew Coffee — Viz ID refresh (Target)",
+    title: "SunBrew Coffee — VizID refresh (Target)",
     description: "Planned Q4 packaging callout removal.",
     requestType: "vizId",
     launchDate: "2026-10-12",
@@ -39,7 +39,7 @@ export const mockBulkRows = [
     status: "ready",
   }),
   createBulkRow({
-    title: "GreenValley Snacks — Viz ID refresh (Walmart)",
+    title: "GreenValley Snacks — VizID refresh (Walmart)",
     description: "New nutrition panel callout.",
     requestType: "vizId",
     launchDate: "2026-10-19",

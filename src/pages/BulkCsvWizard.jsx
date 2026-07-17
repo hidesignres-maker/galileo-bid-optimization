@@ -23,6 +23,12 @@ const BULK_STEPS = ["Import CSV", "Review", "Confirm"];
  * BulkCsvWizard — creates MANY requests, one per uploaded row (per the
  * corrected data model). Ends by calling onRequestsCreated with the full
  * array of new placeholder Requests.
+ *
+ * Open assumption: Bulk is currently treated as a global request
+ * generator — any mix of VizID Change, Brand Request, and Innovation rows
+ * in one file, no batch-level constraints. This hasn't been confirmed with
+ * product as final; see OpenQuestionsPanel for the running list of what's
+ * still open (including which fields are actually required per type).
  */
 export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -34,7 +40,7 @@ export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
   const handleUploadComplete = (uploadedRows) => {
     setRows(uploadedRows);
     // No batch-level requestType — rows carry their own. Kept here only as
-    // a display convenience for "this batch contains: Viz ID, Innovation…".
+    // a display convenience for "this batch contains: VizID, Innovation…".
     setBatch(
       createBulkBatch({
         rowCount: uploadedRows.length,

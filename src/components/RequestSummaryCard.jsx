@@ -127,7 +127,10 @@ export function RequestSummaryCard({
         {distinctRetailerCodes.map(retailerLabel).join(", ") || "—"}
       </SummaryRow>
       <SummaryRow label="Assignee">{formData.assignee || "Unassigned"}</SummaryRow>
-      <ContentRequirementsRows contentRequirements={formData.contentRequirements} />
+      <ContentRequirementsRows
+        contentRequirements={formData.contentRequirements}
+        sectionLabel="Content requirements"
+      />
     </Card>
   );
 }

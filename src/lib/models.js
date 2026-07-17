@@ -88,13 +88,13 @@ export function createRequest(partial = {}) {
  * (Open Question #1) can flip specific rows off without changing the shape.
  *
  * Both `launchDate` and `dueDate` exist because different request types use
- * different date semantics (Viz ID/Innovation lean on launchDate, Brand
+ * different date semantics (VizID/Innovation lean on launchDate, Brand
  * Request on a due/launch date) — a row only needs to populate the one that
  * applies to its own requestType.
  *
  * upc/customerId/productTitle/brand/startShipDate/onSaleDate/ecommPackDetails
  * only apply to Innovation rows (mirrors the combined CSV template, where
- * these columns are simply left blank for Viz ID / Brand Request rows).
+ * these columns are simply left blank for VizID / Brand Request rows).
  *
  * `issueReason` is set when status is "issue", so Review can explain why a
  * row needs attention instead of just flagging it.
@@ -119,7 +119,7 @@ export function createBulkRow(partial = {}) {
     dueDate: null,
     contentType: null,
     retailer: null,
-    // Innovation-only fields (blank for Viz ID / Brand Request rows):
+    // Innovation-only fields (blank for VizID / Brand Request rows):
     upc: null,
     customerId: null,
     productTitle: null,
@@ -196,7 +196,7 @@ export function getRequestDisplayDate(request) {
  * Placeholder because assignee/assets/etc. are expected to be filled in
  * later, closer to the work date (see Bulk purpose in the product spec).
  *
- * Viz ID rows create Viz ID requests, Brand Request rows create Brand
+ * VizID rows create VizID requests, Brand Request rows create Brand
  * Request requests, Innovation rows create Innovation requests — driven
  * entirely by row.requestType, never assumed from the batch.
  */

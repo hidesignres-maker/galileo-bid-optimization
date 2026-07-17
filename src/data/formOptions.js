@@ -5,12 +5,14 @@
  * Innovation had "New Item Setup" / "Enhanced Content" / "A+ Content"),
  * which read like request categories or deliverable packages rather than
  * actual content types — confusing copy. Standardized to one simple,
- * flow-independent list: Images / Copy / Video / Product data. These are
- * genuine content formats, so the same four apply regardless of request
- * type (VizID Change, Brand Request, or Innovation).
+ * flow-independent list: Images / Copy / Video. These are genuine content
+ * formats, so the same three apply regardless of request type (VizID
+ * Change, Brand Request, or Innovation). "Product data" was briefly
+ * included as a fourth option and then removed per product feedback — not
+ * a real content type for this list.
  *
- * Note: this required new option values (images/copy/video/product_data),
- * not just relabeled ones — the old values (enhanced_content, a_plus,
+ * Note: this required new option values (images/copy/video), not just
+ * relabeled ones — the old values (enhanced_content, a_plus,
  * lifestyle_images, brand_store, new_item_setup) don't correspond 1:1 to
  * the new copy, so a label-only change wasn't possible here. Bulk CSV is
  * unaffected: its contentType is a free-text CSV column, never looked up
@@ -20,7 +22,6 @@ const CONTENT_TYPE_OPTIONS = [
   { value: "images", label: "Images" },
   { value: "copy", label: "Copy" },
   { value: "video", label: "Video" },
-  { value: "product_data", label: "Product data" },
 ];
 
 export const CONTENT_TYPE_OPTIONS_BY_FLOW = {

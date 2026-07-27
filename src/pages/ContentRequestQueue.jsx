@@ -2,7 +2,7 @@ import { PencilIcon, ArchiveBoxIcon, ChevronLeftIcon, ChevronRightIcon } from "@
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { QueueMetricCards } from "../components/QueueMetricCards";
 import { Card } from "../components/ui/Card";
-import { Table } from "../components/ui/Table";
+import { Table, ClampCell } from "../components/ui/Table";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { mockRetailers } from "../data/mockRetailers";
@@ -169,14 +169,14 @@ export function ContentRequestQueue({ requests }) {
           </thead>
           <tbody>
             {requests.map((req) => (
-              <tr key={req.id} className="h-12">
-                <td className="font-semibold text-base-content">
+              <tr key={req.id}>
+                <ClampCell contentClassName="font-semibold text-base-content">
                   {req.title || <span className="italic font-normal text-base-content/40">Untitled</span>}
-                </td>
-                <td className="text-base-content/70 whitespace-nowrap">
+                </ClampCell>
+                <td className="text-base-content/70 whitespace-nowrap align-middle">
                   {REQUEST_TYPE_LABELS[req.requestType] ?? req.requestType}
                 </td>
-                <td className="whitespace-nowrap">
+                <td className="whitespace-nowrap align-middle">
                   <span
                     className={`badge badge-sm whitespace-nowrap ${STATUS_BADGE[req.status] ?? "badge-soft badge-neutral"}`}
                     style={STATUS_PILL_RADIUS}
@@ -184,24 +184,24 @@ export function ContentRequestQueue({ requests }) {
                     {STATUS_LABEL[req.status] ?? req.status}
                   </span>
                 </td>
-                <td className="whitespace-nowrap">
+                <td className="whitespace-nowrap align-middle">
                   <RetailerTags codes={req.retailers} />
                 </td>
-                <td className="text-base-content/70 whitespace-nowrap">
+                <td className="text-base-content/70 whitespace-nowrap align-middle">
                   {(req.contentTypes ?? []).join(", ") || <span className="text-base-content/40">—</span>}
                 </td>
-                <td className="text-base-content/70 whitespace-nowrap">
+                <td className="text-base-content/70 whitespace-nowrap align-middle">
                   {req.assignee || <span className="text-base-content/40">Unassigned</span>}
                 </td>
-                <td className="text-base-content/70 whitespace-nowrap">{fmtDate(getRequestDisplayDate(req))}</td>
-                <td className="whitespace-nowrap text-xs text-base-content/40">
+                <td className="text-base-content/70 whitespace-nowrap align-middle">{fmtDate(getRequestDisplayDate(req))}</td>
+                <td className="whitespace-nowrap text-xs text-base-content/40 align-middle">
                   {req.isPlaceholder ? (
                     <span title={req.sourceBatchId ?? ""}>Bulk placeholder</span>
                   ) : (
                     <span>Manual</span>
                   )}
                 </td>
-                <td>
+                <td className="align-middle">
                   <div className="flex items-center justify-end gap-2 text-base-content/55">
                     <PencilIcon className="w-4 h-4" aria-hidden="true" />
                     <ArchiveBoxIcon className="w-4 h-4" aria-hidden="true" />

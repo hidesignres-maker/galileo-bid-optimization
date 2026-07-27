@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { ArrowLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ChevronRightIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/solid";
 import { ContentRequestQueue } from "./pages/ContentRequestQueue";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
 import { BulkCsvWizard } from "./pages/BulkCsvWizard";
 import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
+import { AppShell } from "./components/AppShell";
+import { Button } from "./components/ui/Button";
 import { mockRequests } from "./data/mockRequests";
 
 const BREADCRUMB_BY_VIEW = {
@@ -60,57 +63,77 @@ export default function App() {
 
   return (
     <div data-theme="corporate" className="min-h-screen bg-base-200 font-sans text-base-content">
-      <main className="max-w-screen-xl mx-auto px-6 py-8">
-        <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-4">
-          {view !== "queue" && (
-            <button
-              type="button"
-              className="mr-0.5"
-              onClick={() => goTo("queue")}
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="w-4 h-4" />
-            </button>
+      {/* AppShell adds presentation chrome only (nav rail / module header /
+          section tabs) around the existing breadcrumb + view content below.
+          Nothing inside <main> changes shape, width, or behavior. */}
+      <AppShell>
+        <main className={view === "queue" ? "w-full px-6 py-8" : "max-w-screen-xl mx-auto px-6 py-8"}>
+          <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-4">
+            {view !== "queue" && (
+              <button
+                type="button"
+                className="mr-0.5"
+                onClick={() => goTo("queue")}
+                aria-label="Back"
+              >
+                <ArrowLeftIcon className="w-4 h-4" />
+              </button>
+            )}
+            {crumbs.map(([label, target], i) => (
+              <span key={label} className="flex items-center gap-1.5">
+                {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
+                {target ? (
+                  <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
+                    {label}
+                  </button>
+                ) : (
+                  <span className="text-base-content font-medium">{label}</span>
+                )}
+              </span>
+            ))}
+          </div>
+
+          {view === "queue" && (
+            <>
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                  <h1 className="text-2xl font-bold text-base-content">Content Request Queue</h1>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Brand, innovation, and VizID requests across retailers
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Button variant="outline" icon={CalendarDaysIcon} iconPosition="leading">
+                    Calendar View
+                  </Button>
+                  <Button icon={PlusIcon} iconPosition="leading" onClick={() => setIsCreateModalOpen(true)}>
+                    New Request
+                  </Button>
+                </div>
+              </div>
+              <ContentRequestQueue requests={requests} />
+            </>
           )}
-          {crumbs.map(([label, target], i) => (
-            <span key={label} className="flex items-center gap-1.5">
-              {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
-              {target ? (
-                <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
-                  {label}
-                </button>
-              ) : (
-                <span className="text-base-content font-medium">{label}</span>
-              )}
-            </span>
-          ))}
-        </div>
 
-        {view === "queue" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Content Request Queue</h1>
-            <ContentRequestQueue requests={requests} onNewRequest={() => setIsCreateModalOpen(true)} />
-          </>
-        )}
+          {view === "manual" && (
+            <>
+              <h1 className="text-2xl font-bold text-base-content mb-6">Build Manually</h1>
+              <ManualRequestWizard
+                initialRequestType={initialManualRequestType}
+                onCreateRequest={handleRequestCreated}
+                onCancel={() => goTo("queue")}
+              />
+            </>
+          )}
 
-        {view === "manual" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Build Manually</h1>
-            <ManualRequestWizard
-              initialRequestType={initialManualRequestType}
-              onCreateRequest={handleRequestCreated}
-              onCancel={() => goTo("queue")}
-            />
-          </>
-        )}
-
-        {view === "bulk" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
-            <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
-          </>
-        )}
-      </main>
+          {view === "bulk" && (
+            <>
+              <h1 className="text-2xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
+              <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
+            </>
+          )}
+        </main>
+      </AppShell>
 
       {isCreateModalOpen && (
         <CreateRequestLauncher

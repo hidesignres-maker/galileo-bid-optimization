@@ -62,7 +62,7 @@ export default function App() {
   const crumbs = BREADCRUMB_BY_VIEW[view];
 
   return (
-    <div data-theme="corporate" className="min-h-screen bg-base-200 font-sans text-base-content">
+    <div data-theme="corporate" className="min-h-screen bg-base-200 text-base-content">
       {/* AppShell adds presentation chrome only (nav rail / module header /
           section tabs) around the existing breadcrumb + view content below.
           Nothing inside <main> changes shape, width, or behavior. */}

@@ -12,12 +12,29 @@ import { fmtDate } from "../lib/format";
 
 const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
 
+// Soft pill treatment: "badge-soft" + the existing "badge-{status}" color
+// modifiers is DaisyUI's own built-in composition (badge.css) — badge-soft
+// consumes the --badge-color each modifier already sets, so this reuses the
+// exact color-mix formula already verified in the codebase rather than
+// reimplementing it. Each status keeps its own semantic hue (error/info/
+// success/neutral); only the fill goes from solid to soft-tinted, and text
+// becomes that same semantic color instead of white-on-solid.
 const STATUS_BADGE = {
-  [REQUEST_STATUS.NEEDS_ACTION]: "badge-error",
-  [REQUEST_STATUS.IN_PROGRESS]: "badge-info",
-  [REQUEST_STATUS.COMPLETED]: "badge-success",
-  [REQUEST_STATUS.DRAFT]: "badge-neutral",
+  [REQUEST_STATUS.NEEDS_ACTION]: "badge-soft badge-error",
+  [REQUEST_STATUS.IN_PROGRESS]: "badge-soft badge-info",
+  [REQUEST_STATUS.COMPLETED]: "badge-soft badge-success",
+  [REQUEST_STATUS.DRAFT]: "badge-soft badge-neutral",
 };
+
+// badge's own base rule hardcodes border-radius: var(--radius-selector)
+// (4px). Rather than stack a competing radius utility class — the same
+// same-property cascade conflict already documented elsewhere in this file
+// — the 8px target is applied via inline style referencing the existing,
+// already-approved --radius-box token. Inline style always wins over a
+// stylesheet rule regardless of compiled order, so this is a guaranteed
+// override rather than an order-dependent one, and it introduces no new
+// hardcoded value.
+const STATUS_PILL_RADIUS = { borderRadius: "var(--radius-box)" };
 
 const STATUS_LABEL = {
   [REQUEST_STATUS.NEEDS_ACTION]: "Needs Action",
@@ -160,7 +177,10 @@ export function ContentRequestQueue({ requests }) {
                   {REQUEST_TYPE_LABELS[req.requestType] ?? req.requestType}
                 </td>
                 <td className="whitespace-nowrap">
-                  <span className={`badge badge-sm whitespace-nowrap ${STATUS_BADGE[req.status] ?? "badge-neutral"}`}>
+                  <span
+                    className={`badge badge-sm whitespace-nowrap ${STATUS_BADGE[req.status] ?? "badge-soft badge-neutral"}`}
+                    style={STATUS_PILL_RADIUS}
+                  >
                     {STATUS_LABEL[req.status] ?? req.status}
                   </span>
                 </td>

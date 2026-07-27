@@ -24,7 +24,7 @@
   default: true;
 
   /* ── Primary & Secondary ── */
-  --color-primary:         #0082CE;
+  --color-primary:         #0066FF;
   --color-primary-content: #FFFFFF;
 
   --color-secondary:         #61738D;
@@ -46,16 +46,16 @@
   /* ── Base surfaces ── */
   --color-base-100:     #FFFFFF;
   --color-base-200:     #E8E8E8;
-  --color-base-300:     #D1D1D1;
-  --color-base-content: #181A2A;
+  --color-base-300:     #E4E6EA;
+  --color-base-content: #13181B;
 
   /* ── Neutral ── */
-  --color-neutral:         #000000;
+  --color-neutral:         #21272C;
   --color-neutral-content: #FFFFFF;
 
   /* ── Radius & border — theme(01).radius / border (width) ── */
-  --radius-selector: 0.25rem; /* sm — 4px, checkboxes/radios */
-  --radius-field:    0.5rem;  /* md — 8px, inputs/buttons */
-  --radius-box:      1rem;    /* lg — 16px, cards */
+  --radius-selector: 0.25rem; /* 4px, checkboxes/radios — not reassigned this pass */
+  --radius-field:    0.25rem; /* 4px, inputs/buttons */
+  --radius-box:      0.5rem;  /* 8px, cards/surfaces */
   --border:          1px;
 }

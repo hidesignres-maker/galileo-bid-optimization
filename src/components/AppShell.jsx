@@ -60,7 +60,7 @@ export function AppShell({
     <div className="min-h-screen flex bg-base-200">
       <nav
         aria-label="Primary"
-        className="w-14 bg-neutral flex flex-col items-center py-5 gap-1.5 shrink-0"
+        className="w-[52px] bg-neutral flex flex-col items-center py-5 gap-1.5 shrink-0"
       >
         {navItems.map((item) => {
           const isActive = item.id === activeNavId;
@@ -85,14 +85,14 @@ export function AppShell({
       </nav>
 
       <div className="flex-1 flex flex-col min-w-0">
-        <header className="bg-primary text-primary-content px-6 py-3 flex items-center gap-3 shrink-0">
+        <header className="bg-primary text-primary-content px-6 h-12 flex items-center gap-3 shrink-0">
           <span className="font-bold text-sm">{moduleName}</span>
           <span className="opacity-40">|</span>
           <span className="text-sm">{pageGroupLabel}</span>
         </header>
 
         <div className="bg-base-100 border-b border-base-300 px-6 shrink-0">
-          <div className="flex items-center gap-7">
+          <div className="h-10 flex items-end gap-7">
             {sectionTabs.map((tab) => {
               const isActive = tab === activeSectionTab;
               return (
@@ -101,7 +101,7 @@ export function AppShell({
                   type="button"
                   aria-current={isActive ? "page" : undefined}
                   onClick={onSectionTabSelect ? () => onSectionTabSelect(tab) : undefined}
-                  className={`py-3 text-sm border-b-2 -mb-px transition-colors ${
+                  className={`pb-3 text-sm border-b-2 -mb-px transition-colors ${
                     isActive
                       ? "border-primary text-primary font-semibold"
                       : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"

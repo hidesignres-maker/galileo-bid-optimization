@@ -68,7 +68,7 @@ export default function App() {
           Nothing inside <main> changes shape, width, or behavior. */}
       <AppShell>
         <main className={view === "queue" ? "w-full px-6 py-8" : "max-w-screen-xl mx-auto px-6 py-8"}>
-          <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-4">
+          <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-6">
             {view !== "queue" && (
               <button
                 type="button"
@@ -97,13 +97,18 @@ export default function App() {
             <>
               <div className="flex items-start justify-between gap-4 mb-6">
                 <div>
-                  <h1 className="text-2xl font-bold text-base-content">Content Request Queue</h1>
+                  <h1 className="text-xl font-bold text-base-content">Content Request Queue</h1>
                   <p className="text-sm text-base-content/60 mt-1">
                     Brand, innovation, and VizID requests across retailers
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <Button variant="outline" icon={CalendarDaysIcon} iconPosition="leading">
+                  <Button
+                    variant="outline"
+                    icon={CalendarDaysIcon}
+                    iconPosition="leading"
+                    iconClassName="w-5 h-5"
+                  >
                     Calendar View
                   </Button>
                   <Button icon={PlusIcon} iconPosition="leading" onClick={() => setIsCreateModalOpen(true)}>
@@ -117,7 +122,7 @@ export default function App() {
 
           {view === "manual" && (
             <>
-              <h1 className="text-2xl font-bold text-base-content mb-6">Build Manually</h1>
+              <h1 className="text-xl font-bold text-base-content mb-6">Build Manually</h1>
               <ManualRequestWizard
                 initialRequestType={initialManualRequestType}
                 onCreateRequest={handleRequestCreated}
@@ -128,7 +133,7 @@ export default function App() {
 
           {view === "bulk" && (
             <>
-              <h1 className="text-2xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
+              <h1 className="text-xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
               <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
             </>
           )}

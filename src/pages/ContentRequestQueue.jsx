@@ -143,10 +143,10 @@ export function ContentRequestQueue({ requests }) {
             <Input placeholder="Search by request, brand, SKU, GTIN, UPC, or retailer" className="pl-9" />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select placeholder="All Request Types" options={REQUEST_TYPE_FILTER_OPTIONS} />
+            <Select placeholder="All" options={REQUEST_TYPE_FILTER_OPTIONS} />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select placeholder="All Assignees" options={mockAssignees} />
+            <Select placeholder="All" options={mockAssignees} />
           </div>
         </div>
 

@@ -60,7 +60,7 @@ export function AppShell({
     <div className="min-h-screen flex bg-base-200">
       <nav
         aria-label="Primary"
-        className="w-[52px] bg-neutral flex flex-col items-center py-5 gap-1.5 shrink-0"
+        className="w-[52px] bg-base-100 border-r border-base-300 flex flex-col items-center py-5 gap-1.5 shrink-0"
       >
         {navItems.map((item) => {
           const isActive = item.id === activeNavId;
@@ -75,7 +75,7 @@ export function AppShell({
               className={`w-9 h-9 flex items-center justify-center rounded-field transition-colors ${
                 isActive
                   ? "bg-primary text-primary-content"
-                  : "text-neutral-content/50 hover:text-neutral-content hover:bg-neutral-content/10"
+                  : "text-primary/50 hover:text-primary hover:bg-primary/10"
               }`}
             >
               <item.icon className="w-5 h-5" />

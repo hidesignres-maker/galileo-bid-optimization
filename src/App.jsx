@@ -68,30 +68,29 @@ export default function App() {
           Nothing inside <main> changes shape, width, or behavior. */}
       <AppShell>
         <main className={view === "queue" ? "w-full px-6 py-8" : "max-w-screen-xl mx-auto px-6 py-8"}>
-          <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-6">
-            {view !== "queue" && (
-              <button
-                type="button"
-                className="mr-0.5"
-                onClick={() => goTo("queue")}
-                aria-label="Back"
-              >
+          {/* Breadcrumb is intentionally not rendered for the Home/Queue
+              view (per Figma) — it's the root screen, nothing to trace
+              back through. Manual/Bulk/internal flows keep their full
+              breadcrumb + back-arrow, unchanged. */}
+          {view !== "queue" && (
+            <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-6">
+              <button type="button" className="mr-0.5" onClick={() => goTo("queue")} aria-label="Back">
                 <ArrowLeftIcon className="w-4 h-4" />
               </button>
-            )}
-            {crumbs.map(([label, target], i) => (
-              <span key={label} className="flex items-center gap-1.5">
-                {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
-                {target ? (
-                  <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
-                    {label}
-                  </button>
-                ) : (
-                  <span className="text-base-content font-medium">{label}</span>
-                )}
-              </span>
-            ))}
-          </div>
+              {crumbs.map(([label, target], i) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
+                  {target ? (
+                    <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
+                      {label}
+                    </button>
+                  ) : (
+                    <span className="text-base-content font-medium">{label}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
 
           {view === "queue" && (
             <>

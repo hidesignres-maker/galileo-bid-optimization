@@ -126,16 +126,17 @@ export function ContentRequestQueue({ requests }) {
             <Input placeholder="Search by request, brand, SKU, GTIN, UPC, or retailer" className="pl-9" />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select placeholder="Request Type" options={REQUEST_TYPE_FILTER_OPTIONS} />
+            <Select placeholder="All Request Types" options={REQUEST_TYPE_FILTER_OPTIONS} />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select placeholder="Assignee" options={mockAssignees} />
+            <Select placeholder="All Assignees" options={mockAssignees} />
           </div>
         </div>
 
-        {/* Table — flush with the Card (no extra nested horizontal inset);
-            explicit 48px header/row height via h-12 on each <tr>. */}
-        <Table>
+        {/* Table — flush with the Card (no extra nested horizontal inset,
+            no nested border/radius — see ui/Table's `flush` prop); explicit
+            48px header/row height via h-12 on each <tr>. */}
+        <Table flush>
           <thead>
             <tr className="h-12">
               <th className="whitespace-nowrap">Request title</th>

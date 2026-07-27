@@ -31,6 +31,7 @@ export function QueueMetricCards({ requests }) {
       {cards.map((c) => (
         <Card
           key={c.label}
+          flat
           className="w-[194px] h-[84px] shrink-0"
           bodyClassName="p-4 h-full flex flex-col justify-center"
         >

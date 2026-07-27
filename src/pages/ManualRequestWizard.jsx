@@ -58,7 +58,6 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
   const [formData, setFormData] = useState(initialFormData);
   const [products, setProducts] = useState([]);
   const [itemInputs, setItemInputs] = useState([makeBlankItem()]);
-  const [selectedProductIds, setSelectedProductIds] = useState(new Set());
   const [errors, setErrors] = useState({});
 
   const steps = requestType ? STEPS_BY_TYPE[requestType] : [];
@@ -71,21 +70,21 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
 
   const patchField = (field, value) => setFormData((f) => ({ ...f, [field]: value }));
 
+  // Product-first selection: checking a row in ProductLookupTable adds/
+  // removes it directly in `products` (the wizard's own, already-persistent
+  // state used by Retailers/Review/request creation). There is no separate
+  // staging Set anymore — selection is `products` itself, so it can never
+  // be lost by changing search, retailer filter, or view within the
+  // Products step (see ProductLookupTable.jsx for the interaction).
   const toggleProduct = (id) => {
-    setSelectedProductIds((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
+    setProducts((prev) => {
+      if (prev.some((p) => p.id === id)) return prev.filter((p) => p.id !== id);
+      const product = mockProducts.find((p) => p.id === id);
+      return product ? [...prev, product] : prev;
     });
   };
 
-  const addSelectedProducts = () => {
-    const toAdd = mockProducts.filter(
-      (p) => selectedProductIds.has(p.id) && !products.some((existing) => existing.id === p.id)
-    );
-    setProducts((prev) => [...prev, ...toAdd]);
-    setSelectedProductIds(new Set());
-  };
+  const clearAllProducts = () => setProducts([]);
 
   const updateGroupDate = (retailer, oldDate, newDate) => {
     setProducts((prev) =>
@@ -223,18 +222,11 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
       )}
 
       {stepName === "Products" && (
-        <div className="flex flex-col gap-4">
-          <ProductLookupTable
-            selectedProductIds={selectedProductIds}
-            onToggleProduct={toggleProduct}
-            onAddSelected={addSelectedProducts}
-          />
-          {products.length > 0 && (
-            <InfoBanner variant="info">
-              {products.length} product{products.length === 1 ? "" : "s"} added to this request.
-            </InfoBanner>
-          )}
-        </div>
+        <ProductLookupTable
+          selectedProducts={products}
+          onToggleProduct={toggleProduct}
+          onClearAll={clearAllProducts}
+        />
       )}
 
       {stepName === "Retailers" && (

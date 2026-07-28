@@ -4,7 +4,6 @@ import { WizardStepper } from "../components/WizardStepper";
 import { ImportCsvStep } from "../components/ImportCsvStep";
 import { BulkReviewStep } from "../components/BulkReviewStep";
 import { ConfirmRequestsStep } from "../components/ConfirmRequestsStep";
-import { OpenQuestionsPanel } from "../components/OpenQuestionsPanel";
 import { Button } from "../components/ui/Button";
 import { createBulkBatch, bulkRowToRequest } from "../lib/models";
 
@@ -27,8 +26,7 @@ const BULK_STEPS = ["Import CSV", "Review", "Confirm"];
  * Open assumption: Bulk is currently treated as a global request
  * generator — any mix of VizID Change, Brand Request, and Innovation rows
  * in one file, no batch-level constraints. This hasn't been confirmed with
- * product as final; see OpenQuestionsPanel for the running list of what's
- * still open (including which fields are actually required per type).
+ * product as final.
  */
 export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -70,8 +68,6 @@ export function BulkCsvWizard({ onRequestsCreated, onCancel }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <OpenQuestionsPanel />
-
       <WizardStepper steps={BULK_STEPS} currentStep={currentStep} furthestStep={BULK_STEPS.length - 1} />
 
       {stepName === "Import CSV" && (

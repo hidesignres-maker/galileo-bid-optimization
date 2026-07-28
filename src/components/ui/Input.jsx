@@ -37,10 +37,10 @@ export function Input({
       )}
       <div className="relative">
         {isDate && (
-          <CalendarIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <CalendarIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
         )}
         {!isDate && Icon && (
-          <Icon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <Icon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
         )}
         <input
           type={type}

@@ -7,8 +7,8 @@
  * Used by ImportCsvStep (Bulk's merged Download + Upload step).
  *
  * Open assumption: this column list / which fields are actually required
- * per request type is NOT final — still pending product confirmation (see
- * OpenQuestionsPanel). Do not treat this as a locked spec.
+ * per request type is NOT final — still pending product confirmation. Do
+ * not treat this as a locked spec.
  *
  * Business rule — supporting content in Bulk: for Bulk CSV, supporting
  * content is captured per row as links/notes (reference_links, asset_links,

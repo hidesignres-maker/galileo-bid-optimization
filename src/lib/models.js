@@ -65,6 +65,12 @@ export function createRequest(partial = {}) {
     contentRequirements: {
       files: [],
       referenceLink: "",
+      // notes — Manual-only, request-level "Notes for supporting materials"
+      // field (see ContentRequirementsSection.jsx). Distinct from Bulk CSV's
+      // per-row `contentNotes` below; Manual never populates contentNotes
+      // and Bulk never populates notes. Defaults to "" so pre-existing
+      // requests created before this field existed still render safely.
+      notes: "",
       referenceLinks: "",
       assetLinks: "",
       contentNotes: "",

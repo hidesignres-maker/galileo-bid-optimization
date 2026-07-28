@@ -36,6 +36,12 @@ export function ManualDetailsForm({
 }) {
   const contentTypeOptions = CONTENT_TYPE_OPTIONS_BY_FLOW[requestType] ?? [];
   const dateLabel = DATE_FIELD_LABEL_BY_FLOW[requestType] ?? "Default Date";
+  // Derived from the requestType already passed in — no new showX flag.
+  // Brand/VizID Add Details uses the verified Figma field-row geometry
+  // (207.5 / 207.5 / 267px, 24px gaps); Innovation keeps its existing
+  // proportional 3-up row (it only ever shows 2 of the 3 fields here,
+  // since showDate is false for Innovation — see ManualRequestWizard).
+  const isInnovation = requestType === "innovation";
 
   const toggleContentType = (value) => {
     const current = formData.contentTypes ?? [];
@@ -69,7 +75,13 @@ export function ManualDetailsForm({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-start">
+      <div
+        className={
+          isInnovation
+            ? "grid grid-cols-1 sm:grid-cols-3 gap-4 items-start"
+            : "grid grid-cols-1 md:grid-cols-[207.5px_207.5px_267px] gap-6 items-start"
+        }
+      >
         {showDate && (
           <Input
             type="date"

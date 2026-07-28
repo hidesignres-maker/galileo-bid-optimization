@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import { WizardStepper } from "../components/WizardStepper";
 import { RequestTypeSelector } from "../components/RequestTypeSelector";
@@ -66,6 +66,28 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
 
   const steps = requestType ? STEPS_BY_TYPE[requestType] : [];
   const isInnovation = requestType === "innovation";
+
+  // Supporting Materials' file previews use URL.createObjectURL for real,
+  // browser-selected image files (see ContentRequirementsSection.jsx).
+  // Those blob URLs are revoked immediately when a file is removed, but a
+  // file can also just be abandoned by leaving the wizard entirely
+  // (Discard, or after a successful Create Request) — this wizard is the
+  // actual long-lived owner of formData across every step, so it's the
+  // right place to sweep up any remaining preview URLs on unmount. This
+  // deliberately does NOT run on every re-render/step change — only once,
+  // when the wizard itself unmounts — since revoking on intermediate step
+  // navigation would break previews the user could still navigate back to.
+  const contentRequirementsRef = useRef(formData.contentRequirements);
+  contentRequirementsRef.current = formData.contentRequirements;
+  useEffect(() => {
+    return () => {
+      (contentRequirementsRef.current?.files ?? []).forEach((file) => {
+        if (file.previewUrl?.startsWith("blob:")) {
+          URL.revokeObjectURL(file.previewUrl);
+        }
+      });
+    };
+  }, []);
 
   const retailerGroups = useMemo(() => {
     if (!requestType || isInnovation) return [];

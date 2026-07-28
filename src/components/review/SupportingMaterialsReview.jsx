@@ -1,11 +1,12 @@
 import { Card } from "../ui/Card";
+import { FileThumb } from "../ui/FileThumb";
 
 /**
  * SupportingMaterialsReview — shared right-rail surface, used by both
  * Brand/VizID and Innovation review bodies via ManualReviewStep. Built
- * entirely from formData.contentRequirements ({ files: [{id,name}],
- * referenceLink }) — the only supporting-materials data the Manual flow
- * actually collects (see ContentRequirementsSection.jsx).
+ * entirely from formData.contentRequirements ({ files, referenceLink,
+ * notes }) — the only supporting-materials data the Manual flow actually
+ * collects (see ContentRequirementsSection.jsx).
  *
  * Shows the actual referenceLink value as read-only review content
  * (truncated visually for long URLs, full value available via the
@@ -13,11 +14,11 @@ import { Card } from "../ui/Card";
  * href/onClick added, and the contentRequirements data itself is only
  * read here, never written.
  *
- * No thumbnails, file type, file size, delete affordance, or upload entry
- * point — none of that data or behavior exists in this prototype (files
- * only ever carry {id, name} — see ContentRequirementsSection.jsx's mock
- * file generator). Inventing any of it would misrepresent what's actually
- * modeled.
+ * Each file entry renders via the shared FileThumb (real image preview
+ * when the file has a `previewUrl`, a neutral placeholder icon otherwise
+ * — including pre-existing `{id, name}`-only entries, which still render
+ * safely with no mimeType/sizeLabel line). No delete affordance or upload
+ * entry point here — Review is read-only.
  */
 export function SupportingMaterialsReview({ contentRequirements }) {
   const files = contentRequirements?.files ?? [];
@@ -50,9 +51,17 @@ export function SupportingMaterialsReview({ contentRequirements }) {
                 {files.map((file) => (
                   <li
                     key={file.id}
-                    className="text-sm text-base-content/80 bg-base-200 rounded-box px-3 py-2 truncate"
+                    className="flex items-center gap-2 text-sm bg-base-200 rounded-box px-3 py-2"
                   >
-                    {file.name}
+                    <FileThumb previewUrl={file.previewUrl} mimeType={file.mimeType} size="w-8 h-8" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-base-content/80 truncate">{file.name}</p>
+                      {(file.mimeType || file.sizeLabel) && (
+                        <p className="text-xs text-base-content/40 truncate">
+                          {[file.mimeType, file.sizeLabel].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

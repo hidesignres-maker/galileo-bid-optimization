@@ -3,7 +3,6 @@ import { ReviewFooter } from "./review/ReviewFooter";
 import { SupportingMaterialsReview, ReviewNotesPanel } from "./review/SupportingMaterialsReview";
 import { BrandVizReviewBody } from "./review/BrandVizReviewBody";
 import { InnovationReviewBody } from "./review/InnovationReviewBody";
-import { REQUEST_TYPE_LABELS } from "../data/formOptions";
 
 // Brand Request / VizID Change guidance — verified Figma copy, used
 // exactly as given.
@@ -31,6 +30,12 @@ const INNOVATION_GUIDANCE = "Review the details below, then create the request. 
  * remove action anywhere in Review (removed per instruction); the
  * underlying removeGroup handler still exists in ManualRequestWizard but
  * is no longer threaded through this component.
+ *
+ * Heading is the literal "Review and submit" for both request-type
+ * branches — App.jsx's page-level title is now the request-type-specific
+ * one ("New Request : VizID change" / "Brand request" / "Innovation -
+ * flow A"), so this internal heading intentionally does not repeat the
+ * request type, to avoid showing it twice on the same screen.
  */
 export function ManualReviewStep({
   requestType,
@@ -47,7 +52,7 @@ export function ManualReviewStep({
 
   return (
     <ReviewShell
-      heading={isInnovation ? `Review & Create — ${REQUEST_TYPE_LABELS[requestType] ?? ""}` : "Review and submit"}
+      heading="Review and submit"
       guidance={isInnovation ? INNOVATION_GUIDANCE : BRAND_VIZ_GUIDANCE}
       left={
         isInnovation ? (

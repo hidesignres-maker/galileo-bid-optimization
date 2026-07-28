@@ -65,18 +65,28 @@ export function SupportingMaterialsReview({ contentRequirements }) {
 }
 
 /**
- * ReviewNotesPanel — the Review shell's "separate notes surface." There is
- * no notes field anywhere in the Manual flow's data model (formData /
- * Request / contentRequirements) — contentNotes exists only on Bulk CSV
- * rows, a different creation path entirely. Rather than invent a notes
- * field to populate this panel, it renders as a clearly-labeled, always-
- * empty placeholder: the composition (a dedicated notes surface next to
- * Supporting Materials) is preserved without fabricating data behind it.
+ * ReviewNotesPanel — the Review shell's dedicated notes surface. Reads
+ * `contentRequirements.notes` ("Notes for supporting materials", see
+ * ContentRequirementsSection.jsx) — Manual's own request-level field,
+ * distinct from Bulk CSV's per-row `contentNotes`.
+ *
+ * Defensively defaults to "" so requests created before this field existed
+ * (mockRequests seed data, or any request whose contentRequirements was
+ * built without `notes`) still render safely instead of throwing. Shows a
+ * neutral empty state when there's nothing to show — no invented default
+ * notes text.
  */
-export function ReviewNotesPanel() {
+export function ReviewNotesPanel({ contentRequirements }) {
+  const notes = contentRequirements?.notes ?? "";
+  const hasNotes = Boolean(notes.trim());
+
   return (
     <Card title="Notes">
-      <p className="text-sm text-base-content/40 italic">No notes added for this request.</p>
+      {hasNotes ? (
+        <p className="text-sm text-base-content whitespace-pre-wrap">{notes}</p>
+      ) : (
+        <p className="text-sm text-base-content/40 italic">No notes added for this request.</p>
+      )}
     </Card>
   );
 }

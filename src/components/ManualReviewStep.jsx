@@ -70,7 +70,7 @@ export function ManualReviewStep({
       right={
         <>
           <SupportingMaterialsReview contentRequirements={formData.contentRequirements} />
-          <ReviewNotesPanel />
+          <ReviewNotesPanel contentRequirements={formData.contentRequirements} />
         </>
       }
       footer={<ReviewFooter onBack={onBack} onDiscard={onDiscard} onCreateRequest={onCreateRequest} />}

@@ -34,9 +34,10 @@ const initialFormData = {
   defaultDate: "",
   contentTypes: [],
   assignee: "",
-  // Content requirements — Manual-only (see ManualDetailsForm). No notes
-  // field by design: Task description already covers task context.
-  contentRequirements: { files: [], referenceLink: "" },
+  // Content requirements — Manual-only (see ManualDetailsForm). `notes`
+  // ("Notes for supporting materials") is optional, request-level free
+  // text, distinct from Bulk CSV's per-row contentNotes (see models.js).
+  contentRequirements: { files: [], referenceLink: "", notes: "" },
 };
 
 /**
@@ -154,12 +155,13 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
       products: isInnovation ? [] : products,
       itemInputs: isInnovation ? itemInputs : [],
       // Content requirements collected at creation time (Gowri's
-      // clarification) — files/referenceLink are Manual's own fields;
+      // clarification) — files/referenceLink/notes are Manual's own fields;
       // referenceLinks/assetLinks/contentNotes stay empty here since those
       // are Bulk CSV's per-row fields (see bulkRowToRequest in models.js).
       contentRequirements: {
         files: formData.contentRequirements.files,
         referenceLink: formData.contentRequirements.referenceLink,
+        notes: formData.contentRequirements.notes,
         referenceLinks: "",
         assetLinks: "",
         contentNotes: "",
@@ -193,9 +195,38 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
 
   return (
     <div className="flex flex-col gap-6">
-      <WizardStepper steps={steps} currentStep={currentStep} furthestStep={steps.length - 1} />
+      <WizardStepper
+        steps={steps}
+        currentStep={currentStep}
+        furthestStep={steps.length - 1}
+        variant="manualCreate"
+      />
 
-      {(stepName === "Add Details" || stepName === "Details & Item Inputs") && (
+      {/* Brand/VizID Add Details — explicit Figma-aligned composition
+          (Add Details Pattern v1): centered 778px work surface, "Request
+          details" card title (not the raw step name), 24px padding. This
+          branch never renders for Innovation — STEPS_BY_TYPE.innovation
+          never contains "Add Details", only "Details & Item Inputs". */}
+      {stepName === "Add Details" && (
+        <div className="w-[778px] mx-auto">
+          <Card title="Request details" headerClassName="px-6 pt-6" bodyClassName="p-6">
+            <ManualDetailsForm
+              requestType={requestType}
+              formData={formData}
+              errors={errors}
+              onFieldChange={patchField}
+              showDate={!isInnovation}
+              showContentRequirements={!isInnovation}
+            />
+          </Card>
+        </div>
+      )}
+
+      {/* Innovation Details & Item Inputs — deliberately kept structurally
+          explicit, not folded into the Brand/VizID card composition above:
+          no request-level date, item inputs stay in their existing
+          location, Supporting Materials stays after item inputs. */}
+      {stepName === "Details & Item Inputs" && (
         <Card title={stepName}>
           <div className="flex flex-col gap-6">
             <ManualDetailsForm
@@ -206,26 +237,22 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
               showDate={!isInnovation}
               showContentRequirements={!isInnovation}
             />
-            {isInnovation && (
-              <>
-                <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
-                {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
+            <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
+            {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
 
-                {/* TEMP ASSUMPTION: Manual Innovation keeps multiple item
-                    inputs grouped in one request, and supporting materials
-                    are shared at request level until product confirms
-                    whether item-level attachments or one-ticket-per-item
-                    behavior is required. Rendered here (after Item Inputs,
-                    not inside ManualDetailsForm) because item inputs are
-                    Innovation's primary object — users should enter items
-                    before adding shared supporting materials. */}
-                <ContentRequirementsSection
-                  requestType={requestType}
-                  value={formData.contentRequirements}
-                  onChange={(next) => patchField("contentRequirements", next)}
-                />
-              </>
-            )}
+            {/* TEMP ASSUMPTION: Manual Innovation keeps multiple item
+                inputs grouped in one request, and supporting materials
+                are shared at request level until product confirms
+                whether item-level attachments or one-ticket-per-item
+                behavior is required. Rendered here (after Item Inputs,
+                not inside ManualDetailsForm) because item inputs are
+                Innovation's primary object — users should enter items
+                before adding shared supporting materials. */}
+            <ContentRequirementsSection
+              requestType={requestType}
+              value={formData.contentRequirements}
+              onChange={(next) => patchField("contentRequirements", next)}
+            />
           </div>
         </Card>
       )}
@@ -252,31 +279,49 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         />
       )}
 
-      {/* Review & Create renders its own footer (ReviewFooter, inside
-          ManualReviewStep's ReviewShell) with the same handlers passed
-          above — Back/Discard/Create Request are still wizard-owned, only
-          the button JSX moved. Every other step keeps this shared footer
-          unchanged. */}
-      {stepName !== "Review & Create" && (
-        <div className="flex items-center justify-between border-t border-base-300 pt-4">
-          <div className="flex items-center gap-2">
-            <Button variant="text" className="text-error" onClick={onCancel}>
-              Discard
-            </Button>
-            {currentStep > 0 && (
-              <Button variant="ghost" onClick={handleBack}>
-                Back
-              </Button>
-            )}
-          </div>
-          <Button
-            icon={ArrowRightIcon}
-            onClick={handleNext}
-            disabled={stepName === "Select Products" && itemsValidCount === 0}
-          >
-            Continue to {steps[currentStep + 1]}
+      {/* Brand/VizID Add Details footer — Figma-aligned: anchored to the
+          same 778px work-surface boundary, 40px action row, exact copy
+          "Continue to products" (not the dynamic "Continue to {next
+          step}" used elsewhere), no full-width top border. Back never
+          shows here anyway (Add Details is always step 0), so dropping it
+          changes nothing functionally. Same handleNext/onCancel handlers,
+          same click-time validation — only the JSX shell differs. */}
+      {stepName === "Add Details" ? (
+        <div className="w-[778px] mx-auto flex items-center justify-between h-10">
+          <Button variant="text" className="text-error" onClick={onCancel}>
+            Discard
+          </Button>
+          <Button icon={ArrowRightIcon} onClick={handleNext}>
+            Continue to products
           </Button>
         </div>
+      ) : (
+        /* Review & Create renders its own footer (ReviewFooter, inside
+           ManualReviewStep's ReviewShell) with the same handlers passed
+           above — Back/Discard/Create Request are still wizard-owned, only
+           the button JSX moved. Every other step (including Innovation's
+           Details & Item Inputs) keeps this shared footer unchanged. */
+        stepName !== "Review & Create" && (
+          <div className="flex items-center justify-between border-t border-base-300 pt-4">
+            <div className="flex items-center gap-2">
+              <Button variant="text" className="text-error" onClick={onCancel}>
+                Discard
+              </Button>
+              {currentStep > 0 && (
+                <Button variant="ghost" onClick={handleBack}>
+                  Back
+                </Button>
+              )}
+            </div>
+            <Button
+              icon={ArrowRightIcon}
+              onClick={handleNext}
+              disabled={stepName === "Select Products" && itemsValidCount === 0}
+            >
+              Continue to {steps[currentStep + 1]}
+            </Button>
+          </div>
+        )
       )}
     </div>
   );

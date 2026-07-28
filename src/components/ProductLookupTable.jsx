@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { Table } from "./ui/Table";
@@ -96,6 +97,7 @@ export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearA
       <div className={`flex items-center gap-3 ${isSelectedView ? "opacity-50" : ""}`}>
         <div className="flex-1">
           <Input
+            icon={MagnifyingGlassIcon}
             placeholder="Search by description, brand, UPC, EAN, or retailer…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}

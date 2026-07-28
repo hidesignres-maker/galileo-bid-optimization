@@ -1,93 +1,74 @@
-import { RequestSummaryCard } from "./RequestSummaryCard";
-import { Card } from "./ui/Card";
-import { Table } from "./ui/Table";
-import { mockRetailers } from "../data/mockRetailers";
-import { fmtDate } from "../lib/format";
+import { ReviewShell } from "./review/ReviewShell";
+import { ReviewFooter } from "./review/ReviewFooter";
+import { SupportingMaterialsReview, ReviewNotesPanel } from "./review/SupportingMaterialsReview";
+import { BrandVizReviewBody } from "./review/BrandVizReviewBody";
+import { InnovationReviewBody } from "./review/InnovationReviewBody";
+import { REQUEST_TYPE_LABELS } from "../data/formOptions";
 
-const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
+// Brand Request / VizID Change guidance — verified Figma copy, used
+// exactly as given.
+const BRAND_VIZ_GUIDANCE =
+  "Review the request details, confirm retailer launch dates, and verify the selected products and supporting materials before creating the request.";
+
+// Innovation has no verified Figma guidance string yet — keeping the
+// existing neutral copy as a placeholder rather than reusing the Brand/Viz
+// line (which references retailer launch dates and product selection,
+// neither of which apply to Innovation's flat item-input flow).
+const INNOVATION_GUIDANCE = "Review the details below, then create the request. You can go back to make changes before creating it.";
 
 /**
- * ManualReviewStep — final review before "Create Request" (always exactly
- * one request in the manual flow).
+ * ManualReviewStep — thin dispatcher only. It owns no state and no
+ * business logic: it picks the right explicit review body for the current
+ * requestType and assembles the shared ReviewShell (heading, two-column
+ * grid, Supporting Materials + Notes rail, footer) around it.
  *
- * VizID Change / Brand Request: summary + retailer launch groups (from Products +
- * Retailers steps).
- * Innovation: summary + a flat item-input list — no retailer grouping table,
- * since retailer/dates are already visible per item and there's no separate
- * Retailers step to review here.
+ * All data (formData, products, itemInputs, retailerGroups) and all
+ * handlers (onBack, onDiscard, onCreateRequest, onUpdateGroupDate) are
+ * passed straight through from ManualRequestWizard, which remains the
+ * sole owner of wizard state and every callback — including retailer-date
+ * editing, surfaced inside BrandVizReviewBody's accordion instead of a
+ * separate Retailers step. No onRemoveGroup here — there is no visible
+ * remove action anywhere in Review (removed per instruction); the
+ * underlying removeGroup handler still exists in ManualRequestWizard but
+ * is no longer threaded through this component.
  */
-export function ManualReviewStep({ requestType, formData, products, itemInputs, retailerGroups }) {
-  return (
-    <div className="flex flex-col gap-4">
-      <RequestSummaryCard
-        requestType={requestType}
-        formData={formData}
-        products={products}
-        itemInputs={itemInputs}
-        retailerGroups={retailerGroups}
-      />
+export function ManualReviewStep({
+  requestType,
+  formData,
+  products,
+  itemInputs,
+  retailerGroups,
+  onBack,
+  onDiscard,
+  onCreateRequest,
+  onUpdateGroupDate,
+}) {
+  const isInnovation = requestType === "innovation";
 
-      {requestType === "innovation" ? (
-        <Card title="Item Inputs">
-          <Table>
-            <thead>
-              <tr>
-                <th>UPC</th>
-                <th>Retailer</th>
-                <th>Customer ID</th>
-                <th>Product Title</th>
-                <th>Brand</th>
-                <th>Start Ship Date</th>
-                <th>On Sale Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {itemInputs.map((item) => (
-                <tr key={item.id}>
-                  <td className="text-base-content/70">{item.upc}</td>
-                  <td className="text-base-content/70">{retailerLabel(item.retailer)}</td>
-                  <td className="text-base-content/70">{item.customerId}</td>
-                  <td className="text-base-content">{item.productTitle}</td>
-                  <td className="text-base-content/70">{item.brand}</td>
-                  <td className="text-base-content/70">{fmtDate(item.startShipDate)}</td>
-                  <td className="text-base-content/70">{fmtDate(item.onSaleDate)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
-        </Card>
-      ) : (
-        <Card title="Retailer Launch Groups" bodyClassName="flex flex-col gap-4">
-          {retailerGroups.length === 0 ? (
-            <p className="text-sm text-base-content/50 text-center py-6">No retailer groups yet.</p>
-          ) : (
-            retailerGroups.map((g) => (
-              <div key={`${g.retailer}__${g.date}`} className="flex flex-col gap-2">
-                <div className="text-sm font-semibold text-base-content">
-                  {retailerLabel(g.retailer)}{" "}
-                  <span className="text-base-content/50 font-normal">— {fmtDate(g.date)}</span>
-                </div>
-                <Table>
-                  <thead>
-                    <tr>
-                      <th>Product Title</th>
-                      <th>EAN</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {g.rows.map((r, i) => (
-                      <tr key={i}>
-                        <td className="text-base-content">{r.productTitle}</td>
-                        <td className="text-base-content/70">{r.ean}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </Table>
-              </div>
-            ))
-          )}
-        </Card>
-      )}
-    </div>
+  return (
+    <ReviewShell
+      heading={isInnovation ? `Review & Create — ${REQUEST_TYPE_LABELS[requestType] ?? ""}` : "Review and submit"}
+      guidance={isInnovation ? INNOVATION_GUIDANCE : BRAND_VIZ_GUIDANCE}
+      left={
+        isInnovation ? (
+          <InnovationReviewBody formData={formData} itemInputs={itemInputs} />
+        ) : (
+          <BrandVizReviewBody
+            requestType={requestType}
+            formData={formData}
+            products={products}
+            retailerGroups={retailerGroups}
+            onUpdateGroupDate={onUpdateGroupDate}
+          />
+        )
+      }
+      right={
+        <>
+          <SupportingMaterialsReview contentRequirements={formData.contentRequirements} />
+          <ReviewNotesPanel />
+        </>
+      }
+      footer={<ReviewFooter onBack={onBack} onDiscard={onDiscard} onCreateRequest={onCreateRequest} />}
+    />
   );
 }

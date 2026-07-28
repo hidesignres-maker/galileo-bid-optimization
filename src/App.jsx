@@ -11,8 +11,24 @@ import { mockRequests } from "./data/mockRequests";
 
 const BREADCRUMB_BY_VIEW = {
   queue: [["Content Request Queue"]],
-  manual: [["Content Request", "queue"], ["New Request", "queue"], ["Build Manually"]],
+  // Simplified for the manual create/review flow per the approved Figma
+  // create-flow shell: "Content Request / New Request", no third
+  // "Build Manually" crumb. Bulk's breadcrumb is untouched.
+  manual: [["Content Request", "queue"], ["New Request"]],
   bulk: [["Content Request", "queue"], ["New Request", "queue"], ["Bulk CSV Import"]],
+};
+
+// Request-type-specific page titles for the manual create/review flow,
+// replacing the previous flat "Build Manually" title. Keys are the same
+// requestType identifiers already used everywhere else (RequestTypeSelector,
+// STEPS_BY_TYPE, REQUEST_TYPE_LABELS, createRequest) — no new identifiers
+// introduced. Falls back to a generic title in the rare case this view is
+// reached without a type yet selected (ManualRequestWizard's own in-page
+// fallback gate — see initialManualRequestType's doc comment below).
+const MANUAL_TITLE_BY_TYPE = {
+  vizId: "New Request : VizID change",
+  brandRequest: "New Request : Brand request",
+  innovation: "New Request : Innovation - flow A",
 };
 
 /**
@@ -65,8 +81,10 @@ export default function App() {
     <div data-theme="corporate" className="min-h-screen bg-base-200 text-base-content">
       {/* AppShell adds presentation chrome only (nav rail / module header /
           section tabs) around the existing breadcrumb + view content below.
-          Nothing inside <main> changes shape, width, or behavior. */}
-      <AppShell>
+          Nothing inside <main> changes shape, width, or behavior.
+          showSectionTabs is false only for the manual create/review flow —
+          Queue and Bulk keep the module tabs row exactly as before. */}
+      <AppShell showSectionTabs={view !== "manual"}>
         <main className={view === "queue" ? "w-full px-6 py-8" : "max-w-screen-xl mx-auto px-6 py-8"}>
           {/* Breadcrumb is intentionally not rendered for the Home/Queue
               view (per Figma) — it's the root screen, nothing to trace
@@ -121,7 +139,9 @@ export default function App() {
 
           {view === "manual" && (
             <>
-              <h1 className="text-xl font-bold text-base-content mb-6">Build Manually</h1>
+              <h1 className="text-xl font-bold text-base-content mb-6">
+                {MANUAL_TITLE_BY_TYPE[initialManualRequestType] ?? "New Request"}
+              </h1>
               <ManualRequestWizard
                 initialRequestType={initialManualRequestType}
                 onCreateRequest={handleRequestCreated}

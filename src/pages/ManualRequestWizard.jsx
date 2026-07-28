@@ -6,7 +6,6 @@ import { ManualDetailsForm } from "../components/ManualDetailsForm";
 import { ProductLookupTable } from "../components/ProductLookupTable";
 import { InnovationItemInputForm, makeBlankItem } from "../components/InnovationItemInputForm";
 import { ContentRequirementsSection } from "../components/ContentRequirementsSection";
-import { RetailerDatesStep } from "../components/RetailerDatesStep";
 import { ManualReviewStep } from "../components/ManualReviewStep";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -16,12 +15,16 @@ import { getDetailsValidationErrors, isItemRowValid } from "../lib/businessRules
 import { groupProductsByRetailer } from "../lib/groupByRetailer";
 import { createRequest } from "../lib/models";
 
+// Confirmed product decision: Brand Request / VizID Change are a 3-step
+// flow — the separate Retailers step is no longer part of the visible
+// wizard. Retailer grouping/date-editing/removal (groupProductsByRetailer,
+// updateGroupDate, removeGroup — all unchanged below) now happens inside
+// Review & Create instead of its own step. Innovation is untouched: it
+// already skips a separate Retailers step entirely, since retailer is
+// captured per item in Details & Item Inputs.
 const STEPS_BY_TYPE = {
-  vizId: ["Details", "Products", "Retailers", "Review & Create"],
-  brandRequest: ["Details", "Products", "Retailers", "Review & Create"],
-  // Innovation skips Retailers entirely — retailer is captured per item in
-  // the Details & Item Inputs step. Reaching a separate Retailers step here
-  // was the previous prototype's bug (explicit stakeholder feedback).
+  vizId: ["Add Details", "Select Products", "Review & Create"],
+  brandRequest: ["Add Details", "Select Products", "Review & Create"],
   innovation: ["Details & Item Inputs", "Review & Create"],
 };
 
@@ -72,10 +75,11 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
 
   // Product-first selection: checking a row in ProductLookupTable adds/
   // removes it directly in `products` (the wizard's own, already-persistent
-  // state used by Retailers/Review/request creation). There is no separate
-  // staging Set anymore — selection is `products` itself, so it can never
-  // be lost by changing search, retailer filter, or view within the
-  // Products step (see ProductLookupTable.jsx for the interaction).
+  // state used by Review's retailer grouping/request creation). There is no
+  // separate staging Set anymore — selection is `products` itself, so it
+  // can never be lost by changing search, retailer filter, or view within
+  // the Select Products step (see ProductLookupTable.jsx for the
+  // interaction).
   const toggleProduct = (id) => {
     setProducts((prev) => {
       if (prev.some((p) => p.id === id)) return prev.filter((p) => p.id !== id);
@@ -96,6 +100,11 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
     );
   };
 
+  // No visible remove action anywhere in Review (removed per instruction —
+  // see ManualReviewStep/BrandVizReviewBody). This handler is intentionally
+  // kept, not deleted: grep confirms it currently has no consumers, but
+  // deleting it wasn't explicitly requested, so it stays available rather
+  // than being removed speculatively.
   const removeGroup = (retailer, date) => {
     setProducts((prev) =>
       prev.map((p) => {
@@ -107,7 +116,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
   };
 
   const handleNext = () => {
-    if (steps[currentStep] === "Details" || steps[currentStep] === "Details & Item Inputs") {
+    if (steps[currentStep] === "Add Details" || steps[currentStep] === "Details & Item Inputs") {
       const validationErrors = getDetailsValidationErrors(formData, { requireDate: !isInnovation });
 
       // Blocking validation for Innovation item inputs — UPC, Retailer,
@@ -186,7 +195,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
     <div className="flex flex-col gap-6">
       <WizardStepper steps={steps} currentStep={currentStep} furthestStep={steps.length - 1} />
 
-      {(stepName === "Details" || stepName === "Details & Item Inputs") && (
+      {(stepName === "Add Details" || stepName === "Details & Item Inputs") && (
         <Card title={stepName}>
           <div className="flex flex-col gap-6">
             <ManualDetailsForm
@@ -221,20 +230,11 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         </Card>
       )}
 
-      {stepName === "Products" && (
+      {stepName === "Select Products" && (
         <ProductLookupTable
           selectedProducts={products}
           onToggleProduct={toggleProduct}
           onClearAll={clearAllProducts}
-        />
-      )}
-
-      {stepName === "Retailers" && (
-        <RetailerDatesStep
-          requestType={requestType}
-          groups={retailerGroups}
-          onUpdateGroupDate={updateGroupDate}
-          onRemoveGroup={removeGroup}
         />
       )}
 
@@ -245,34 +245,39 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
           products={products}
           itemInputs={itemInputs}
           retailerGroups={retailerGroups}
+          onBack={handleBack}
+          onDiscard={onCancel}
+          onCreateRequest={handleCreateRequest}
+          onUpdateGroupDate={updateGroupDate}
         />
       )}
 
-      <div className="flex items-center justify-between border-t border-base-300 pt-4">
-        <div className="flex items-center gap-2">
-          <Button variant="text" className="text-error" onClick={onCancel}>
-            Discard
-          </Button>
-          {currentStep > 0 && (
-            <Button variant="ghost" onClick={handleBack}>
-              Back
+      {/* Review & Create renders its own footer (ReviewFooter, inside
+          ManualReviewStep's ReviewShell) with the same handlers passed
+          above — Back/Discard/Create Request are still wizard-owned, only
+          the button JSX moved. Every other step keeps this shared footer
+          unchanged. */}
+      {stepName !== "Review & Create" && (
+        <div className="flex items-center justify-between border-t border-base-300 pt-4">
+          <div className="flex items-center gap-2">
+            <Button variant="text" className="text-error" onClick={onCancel}>
+              Discard
             </Button>
-          )}
-        </div>
-        {stepName === "Review & Create" ? (
-          <Button variant="success" onClick={handleCreateRequest}>
-            Create Request
-          </Button>
-        ) : (
+            {currentStep > 0 && (
+              <Button variant="ghost" onClick={handleBack}>
+                Back
+              </Button>
+            )}
+          </div>
           <Button
             icon={ArrowRightIcon}
             onClick={handleNext}
-            disabled={stepName === "Products" && itemsValidCount === 0}
+            disabled={stepName === "Select Products" && itemsValidCount === 0}
           >
             Continue to {steps[currentStep + 1]}
           </Button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

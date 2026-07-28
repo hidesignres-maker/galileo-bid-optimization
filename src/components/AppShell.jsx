@@ -26,6 +26,13 @@ import {
  * Deliberately generic so a future screen (Scores, Changes, Insights...)
  * could reuse it by passing different `navItems`/`sectionTabs`/`children`
  * — it is not hardcoded to Content Request Queue.
+ *
+ * `showSectionTabs` (default true): opt-in, backward-compatible — when
+ * false, the entire module section-tabs row is omitted (used by the
+ * manual create/review flow, which hides Scores/Changes/Content
+ * Request/Insights per the approved Figma create-flow shell). Every
+ * existing caller that doesn't pass this prop renders exactly as before;
+ * the rail and blue module header are unaffected either way.
  */
 
 export const DEFAULT_NAV_ITEMS = [
@@ -54,6 +61,7 @@ export function AppShell({
   sectionTabs = DEFAULT_SECTION_TABS,
   activeSectionTab = "Content Request",
   onSectionTabSelect,
+  showSectionTabs = true,
   children,
 }) {
   return (
@@ -91,28 +99,30 @@ export function AppShell({
           <span className="text-sm">{pageGroupLabel}</span>
         </header>
 
-        <div className="bg-base-100 border-b border-base-300 px-6 shrink-0">
-          <div className="h-10 flex items-end gap-7">
-            {sectionTabs.map((tab) => {
-              const isActive = tab === activeSectionTab;
-              return (
-                <button
-                  key={tab}
-                  type="button"
-                  aria-current={isActive ? "page" : undefined}
-                  onClick={onSectionTabSelect ? () => onSectionTabSelect(tab) : undefined}
-                  className={`pb-3 text-sm border-b-2 -mb-px transition-colors ${
-                    isActive
-                      ? "border-primary text-primary font-semibold"
-                      : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
-                  }`}
-                >
-                  {tab}
-                </button>
-              );
-            })}
+        {showSectionTabs && (
+          <div className="bg-base-100 border-b border-base-300 px-6 shrink-0">
+            <div className="h-10 flex items-end gap-7">
+              {sectionTabs.map((tab) => {
+                const isActive = tab === activeSectionTab;
+                return (
+                  <button
+                    key={tab}
+                    type="button"
+                    aria-current={isActive ? "page" : undefined}
+                    onClick={onSectionTabSelect ? () => onSectionTabSelect(tab) : undefined}
+                    className={`pb-3 text-sm border-b-2 -mb-px transition-colors ${
+                      isActive
+                        ? "border-primary text-primary font-semibold"
+                        : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
+                    }`}
+                  >
+                    {tab}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         <div className="flex-1 min-w-0">{children}</div>
       </div>

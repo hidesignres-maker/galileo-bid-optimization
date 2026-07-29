@@ -5,7 +5,7 @@ import { RequestTypeSelector } from "../components/RequestTypeSelector";
 import { ManualDetailsForm } from "../components/ManualDetailsForm";
 import { ProductLookupTable } from "../components/ProductLookupTable";
 import { InnovationItemInputForm, makeBlankItem } from "../components/InnovationItemInputForm";
-import { ContentRequirementsSection } from "../components/ContentRequirementsSection";
+import { InnovationItemTable } from "../components/product-input/InnovationItemTable";
 import { ManualReviewStep } from "../components/ManualReviewStep";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
@@ -19,13 +19,22 @@ import { createRequest } from "../lib/models";
 // flow — the separate Retailers step is no longer part of the visible
 // wizard. Retailer grouping/date-editing/removal (groupProductsByRetailer,
 // updateGroupDate, removeGroup — all unchanged below) now happens inside
-// Review & Create instead of its own step. Innovation is untouched: it
-// already skips a separate Retailers step entirely, since retailer is
-// captured per item in Details & Item Inputs.
+// Review & Create instead of its own step.
+//
+// Innovation Flow B (InnovationItemTable) is now the primary Innovation
+// input experience, per the approved Figma audit — a 3-step flow of its
+// own: Add Details (shares the exact Brand/VizID Add Details composition,
+// including Supporting Materials/Notes) → Item Inputs (a dedicated step,
+// no longer merged with Details) → Review and Submit. Flow A
+// (InnovationItemInputForm) is preserved as an alternate presentation
+// reachable via the "Test option A" toggle inside the Item Inputs step
+// (see the Item Inputs render block below) — it is not a separate step
+// count or a separate item model, just a different editor over the same
+// itemInputs array.
 const STEPS_BY_TYPE = {
   vizId: ["Add Details", "Select Products", "Review & Create"],
   brandRequest: ["Add Details", "Select Products", "Review & Create"],
-  innovation: ["Details & Item Inputs", "Review & Create"],
+  innovation: ["Add Details", "Item Inputs", "Review and Submit"],
 };
 
 const initialFormData = {
@@ -63,6 +72,13 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
   const [products, setProducts] = useState([]);
   const [itemInputs, setItemInputs] = useState([makeBlankItem()]);
   const [errors, setErrors] = useState({});
+
+  // Presentation-only Innovation input mode — "table" (Flow B, primary) or
+  // "form" (Flow A, reached via the temporary "Test option A" toggle in
+  // the Item Inputs step). Never persisted in the Request payload; both
+  // modes read/write the exact same itemInputs array, so no conversion is
+  // ever needed when switching.
+  const [innovationInputMode, setInnovationInputMode] = useState("table");
 
   const steps = requestType ? STEPS_BY_TYPE[requestType] : [];
   const isInnovation = requestType === "innovation";
@@ -139,21 +155,36 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
   };
 
   const handleNext = () => {
-    if (steps[currentStep] === "Add Details" || steps[currentStep] === "Details & Item Inputs") {
+    const step = steps[currentStep];
+
+    // Add Details validation — title/date/content type — same rule set as
+    // before, now shared verbatim by Brand/VizID and Innovation, since
+    // Innovation's Add Details is the same step (and same composition) as
+    // Brand/VizID's, just with showDate=false.
+    if (step === "Add Details") {
       const validationErrors = getDetailsValidationErrors(formData, { requireDate: !isInnovation });
-
-      // Blocking validation for Innovation item inputs — UPC, Retailer,
-      // Customer ID, Product Title, Brand, On Sale Date always required;
-      // Start Ship Date required when Retailer is AMZ (isItemRowValid,
-      // businessRules.js). A single invalid row blocks Continue to Review.
-      if (isInnovation && itemInputs.some((item) => !isItemRowValid(item))) {
-        validationErrors.items =
-          "Some item inputs are missing required fields. Complete all required fields before continuing.";
-      }
-
       setErrors(validationErrors);
       if (Object.keys(validationErrors).length > 0) return;
     }
+
+    // Item Inputs validation — Innovation only, now its own dedicated step
+    // (previously merged with Details). Same rule, same trigger point
+    // relative to "leaving the step that owns itemInputs": UPC, Retailer,
+    // Customer ID, Product Title, Brand, On Sale Date always required;
+    // Start Ship Date required when Retailer is AMZ (isItemRowValid,
+    // businessRules.js, unchanged). A single invalid row — from either
+    // Flow A or Flow B, since both write the same itemInputs array —
+    // blocks Continue to Review.
+    if (step === "Item Inputs") {
+      const validationErrors = {};
+      if (itemInputs.some((item) => !isItemRowValid(item))) {
+        validationErrors.items =
+          "Some item inputs are missing required fields. Complete all required fields before continuing.";
+      }
+      setErrors(validationErrors);
+      if (Object.keys(validationErrors).length > 0) return;
+    }
+
     setCurrentStep((s) => Math.min(s + 1, steps.length - 1));
   };
 
@@ -195,6 +226,11 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
 
   const stepName = steps[currentStep];
   const itemsValidCount = isInnovation ? itemInputs.length : products.length;
+  // Both request-type families now use a differently-worded final step
+  // name ("Review & Create" for Brand/VizID, "Review and Submit" for
+  // Innovation's new 3-step Flow B topology) — this just generalizes the
+  // exact-string checks that used to only match "Review & Create".
+  const isReviewStep = stepName === "Review & Create" || stepName === "Review and Submit";
 
   // Gate: request type must be chosen before any step-specific form shows.
   if (!requestType) {
@@ -224,11 +260,16 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         variant="manualCreate"
       />
 
-      {/* Brand/VizID Add Details — explicit Figma-aligned composition
-          (Add Details Pattern v1): centered 778px work surface, "Request
-          details" card title (not the raw step name), 24px padding. This
-          branch never renders for Innovation — STEPS_BY_TYPE.innovation
-          never contains "Add Details", only "Details & Item Inputs". */}
+      {/* Add Details — explicit Figma-aligned composition (Add Details
+          Pattern v1): centered 778px work surface, "Request details" card
+          title (not the raw step name), 24px padding. Now shared verbatim
+          by Brand/VizID AND Innovation Flow B/A alike — Innovation's Add
+          Details step uses this exact same composition (no request-level
+          date, per showDate={!isInnovation}, but Supporting
+          Materials/Notes/mock file previews DO render here now for
+          Innovation too, since Add Details is where they live for every
+          request type in this pattern — see ManualDetailsForm's own
+          showContentRequirements default of true). */}
       {stepName === "Add Details" && (
         <div className="w-[778px] mx-auto">
           <Card title="Request details" headerClassName="px-6 pt-6" bodyClassName="p-6">
@@ -238,45 +279,40 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
               errors={errors}
               onFieldChange={patchField}
               showDate={!isInnovation}
-              showContentRequirements={!isInnovation}
             />
           </Card>
         </div>
       )}
 
-      {/* Innovation Details & Item Inputs — deliberately kept structurally
-          explicit, not folded into the Brand/VizID card composition above:
-          no request-level date, item inputs stay in their existing
-          location, Supporting Materials stays after item inputs. */}
-      {stepName === "Details & Item Inputs" && (
-        <Card title={stepName}>
-          <div className="flex flex-col gap-6">
-            <ManualDetailsForm
-              requestType={requestType}
-              formData={formData}
-              errors={errors}
-              onFieldChange={patchField}
-              showDate={!isInnovation}
-              showContentRequirements={!isInnovation}
-            />
-            <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
-            {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
-
-            {/* TEMP ASSUMPTION: Manual Innovation keeps multiple item
-                inputs grouped in one request, and supporting materials
-                are shared at request level until product confirms
-                whether item-level attachments or one-ticket-per-item
-                behavior is required. Rendered here (after Item Inputs,
-                not inside ManualDetailsForm) because item inputs are
-                Innovation's primary object — users should enter items
-                before adding shared supporting materials. */}
-            <ContentRequirementsSection
-              requestType={requestType}
-              value={formData.contentRequirements}
-              onChange={(next) => patchField("contentRequirements", next)}
-            />
+      {/* Innovation Item Inputs — its own dedicated step (Flow B topology),
+          no longer merged with Add Details. Renders whichever editor
+          `innovationInputMode` selects: InnovationItemTable (Flow B,
+          default/primary) or InnovationItemInputForm (Flow A, preserved
+          as-is, reached via the temporary "Test option A" toggle below).
+          Both read/write the exact same wizard-owned itemInputs array —
+          no conversion, no second item model, no data loss when toggling. */}
+      {stepName === "Item Inputs" && (
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end">
+            <label className="flex items-center gap-2 text-xs text-base-content/60 cursor-pointer">
+              <input
+                type="checkbox"
+                className="toggle toggle-sm"
+                checked={innovationInputMode === "form"}
+                onChange={(e) => setInnovationInputMode(e.target.checked ? "form" : "table")}
+              />
+              Test option A
+            </label>
           </div>
-        </Card>
+
+          {innovationInputMode === "form" ? (
+            <InnovationItemInputForm items={itemInputs} onChangeItems={setItemInputs} />
+          ) : (
+            <InnovationItemTable items={itemInputs} onChangeItems={setItemInputs} />
+          )}
+
+          {errors.items && <InfoBanner variant="error">{errors.items}</InfoBanner>}
+        </div>
       )}
 
       {stepName === "Select Products" && (
@@ -287,7 +323,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         />
       )}
 
-      {stepName === "Review & Create" && (
+      {isReviewStep && (
         <ManualReviewStep
           requestType={requestType}
           formData={formData}
@@ -301,11 +337,12 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
         />
       )}
 
-      {/* Brand/VizID Add Details footer — Figma-aligned: anchored to the
-          same 778px work-surface boundary, 40px action row, exact copy
-          "Continue to products" (not the dynamic "Continue to {next
-          step}" used elsewhere), no full-width top border. Back never
-          shows here anyway (Add Details is always step 0), so dropping it
+      {/* Add Details footer — Figma-aligned: anchored to the same 778px
+          work-surface boundary, 40px action row, no full-width top
+          border. Copy is type-specific ("Continue to products" for
+          Brand/VizID, "Continue to item inputs" for Innovation) since Add
+          Details is now the shared first step for both. Back never shows
+          here anyway (Add Details is always step 0), so dropping it
           changes nothing functionally. Same handleNext/onCancel handlers,
           same click-time validation — only the JSX shell differs. */}
       {stepName === "Add Details" ? (
@@ -314,16 +351,19 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
             Discard
           </Button>
           <Button icon={ArrowRightIcon} onClick={handleNext}>
-            Continue to products
+            {isInnovation ? "Continue to item inputs" : "Continue to products"}
           </Button>
         </div>
       ) : (
-        /* Review & Create renders its own footer (ReviewFooter, inside
+        /* Review steps render their own footer (ReviewFooter, inside
            ManualReviewStep's ReviewShell) with the same handlers passed
            above — Back/Discard/Create Request are still wizard-owned, only
-           the button JSX moved. Every other step (including Innovation's
-           Details & Item Inputs) keeps this shared footer unchanged. */
-        stepName !== "Review & Create" && (
+           the button JSX moved. Every other step (Select Products,
+           Innovation's Item Inputs) keeps this shared footer unchanged.
+           Item Inputs gets the exact copy "Continue to review" instead of
+           the dynamic next-step-name template, since the next step's real
+           name ("Review and Submit") reads awkwardly here. */
+        !isReviewStep && (
           <div className="flex items-center justify-between border-t border-base-300 pt-4">
             <div className="flex items-center gap-2">
               <Button variant="text" className="text-error" onClick={onCancel}>
@@ -340,7 +380,7 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
               onClick={handleNext}
               disabled={stepName === "Select Products" && itemsValidCount === 0}
             >
-              Continue to {steps[currentStep + 1]}
+              {stepName === "Item Inputs" ? "Continue to review" : `Continue to ${steps[currentStep + 1]}`}
             </Button>
           </div>
         )

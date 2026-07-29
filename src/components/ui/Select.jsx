@@ -1,6 +1,11 @@
 /**
  * Select — labeled select input, Galileo style
  * options: [{ value, label }]
+ *
+ * `size` — optional, "md" (default, unchanged) | "sm" (appends DaisyUI's
+ * own `select-sm` modifier, ~32px tall, for compact table-cell editing —
+ * see InnovationItemTable.jsx). Every existing caller omits this prop and
+ * renders with the exact same classes as before.
  */
 export function Select({
   label,
@@ -11,6 +16,7 @@ export function Select({
   placeholder = "Select…",
   className = "",
   containerClassName = "",
+  size = "md",
   ...props
 }) {
   return (
@@ -24,7 +30,9 @@ export function Select({
         </label>
       )}
       <select
-        className={`select select-bordered w-full ${error ? "select-error" : ""} ${className}`}
+        className={`select select-bordered w-full ${size === "sm" ? "select-sm" : ""} ${
+          error ? "select-error" : ""
+        } ${className}`}
         {...props}
       >
         <option value="" disabled>

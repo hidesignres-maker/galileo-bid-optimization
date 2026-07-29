@@ -1,7 +1,13 @@
 @import "tailwindcss";
 @import "./theme/corporate.css";
+
+/* themes: false disables every DaisyUI bundled preset theme (including its
+   own built-in theme also named "corporate"), so the custom theme defined
+   in ./theme/corporate.css (via @plugin "daisyui/theme") is the single
+   effective owner of [data-theme="corporate"] — no duplicate/colliding
+   theme registration under the same name. */
 @plugin "daisyui" {
-  themes: corporate;
+  themes: false;
 }
 
 body {

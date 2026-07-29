@@ -11,10 +11,33 @@ import { CheckIcon } from "@heroicons/react/24/solid";
  * Reusing one fixed 4-label stepper for all of these was the bug in the
  * previous version — Innovation was forced through a "Retailers" step it
  * doesn't need, and Bulk was jammed into the Manual wizard's step 2.
+ *
+ * `variant` ("default" | "manualCreate") — opt-in visual variant for the
+ * Add Details Pattern v1 create-flow shell. "default" renders byte-
+ * identical output to before this prop existed (same classes, same order),
+ * so Bulk CSV's stepper (which never passes variant) is untouched.
+ * "manualCreate" is used only by ManualRequestWizard: 32px indicators
+ * (down from 40px), 8px pill connector bars (up from a 1px hairline),
+ * 16/28 labels (up from text-sm), and the whole stepper capped at 780px
+ * and centered — which lines up with the 778px Add Details work surface
+ * (roughly a 200px inset on each side within the 1180px page canvas).
+ * Active/inactive color logic (bg-primary vs bg-base-300) is unchanged by
+ * either variant.
  */
-export function WizardStepper({ steps, currentStep, furthestStep = currentStep, onStepClick }) {
+export function WizardStepper({
+  steps,
+  currentStep,
+  furthestStep = currentStep,
+  onStepClick,
+  variant = "default",
+}) {
+  const isManualCreate = variant === "manualCreate";
+  const indicatorSize = isManualCreate ? "w-8 h-8" : "w-10 h-10";
+  const connectorClass = isManualCreate ? "h-2 rounded-full mt-3" : "h-px mt-5";
+  const labelClass = isManualCreate ? "text-base leading-7" : "text-sm";
+
   return (
-    <ol className="flex items-start w-full">
+    <ol className={`flex items-start w-full ${isManualCreate ? "max-w-[780px] mx-auto" : ""}`}>
       {steps.map((label, i) => {
         const isDone = i < currentStep;
         const isCurrent = i === currentStep;
@@ -29,7 +52,7 @@ export function WizardStepper({ steps, currentStep, furthestStep = currentStep, 
               style={{ cursor: isReachable && onStepClick ? "pointer" : "default" }}
             >
               <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
+                className={`${indicatorSize} rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
                   isDone || isCurrent
                     ? "bg-primary text-primary-content"
                     : "bg-base-300 text-base-content/60"
@@ -38,7 +61,7 @@ export function WizardStepper({ steps, currentStep, furthestStep = currentStep, 
                 {isDone ? <CheckIcon className="w-5 h-5" /> : i + 1}
               </div>
               <span
-                className={`text-sm whitespace-nowrap ${
+                className={`${labelClass} whitespace-nowrap ${
                   isCurrent ? "font-semibold text-base-content" : "text-base-content/60"
                 }`}
               >
@@ -47,7 +70,7 @@ export function WizardStepper({ steps, currentStep, furthestStep = currentStep, 
             </div>
 
             {!isLast && (
-              <div className={`flex-1 h-px mx-3 mt-5 ${isDone ? "bg-primary" : "bg-base-300"}`} />
+              <div className={`flex-1 ${connectorClass} mx-3 ${isDone ? "bg-primary" : "bg-base-300"}`} />
             )}
           </li>
         );

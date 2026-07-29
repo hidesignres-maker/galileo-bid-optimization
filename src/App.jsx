@@ -1,15 +1,34 @@
 import { useState } from "react";
-import { ArrowLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ChevronRightIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { PlusIcon } from "@heroicons/react/24/solid";
 import { ContentRequestQueue } from "./pages/ContentRequestQueue";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
 import { BulkCsvWizard } from "./pages/BulkCsvWizard";
 import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
+import { AppShell } from "./components/AppShell";
+import { Button } from "./components/ui/Button";
 import { mockRequests } from "./data/mockRequests";
 
 const BREADCRUMB_BY_VIEW = {
   queue: [["Content Request Queue"]],
-  manual: [["Content Request", "queue"], ["New Request", "queue"], ["Build Manually"]],
+  // Simplified for the manual create/review flow per the approved Figma
+  // create-flow shell: "Content Request / New Request", no third
+  // "Build Manually" crumb. Bulk's breadcrumb is untouched.
+  manual: [["Content Request", "queue"], ["New Request"]],
   bulk: [["Content Request", "queue"], ["New Request", "queue"], ["Bulk CSV Import"]],
+};
+
+// Request-type-specific page titles for the manual create/review flow,
+// replacing the previous flat "Build Manually" title. Keys are the same
+// requestType identifiers already used everywhere else (RequestTypeSelector,
+// STEPS_BY_TYPE, REQUEST_TYPE_LABELS, createRequest) — no new identifiers
+// introduced. Falls back to a generic title in the rare case this view is
+// reached without a type yet selected (ManualRequestWizard's own in-page
+// fallback gate — see initialManualRequestType's doc comment below).
+const MANUAL_TITLE_BY_TYPE = {
+  vizId: "New Request : VizID change",
+  brandRequest: "New Request : Brand request",
+  innovation: "New Request : Innovation - flow A",
 };
 
 /**
@@ -59,58 +78,86 @@ export default function App() {
   const crumbs = BREADCRUMB_BY_VIEW[view];
 
   return (
-    <div data-theme="corporate" className="min-h-screen bg-base-200 font-sans text-base-content">
-      <main className="max-w-screen-xl mx-auto px-6 py-8">
-        <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-4">
+    <div data-theme="corporate" className="min-h-screen bg-base-200 text-base-content">
+      {/* AppShell adds presentation chrome only (nav rail / module header /
+          section tabs) around the existing breadcrumb + view content below.
+          Nothing inside <main> changes shape, width, or behavior.
+          showSectionTabs is false only for the manual create/review flow —
+          Queue and Bulk keep the module tabs row exactly as before. */}
+      <AppShell showSectionTabs={view !== "manual"}>
+        <main className={view === "queue" ? "w-full px-6 py-8" : "max-w-screen-xl mx-auto px-6 py-8"}>
+          {/* Breadcrumb is intentionally not rendered for the Home/Queue
+              view (per Figma) — it's the root screen, nothing to trace
+              back through. Manual/Bulk/internal flows keep their full
+              breadcrumb + back-arrow, unchanged. */}
           {view !== "queue" && (
-            <button
-              type="button"
-              className="mr-0.5"
-              onClick={() => goTo("queue")}
-              aria-label="Back"
-            >
-              <ArrowLeftIcon className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 text-sm text-base-content/60 mb-6">
+              <button type="button" className="mr-0.5" onClick={() => goTo("queue")} aria-label="Back">
+                <ArrowLeftIcon className="w-4 h-4" />
+              </button>
+              {crumbs.map(([label, target], i) => (
+                <span key={label} className="flex items-center gap-1.5">
+                  {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
+                  {target ? (
+                    <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
+                      {label}
+                    </button>
+                  ) : (
+                    <span className="text-base-content font-medium">{label}</span>
+                  )}
+                </span>
+              ))}
+            </div>
           )}
-          {crumbs.map(([label, target], i) => (
-            <span key={label} className="flex items-center gap-1.5">
-              {i > 0 && <ChevronRightIcon className="w-3.5 h-3.5" />}
-              {target ? (
-                <button type="button" className="hover:text-base-content" onClick={() => goTo(target)}>
-                  {label}
-                </button>
-              ) : (
-                <span className="text-base-content font-medium">{label}</span>
-              )}
-            </span>
-          ))}
-        </div>
 
-        {view === "queue" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Content Request Queue</h1>
-            <ContentRequestQueue requests={requests} onNewRequest={() => setIsCreateModalOpen(true)} />
-          </>
-        )}
+          {view === "queue" && (
+            <>
+              <div className="flex items-start justify-between gap-4 mb-6">
+                <div>
+                  <h1 className="text-xl font-bold text-base-content">Content Request Queue</h1>
+                  <p className="text-sm text-base-content/60 mt-1">
+                    Brand, innovation, and VizID requests across retailers
+                  </p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <Button
+                    variant="outline"
+                    icon={CalendarDaysIcon}
+                    iconPosition="leading"
+                    iconClassName="w-5 h-5"
+                  >
+                    Calendar View
+                  </Button>
+                  <Button icon={PlusIcon} iconPosition="leading" onClick={() => setIsCreateModalOpen(true)}>
+                    New Request
+                  </Button>
+                </div>
+              </div>
+              <ContentRequestQueue requests={requests} />
+            </>
+          )}
 
-        {view === "manual" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Build Manually</h1>
-            <ManualRequestWizard
-              initialRequestType={initialManualRequestType}
-              onCreateRequest={handleRequestCreated}
-              onCancel={() => goTo("queue")}
-            />
-          </>
-        )}
+          {view === "manual" && (
+            <>
+              <h1 className="text-xl font-bold text-base-content mb-6">
+                {MANUAL_TITLE_BY_TYPE[initialManualRequestType] ?? "New Request"}
+              </h1>
+              <ManualRequestWizard
+                initialRequestType={initialManualRequestType}
+                onCreateRequest={handleRequestCreated}
+                onCancel={() => goTo("queue")}
+              />
+            </>
+          )}
 
-        {view === "bulk" && (
-          <>
-            <h1 className="text-2xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
-            <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
-          </>
-        )}
-      </main>
+          {view === "bulk" && (
+            <>
+              <h1 className="text-xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
+              <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
+            </>
+          )}
+        </main>
+      </AppShell>
 
       {isCreateModalOpen && (
         <CreateRequestLauncher

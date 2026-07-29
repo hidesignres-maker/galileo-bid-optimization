@@ -3,6 +3,18 @@ import { CalendarIcon } from "@heroicons/react/24/outline";
 /**
  * Input — labeled text/date input with inline error, Corporate style.
  * Date inputs get a leading calendar icon to match the reference UI.
+ *
+ * `icon` — optional leading Heroicon component for non-date inputs (e.g.
+ * LinkIcon on Reference link, per Add Details Pattern v1). Purely visual:
+ * no navigation/click behavior is attached to it. Backward-compatible —
+ * every existing caller omits it and renders exactly as before. Date
+ * inputs keep their own CalendarIcon regardless of this prop, so `type`
+ * and `icon` can never both try to render a leading icon at once.
+ *
+ * `size` — optional, "md" (default, unchanged) | "sm" (appends DaisyUI's
+ * own `input-sm` modifier, ~32px tall, for compact table-cell editing —
+ * see InnovationItemTable.jsx). Every existing caller omits this prop and
+ * renders with the exact same classes as before.
  */
 export function Input({
   label,
@@ -12,9 +24,12 @@ export function Input({
   className = "",
   containerClassName = "",
   type,
+  icon: Icon,
+  size = "md",
   ...props
 }) {
   const isDate = type === "date";
+  const hasLeadingIcon = isDate || Boolean(Icon);
 
   return (
     <div className={`form-control w-full ${containerClassName}`}>
@@ -28,13 +43,16 @@ export function Input({
       )}
       <div className="relative">
         {isDate && (
-          <CalendarIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <CalendarIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
+        )}
+        {!isDate && Icon && (
+          <Icon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
         )}
         <input
           type={type}
-          className={`input input-bordered w-full ${isDate ? "pl-9" : ""} ${
-            error ? "input-error" : ""
-          } ${className}`}
+          className={`input input-bordered w-full ${size === "sm" ? "input-sm" : ""} ${
+            hasLeadingIcon ? "pl-9" : ""
+          } ${error ? "input-error" : ""} ${className}`}
           {...props}
         />
       </div>

@@ -6,10 +6,9 @@
  * any future scenario rule (a new retailer-specific requirement, a new
  * flow-specific default, etc.) has one place to be added and reviewed.
  *
- * Note: OpenQuestionsPanel currently only lists Bulk-CSV-specific open
- * questions (per the latest stakeholder round). The AMZ Start Ship Date
- * rule below is a resolved implementation default, not an open question —
- * but it's still worth a quick confirm with product if it comes up again.
+ * Note: the AMZ Start Ship Date rule below is a resolved implementation
+ * default, not an open question — but it's still worth a quick confirm
+ * with product if it comes up again.
  */
 
 /**

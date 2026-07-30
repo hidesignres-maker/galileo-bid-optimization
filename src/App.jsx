@@ -4,10 +4,21 @@ import { PlusIcon } from "@heroicons/react/24/solid";
 import { ContentRequestQueue } from "./pages/ContentRequestQueue";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
 import { BulkCsvWizard } from "./pages/BulkCsvWizard";
+import { ProductSelectionDemo } from "./pages/ProductSelectionDemo";
 import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
 import { AppShell } from "./components/AppShell";
 import { Button } from "./components/ui/Button";
 import { mockRequests } from "./data/mockRequests";
+
+// Lightest possible route handling for this static prototype: no router
+// dependency, just a pathname check read once at module load. There is no
+// client-side navigation *into* "/product-selection" from within the full
+// app (it's a separate stakeholder-testing entry point, reached by opening
+// or refreshing that URL directly), so this value never needs to change
+// during a mounted App's lifetime — safe to branch on before any hooks run.
+const isProductSelectionDemo =
+  typeof window !== "undefined" &&
+  window.location.pathname.replace(/\/+$/, "") === "/product-selection";
 
 const BREADCRUMB_BY_VIEW = {
   queue: [["Content Request Queue"]],
@@ -47,6 +58,13 @@ const MANUAL_TITLE_BY_TYPE = {
  * BulkCsvWizard once "Bulk CSV import" is chosen.
  */
 export default function App() {
+  // Isolated Product Selection demo short-circuits before any of the full
+  // prototype's state/hooks are set up — the existing queue/manual/bulk
+  // view machine below is completely untouched for "/".
+  if (isProductSelectionDemo) {
+    return <ProductSelectionDemo onNavigateHome={() => { window.location.href = "/"; }} />;
+  }
+
   const [view, setView] = useState("queue");
   const [requests, setRequests] = useState(mockRequests);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

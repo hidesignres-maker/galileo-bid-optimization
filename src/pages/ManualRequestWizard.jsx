@@ -14,6 +14,12 @@ import { mockProducts } from "../data/mockProducts";
 import { getDetailsValidationErrors, isItemRowValid } from "../lib/businessRules";
 import { groupProductsByRetailer } from "../lib/groupByRetailer";
 import { createRequest } from "../lib/models";
+import {
+  requestToWizardFormData,
+  requestToWizardProducts,
+  requestToWizardItemInputs,
+  buildUpdatedRequest,
+} from "../lib/requestWizardAdapter";
 
 // Confirmed product decision: Brand Request / VizID Change are a 3-step
 // flow — the separate Retailers step is no longer part of the visible
@@ -63,14 +69,63 @@ const initialFormData = {
  * provided, the in-page type gate below is skipped entirely and the correct
  * step list renders immediately. When omitted (e.g. this component is used
  * directly, or the launcher is bypassed), the old gate remains as a
- * fallback so the component still works on its own.
+ * fallback so the component still works on its own. Ignored in edit mode
+ * (see below) — an existing request's own type is always the source of
+ * truth there.
+ *
+ * EDIT MVP — three new, optional, backward-compatible props. Every
+ * existing create caller (CreateRequestLauncher's flow, via App.jsx) omits
+ * all three, so `mode` defaults to "create" and nothing below behaves any
+ * differently than before:
+ *
+ * `mode` ("create", default | "edit") — which final Review action / save
+ * path is active. Read once at the top; nothing else in this component
+ * branches on the request-type-selector gate becoming reachable in edit
+ * mode, because `requestType` is already hydrated below whenever
+ * `initialRequestData` is present, so that gate is simply never reached.
+ *
+ * `initialRequestData` — the persisted Request being edited (only
+ * meaningful when `mode === "edit"`). Used exactly once, at mount, via
+ * lazy `useState` initializers below (requestToWizardFormData/Products/
+ * ItemInputs — see requestWizardAdapter.js) — never re-read after that.
+ * This is deliberate: a lazy initializer function only runs on the very
+ * first render, so the wizard hydrates from the request once and then
+ * behaves as fully independent local state from then on, exactly like
+ * create mode's blank defaults do. There is no effect anywhere in this
+ * file that re-syncs state from `initialRequestData` on a later render.
+ *
+ * `onUpdateRequest` — called instead of `onCreateRequest` when saving in
+ * edit mode (see handleSaveChanges). `onCreateRequest` itself is simply
+ * not passed by the edit-mode caller and is never invoked in that mode.
  */
-export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestType = null }) {
-  const [requestType, setRequestType] = useState(initialRequestType);
+export function ManualRequestWizard({
+  onCreateRequest,
+  onCancel,
+  initialRequestType = null,
+  initialRequestData = null,
+  mode = "create",
+  onUpdateRequest,
+}) {
+  const isEditMode = mode === "edit" && Boolean(initialRequestData);
+
+  const [requestType, setRequestType] = useState(() =>
+    isEditMode ? initialRequestData.requestType : initialRequestType
+  );
   const [currentStep, setCurrentStep] = useState(0);
-  const [formData, setFormData] = useState(initialFormData);
-  const [products, setProducts] = useState([]);
-  const [itemInputs, setItemInputs] = useState([makeBlankItem()]);
+  const [formData, setFormData] = useState(() =>
+    isEditMode ? requestToWizardFormData(initialRequestData) : initialFormData
+  );
+  const [products, setProducts] = useState(() =>
+    isEditMode && initialRequestData.requestType !== "innovation"
+      ? requestToWizardProducts(initialRequestData)
+      : []
+  );
+  const [itemInputs, setItemInputs] = useState(() => {
+    if (isEditMode && initialRequestData.requestType === "innovation") {
+      return requestToWizardItemInputs(initialRequestData) ?? [makeBlankItem()];
+    }
+    return [makeBlankItem()];
+  });
   const [errors, setErrors] = useState({});
 
   // Presentation-only Innovation input mode — "table" (Flow B, primary) or
@@ -224,6 +279,32 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
     onCreateRequest(request);
   };
 
+  // EDIT MVP — the Save path. Builds the updated request via the shared
+  // requestWizardAdapter (same createRequest() serialization
+  // handleCreateRequest above uses, plus identity/lifecycle preservation —
+  // see buildUpdatedRequest's own doc comment), then hands it to the
+  // caller. Never calls onCreateRequest and never touches
+  // initialRequestData itself — the wizard's own products/itemInputs/
+  // formData are the only things read here, and they've been local,
+  // independent draft state since the one-time hydration above.
+  const handleSaveChanges = () => {
+    const distinctRetailers = isInnovation
+      ? Array.from(new Set(itemInputs.map((i) => i.retailer).filter(Boolean)))
+      : Array.from(new Set(retailerGroups.map((g) => g.retailer)));
+
+    const updatedRequest = buildUpdatedRequest({
+      originalRequest: initialRequestData,
+      requestType,
+      formData,
+      products,
+      itemInputs,
+      retailers: distinctRetailers,
+      isInnovation,
+    });
+
+    onUpdateRequest(updatedRequest);
+  };
+
   const stepName = steps[currentStep];
   const itemsValidCount = isInnovation ? itemInputs.length : products.length;
   // Both request-type families now use a differently-worded final step
@@ -334,6 +415,8 @@ export function ManualRequestWizard({ onCreateRequest, onCancel, initialRequestT
           onDiscard={onCancel}
           onCreateRequest={handleCreateRequest}
           onUpdateGroupDate={updateGroupDate}
+          mode={isEditMode ? "edit" : "create"}
+          onSaveChanges={handleSaveChanges}
         />
       )}
 

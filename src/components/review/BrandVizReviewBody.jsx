@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Table, ClampCell } from "../ui/Table";
+import { ProductImageThumb } from "../ui/ProductImageThumb";
 import { mockRetailers } from "../../data/mockRetailers";
 import { fmtDate, fmtCount } from "../../lib/format";
 import { BrandVizRequestSummary } from "./BrandVizRequestSummary";
@@ -70,8 +71,17 @@ function retailerDotClass(code) {
  * group's rows are visible and does not read or write retailerGroups,
  * products, or any wizard state. Collapsing/expanding here can never
  * change what gets submitted on Create Request.
+ *
+ * `readOnly` (default false) — opt-in, backward-compatible: when true, the
+ * editable date `<input>` is replaced by the exact same `fmtDate(group.date)`
+ * plain-text treatment already shown as context next to it, and
+ * `onUpdateGroupDate` is never called (not passed through as a handler to
+ * anything). Every existing caller (the wizard's Review step) omits this
+ * prop and renders exactly as before. Added for the READ Request Detail
+ * page, which reuses this component for its retailer/product body but must
+ * never expose a control that could mutate a persisted request.
  */
-function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdateGroupDate }) {
+function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdateGroupDate, readOnly = false }) {
   const [open, setOpen] = useState(defaultOpen);
   const toggle = () => setOpen((o) => !o);
   const label = retailerLabel(group.retailer);
@@ -99,17 +109,31 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
         </button>
 
         <div className="flex items-center gap-4 shrink-0">
-          <span className="text-xs whitespace-nowrap">
-            <span className="font-semibold text-base-content/70">Launch date:</span>{" "}
-            <span className="text-base-content/60">{fmtDate(group.date)}</span>
-          </span>
-          <input
-            type="date"
-            aria-label={`${dateLabel} for ${label}`}
-            className="input input-bordered w-[140px] bg-base-200/50 border-base-300 text-base-content/70 text-sm"
-            value={group.date || ""}
-            onChange={(e) => onUpdateGroupDate(group.retailer, group.date, e.target.value)}
-          />
+          {readOnly ? (
+            // Single labeled value — no separate "context label" + input
+            // pair needed here (the input's own context label exists in the
+            // editable branch specifically because a native date input's
+            // own displayed value isn't in the friendly fmtDate format;
+            // there's nothing to disambiguate once it's already plain text).
+            <span className="text-xs whitespace-nowrap" aria-label={`${dateLabel} for ${label}`}>
+              <span className="font-semibold text-base-content/70">{dateLabel}:</span>{" "}
+              <span className="text-base-content/70">{fmtDate(group.date)}</span>
+            </span>
+          ) : (
+            <>
+              <span className="text-xs whitespace-nowrap">
+                <span className="font-semibold text-base-content/70">Launch date:</span>{" "}
+                <span className="text-base-content/60">{fmtDate(group.date)}</span>
+              </span>
+              <input
+                type="date"
+                aria-label={`${dateLabel} for ${label}`}
+                className="input input-bordered w-[140px] bg-base-200/50 border-base-300 text-base-content/70 text-sm"
+                value={group.date || ""}
+                onChange={(e) => onUpdateGroupDate(group.retailer, group.date, e.target.value)}
+              />
+            </>
+          )}
           <button
             type="button"
             onClick={toggle}
@@ -126,6 +150,11 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
           <Table flush>
             <thead>
               <tr>
+                {/* No header label for the thumbnail column — same
+                    convention already used for icon-only columns elsewhere
+                    (e.g. Queue's row-actions <th>), a narrow fixed width
+                    keeps every other column's layout untouched. */}
+                <th className="w-14" aria-label="Product image" />
                 <th className="whitespace-nowrap">Product Description</th>
                 <th className="whitespace-nowrap">Brand</th>
                 <th className="whitespace-nowrap">EAN</th>
@@ -134,6 +163,9 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
             <tbody>
               {group.rows.map((r, i) => (
                 <tr key={i}>
+                  <td className="align-middle">
+                    <ProductImageThumb src={r.imageUrl} alt={r.productTitle} />
+                  </td>
                   <ClampCell contentClassName="text-base-content">{r.productTitle}</ClampCell>
                   <td className="text-base-content/70 whitespace-nowrap align-middle">
                     {brandByEan.get(r.ean) ?? "—"}
@@ -161,9 +193,18 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
  * now its own independent white card instead of all of them sharing one
  * outer card surface.
  *
+ * Each product row now leads with a compact ProductImageThumb (`r.imageUrl`,
+ * carried through by groupProductsByRetailer — see its own comment). This
+ * renders in both the wizard's Review step and Request Detail, since it's
+ * the same shared table; it's purely additive/decorative and never gates
+ * or changes any editing behavior. No product in this prototype's mock
+ * data currently has a real `imageUrl`, so every row shows the neutral
+ * placeholder today — the column exists so a real image can be dropped in
+ * later without any further component changes.
+ *
  * Brand isn't present on retailerGroups rows (groupProductsByRetailer only
- * carries productTitle/ean/upc/retailers per row) — it's joined here for
- * display only, by EAN, from the `products` array the wizard already
+ * carries productTitle/ean/upc/retailers/imageUrl per row) — it's joined
+ * here for display only, by EAN, from the `products` array the wizard already
  * passes down. This does not touch groupByRetailer.js or products state.
  *
  * No `onRemoveGroup` prop — the visible remove control was removed from
@@ -171,8 +212,23 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
  * handler still exists in ManualRequestWizard.jsx (kept intentionally,
  * not deleted, since deleting it wasn't explicitly requested) but is no
  * longer threaded down through here.
+ *
+ * `readOnly` (default false) — opt-in, backward-compatible: forwarded
+ * straight through to every `RetailerGroupPanel`, which is the only place
+ * this actually changes anything (see its own doc comment). The wizard's
+ * Review step never passes this prop, so it keeps rendering live,
+ * editable date inputs exactly as before. Request Detail (READ MVP) passes
+ * `readOnly` and omits `onUpdateGroupDate` entirely, since there is
+ * nothing here to call it.
  */
-export function BrandVizReviewBody({ requestType, formData, products, retailerGroups, onUpdateGroupDate }) {
+export function BrandVizReviewBody({
+  requestType,
+  formData,
+  products,
+  retailerGroups,
+  onUpdateGroupDate,
+  readOnly = false,
+}) {
   const brandByEan = new Map(products.map((p) => [p.ean, p.brand]));
   const dateLabel = DATE_COLUMN_LABEL[requestType] ?? "Date";
 
@@ -200,6 +256,7 @@ export function BrandVizReviewBody({ requestType, formData, products, retailerGr
                 defaultOpen={i === 0}
                 dateLabel={dateLabel}
                 onUpdateGroupDate={onUpdateGroupDate}
+                readOnly={readOnly}
               />
             ))}
           </div>

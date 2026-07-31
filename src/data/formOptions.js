@@ -37,6 +37,29 @@ export const mockAssignees = [
   { value: "jordan.lee", label: "Jordan Lee" },
 ];
 
+/**
+ * getAssigneeLabel — the single shared "how do we display an assignee"
+ * helper. A request's `assignee` field is always stored as the Select's
+ * option *value* (e.g. "priya.nair") when written by the live wizard
+ * (create or edit) — matching what ManualDetailsForm's Assignee <Select>
+ * needs to pre-select correctly. This helper is for the opposite
+ * direction: turning that stored value back into the friendly label
+ * ("Priya Nair") everywhere a request's assignee is only ever *displayed*
+ * (Queue, Request Detail, Review/Summary bodies) — never for the Select
+ * control itself, which still reads/writes the raw value directly.
+ *
+ * Backward compatible on purpose: also accepts an already-friendly label
+ * (in case any request still stores one) and an unrecognized name (in
+ * case of a future assignee not yet in mockAssignees) — both are returned
+ * as-is rather than blanked out. Nothing here mutates the request; it's a
+ * pure display-time lookup, called fresh on every render.
+ */
+export function getAssigneeLabel(value) {
+  if (!value) return "";
+  const match = mockAssignees.find((a) => a.value === value || a.label === value);
+  return match ? match.label : value;
+}
+
 // Display label only — the enum value stays "vizId" everywhere in code
 // (createRequest/createBulkRow/STEPS_BY_TYPE/etc.); only this label changed
 // from "Viz ID Change" to "VizID Change" for copy consistency.

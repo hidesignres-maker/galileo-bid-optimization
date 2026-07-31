@@ -1,5 +1,5 @@
 import { Card } from "../ui/Card";
-import { CONTENT_TYPE_OPTIONS_BY_FLOW, REQUEST_TYPE_LABELS } from "../../data/formOptions";
+import { CONTENT_TYPE_OPTIONS_BY_FLOW, REQUEST_TYPE_LABELS, getAssigneeLabel } from "../../data/formOptions";
 
 function contentTypeLabels(values) {
   const options = CONTENT_TYPE_OPTIONS_BY_FLOW.innovation ?? [];
@@ -39,7 +39,7 @@ export function InnovationRequestSummary({ formData }) {
       <SummaryRow label="Title">{formData.title || "—"}</SummaryRow>
       <SummaryRow label="Description">{formData.description || "—"}</SummaryRow>
       <SummaryRow label="Content Type">{contentTypes.join(", ") || "—"}</SummaryRow>
-      <SummaryRow label="Assignee">{formData.assignee || "Unassigned"}</SummaryRow>
+      <SummaryRow label="Assignee">{getAssigneeLabel(formData.assignee) || "Unassigned"}</SummaryRow>
     </Card>
   );
 }

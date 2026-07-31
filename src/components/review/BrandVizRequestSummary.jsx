@@ -1,5 +1,5 @@
 import { Card } from "../ui/Card";
-import { CONTENT_TYPE_OPTIONS_BY_FLOW } from "../../data/formOptions";
+import { CONTENT_TYPE_OPTIONS_BY_FLOW, getAssigneeLabel } from "../../data/formOptions";
 import { fmtDate } from "../../lib/format";
 
 function contentTypeLabels(requestType, values) {
@@ -41,6 +41,12 @@ function SummaryField({ label, children }) {
  * by Retailer" section (see RetailerGroupPanel), so there is exactly one
  * place retailer date state can be edited from, never two. There is no
  * visible remove action anywhere in Review (see BrandVizReviewBody).
+ *
+ * `formData.assignee` is always the Select's raw option value (e.g.
+ * "priya.nair"), whether this renders live during the wizard (create or
+ * edit) or read-only inside Request Detail — `getAssigneeLabel` turns it
+ * into the friendly display name in every case; the underlying value is
+ * never rewritten.
  */
 export function BrandVizRequestSummary({ requestType, formData }) {
   const contentTypes = contentTypeLabels(requestType, formData.contentTypes);
@@ -54,7 +60,7 @@ export function BrandVizRequestSummary({ requestType, formData }) {
           <div className="flex items-start gap-6">
             <SummaryField label={dateLabel}>{fmtDate(formData.defaultDate)}</SummaryField>
             <SummaryField label="Content type">{contentTypes.join(", ") || "—"}</SummaryField>
-            <SummaryField label="Assignee">{formData.assignee || "Unassigned"}</SummaryField>
+            <SummaryField label="Assignee">{getAssigneeLabel(formData.assignee) || "Unassigned"}</SummaryField>
           </div>
         </div>
         <div>

@@ -6,9 +6,10 @@ import { Table, ClampCell } from "../components/ui/Table";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
 import { mockRetailers } from "../data/mockRetailers";
-import { REQUEST_TYPE_LABELS, mockAssignees } from "../data/formOptions";
+import { REQUEST_TYPE_LABELS, mockAssignees, getAssigneeLabel } from "../data/formOptions";
 import { REQUEST_STATUS, getRequestDisplayDate } from "../lib/models";
 import { fmtDate } from "../lib/format";
+import { handleInternalNavClick } from "../lib/clientNav";
 
 const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
 
@@ -19,7 +20,11 @@ const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name
 // reimplementing it. Each status keeps its own semantic hue (error/info/
 // success/neutral); only the fill goes from solid to soft-tinted, and text
 // becomes that same semantic color instead of white-on-solid.
-const STATUS_BADGE = {
+//
+// Exported (along with STATUS_LABEL / STATUS_PILL_RADIUS below) so
+// RequestDetailHeader can render the exact same status pill treatment
+// instead of re-deriving its own color mapping.
+export const STATUS_BADGE = {
   [REQUEST_STATUS.NEEDS_ACTION]: "badge-soft badge-error",
   [REQUEST_STATUS.IN_PROGRESS]: "badge-soft badge-info",
   [REQUEST_STATUS.COMPLETED]: "badge-soft badge-success",
@@ -34,9 +39,9 @@ const STATUS_BADGE = {
 // stylesheet rule regardless of compiled order, so this is a guaranteed
 // override rather than an order-dependent one, and it introduces no new
 // hardcoded value.
-const STATUS_PILL_RADIUS = { borderRadius: "var(--radius-box)" };
+export const STATUS_PILL_RADIUS = { borderRadius: "var(--radius-box)" };
 
-const STATUS_LABEL = {
+export const STATUS_LABEL = {
   [REQUEST_STATUS.NEEDS_ACTION]: "Needs Action",
   [REQUEST_STATUS.IN_PROGRESS]: "In Progress",
   [REQUEST_STATUS.COMPLETED]: "Completed",
@@ -102,7 +107,7 @@ function RetailerTags({ codes }) {
  *  - Row actions (edit/archive icons) are decorative; no edit/archive
  *    callback exists anywhere in this prototype yet.
  */
-export function ContentRequestQueue({ requests }) {
+export function ContentRequestQueue({ requests, onNavigate }) {
   const countFor = (key) =>
     key === "all" ? requests.length : requests.filter((r) => r.status === key).length;
 
@@ -171,7 +176,24 @@ export function ContentRequestQueue({ requests }) {
             {requests.map((req) => (
               <tr key={req.id}>
                 <ClampCell contentClassName="font-semibold text-base-content">
-                  {req.title || <span className="italic font-normal text-base-content/40">Untitled</span>}
+                  {/* Real link with a real href — keyboard focus, hover,
+                      right-click "copy link"/"open in new tab", and
+                      Cmd/Ctrl/Shift/middle-click all work natively. A plain,
+                      unmodified left-click is intercepted by
+                      handleInternalNavClick and routed through onNavigate
+                      (pushState, see App.jsx) instead of a full page
+                      reload, so in-memory `requests` state (including
+                      anything created earlier in this session) survives
+                      the trip to Request Detail. Decorative edit/archive
+                      icons below are unchanged — inert, no handlers. */}
+                  <a
+                    href={`/request/${req.id}`}
+                    onClick={(e) => handleInternalNavClick(e, `/request/${req.id}`, onNavigate)}
+                    className="hover:underline focus-visible:underline"
+                    aria-label={`View request details: ${req.title || "Untitled"}`}
+                  >
+                    {req.title || <span className="italic font-normal text-base-content/40">Untitled</span>}
+                  </a>
                 </ClampCell>
                 <td className="text-base-content/70 whitespace-nowrap align-middle">
                   {REQUEST_TYPE_LABELS[req.requestType] ?? req.requestType}
@@ -191,7 +213,7 @@ export function ContentRequestQueue({ requests }) {
                   {(req.contentTypes ?? []).join(", ") || <span className="text-base-content/40">—</span>}
                 </td>
                 <td className="text-base-content/70 whitespace-nowrap align-middle">
-                  {req.assignee || <span className="text-base-content/40">Unassigned</span>}
+                  {getAssigneeLabel(req.assignee) || <span className="text-base-content/40">Unassigned</span>}
                 </td>
                 <td className="text-base-content/70 whitespace-nowrap align-middle">{fmtDate(getRequestDisplayDate(req))}</td>
                 <td className="whitespace-nowrap text-xs text-base-content/40 align-middle">

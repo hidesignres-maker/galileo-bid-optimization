@@ -5,8 +5,11 @@ import { InnovationReviewBody } from "../components/review/InnovationReviewBody"
 import { SupportingMaterialsReview, ReviewNotesPanel } from "../components/review/SupportingMaterialsReview";
 import { RequestDetailHeader } from "../components/detail/RequestDetailHeader";
 import { RequestDetailFooter } from "../components/detail/RequestDetailFooter";
+import { RequestDetailsCard } from "../components/detail/RequestDetailsCard";
+import { RequestComments } from "../components/detail/RequestComments";
+import { RequestHistory } from "../components/detail/RequestHistory";
 import { groupProductsByRetailer } from "../lib/groupByRetailer";
-import { isRequestEditable } from "../lib/editability";
+import { canEditRequest, isRequestArchived } from "../lib/editability";
 import { handleInternalNavClick } from "../lib/clientNav";
 
 /**
@@ -82,13 +85,25 @@ export function RequestNotFound({ requestId, onNavigate }) {
  * `itemInputs` shape, so Detail can't tell (and doesn't need to tell) which
  * one was used.
  */
-export function RequestDetail({ request, requestId, onNavigate }) {
+export function RequestDetail({
+  request,
+  requestId,
+  onNavigate,
+  comments = [],
+  history = [],
+  onAddComment,
+  onArchive,
+}) {
   if (!request) {
     return <RequestNotFound requestId={requestId} onNavigate={onNavigate} />;
   }
 
   const isInnovation = request.requestType === "innovation";
-  const editable = isRequestEditable(request);
+  // Editable now folds in the Archive lifecycle check (canEditRequest)
+  // alongside the pre-existing date rule (isRequestEditable, untouched) —
+  // an archived request is always read-only regardless of its dates.
+  const editable = canEditRequest(request);
+  const archived = isRequestArchived(request);
 
   const formData = {
     title: request.title,
@@ -122,12 +137,31 @@ export function RequestDetail({ request, requestId, onNavigate }) {
             )
           }
           right={
+            // Sidebar order (product-feedback correction): Details,
+            // Supporting Materials, Notes, Comments, History — Comments
+            // moved below Notes (was previously right under Details), and
+            // History stays last.
             <>
+              <RequestDetailsCard request={request} />
               <SupportingMaterialsReview contentRequirements={request.contentRequirements} />
               <ReviewNotesPanel contentRequirements={request.contentRequirements} />
+              <RequestComments
+                comments={comments}
+                onAddComment={(text) => onAddComment?.(request.id, text)}
+              />
+              <RequestHistory events={history} />
             </>
           }
-          footer={<RequestDetailFooter isEditable={editable} onNavigate={onNavigate} requestId={request.id} />}
+          footer={
+            <RequestDetailFooter
+              isEditable={editable}
+              isArchived={archived}
+              onNavigate={onNavigate}
+              requestId={request.id}
+              requestTitle={request.title}
+              onArchive={onArchive}
+            />
+          }
         />
       </main>
     </AppShell>

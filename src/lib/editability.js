@@ -1,5 +1,6 @@
 import { groupProductsByRetailer } from "./groupByRetailer";
 import { todayIso } from "./format";
+import { REQUEST_STATUS } from "./models";
 
 /**
  * editability — pure, presentation-agnostic helpers for the READ Request
@@ -83,4 +84,46 @@ export function isRequestEditable(request, today = todayIso()) {
   const dates = getEffectiveDates(request);
   if (dates.length === 0) return true;
   return dates.some((date) => date >= today);
+}
+
+/**
+ * isRequestArchived — pure status check, split out on purpose so the
+ * date-based `isRequestEditable` rule above never has to know about
+ * lifecycle/status. Archive is a separate, orthogonal reason a request can
+ * become read-only (see models.js REQUEST_STATUS.ARCHIVED).
+ */
+export function isRequestArchived(request) {
+  return request?.status === REQUEST_STATUS.ARCHIVED;
+}
+
+/**
+ * canEditRequest — the combined editability decision every call site (Queue
+ * row action, Request Detail footer, the /request/:id/edit route guard)
+ * should use going forward instead of calling `isRequestEditable` alone.
+ * A request is only actually editable when BOTH the existing date rule
+ * allows it AND it hasn't been archived — archiving a request that still
+ * has a future effective date must still lock it, and this is the one place
+ * that combination is decided, so it can't drift between call sites.
+ */
+export function canEditRequest(request, today = todayIso()) {
+  return isRequestEditable(request, today) && !isRequestArchived(request);
+}
+
+/**
+ * editUnavailableReason — the one shared, plain-English explanation for why
+ * Edit is unavailable, used everywhere the Edit action needs an accessible
+ * explanation (Queue row action's title/aria-label, Request Detail's
+ * visible read-only text, RequestDetailFooter). Archived is checked first
+ * since it's the more specific/recent reason when a request is both
+ * archived and date-locked. Returns null when the request IS editable, so
+ * callers can render nothing rather than an empty explanation.
+ */
+export function editUnavailableReason(request, today = todayIso()) {
+  if (isRequestArchived(request)) {
+    return "This request is read-only because it has been archived.";
+  }
+  if (!isRequestEditable(request, today)) {
+    return "This request is read-only because all effective dates are in the past.";
+  }
+  return null;
 }

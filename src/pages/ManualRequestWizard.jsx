@@ -7,6 +7,7 @@ import { ProductLookupTable } from "../components/ProductLookupTable";
 import { InnovationItemInputForm, makeBlankItem } from "../components/InnovationItemInputForm";
 import { InnovationItemTable } from "../components/product-input/InnovationItemTable";
 import { ManualReviewStep } from "../components/ManualReviewStep";
+import { RequestHistory } from "../components/detail/RequestHistory";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { InfoBanner } from "../components/ui/InfoBanner";
@@ -97,6 +98,17 @@ const initialFormData = {
  * `onUpdateRequest` — called instead of `onCreateRequest` when saving in
  * edit mode (see handleSaveChanges). `onCreateRequest` itself is simply
  * not passed by the edit-mode caller and is never invoked in that mode.
+ *
+ * `history` — optional, edit-mode-only. Plain pass-through from App.jsx's
+ * own history state (keyed by `initialRequestData.id`) — this wizard holds
+ * none of that data itself, exactly like RequestDetail doesn't either.
+ * Create mode never passes it (there's no persisted request id yet to key
+ * it by), so History simply never renders outside edit mode.
+ *
+ * Comments are deliberately NOT accepted here (product correction: Comments
+ * must not appear anywhere inside the Edit wizard — Comments remain a
+ * READ-only surface, via RequestDetail). App.jsx's comment state/handler
+ * are untouched; this component just never reads them.
  */
 export function ManualRequestWizard({
   onCreateRequest,
@@ -105,6 +117,7 @@ export function ManualRequestWizard({
   initialRequestData = null,
   mode = "create",
   onUpdateRequest,
+  history = [],
 }) {
   const isEditMode = mode === "edit" && Boolean(initialRequestData);
 
@@ -313,6 +326,27 @@ export function ManualRequestWizard({
   // exact-string checks that used to only match "Review & Create".
   const isReviewStep = stepName === "Review & Create" || stepName === "Review and Submit";
 
+  // The persistent Edit-layout sidebar (History only — no Details, no
+  // Comments) applies to Edit mode's non-Review steps (Add Details, Item
+  // Inputs, Select Products). The Review step is handled separately below:
+  // ManualReviewStep/ReviewShell already have their own proven two-column
+  // composition (Request Summary + Products by Retailer/Innovation items
+  // on the left, Supporting Materials + Notes on the right), and per
+  // instruction that composition must be preserved rather than
+  // reconstructed manually here — so Review never uses this outer sidebar
+  // grid at all. Instead, History is threaded into ManualReviewStep's own
+  // `extraRightContent` slot (see below), landing in the SAME right column
+  // as Supporting Materials/Notes, directly beneath them. Create mode never
+  // sets this true, so create mode's layout is byte-for-byte unaffected.
+  const showEditSidebar = isEditMode && !isReviewStep;
+
+  // Fluid, responsive outer grid for Edit's non-Review steps: main column
+  // flexes (minmax(0,1fr)) and the History column is a fixed 320px. Single
+  // column below the `md` breakpoint (History stacks below the main
+  // content on narrow widths — no horizontal scrolling, no fixed/absolute
+  // positioning anywhere).
+  const editSidebarGridClass = "grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_320px] gap-6 items-start";
+
   // Gate: request type must be chosen before any step-specific form shows.
   if (!requestType) {
     return (
@@ -332,27 +366,32 @@ export function ManualRequestWizard({
     );
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      <WizardStepper
-        steps={steps}
-        currentStep={currentStep}
-        furthestStep={steps.length - 1}
-        variant="manualCreate"
-      />
-
+  // Main step content + its footer — unchanged markup/handlers from before
+  // this pass, just extracted into a variable so it can render either
+  // directly (create mode, and edit mode's Review step) or inside the new
+  // two-column Edit-layout grid (edit mode's non-Review steps) without
+  // duplicating any of it.
+  const stepBody = (
+    <>
       {/* Add Details — explicit Figma-aligned composition (Add Details
-          Pattern v1): centered 778px work surface, "Request details" card
-          title (not the raw step name), 24px padding. Now shared verbatim
-          by Brand/VizID AND Innovation Flow B/A alike — Innovation's Add
-          Details step uses this exact same composition (no request-level
-          date, per showDate={!isInnovation}, but Supporting
-          Materials/Notes/mock file previews DO render here now for
-          Innovation too, since Add Details is where they live for every
-          request type in this pattern — see ManualDetailsForm's own
-          showContentRequirements default of true). */}
+          Pattern v1): centered 778px work surface in create mode ("Request
+          details" card title, 24px padding), full-width within the grid's
+          left column in Edit mode (showEditSidebar) instead — same card,
+          same fields, just no fixed width/centering once it's already
+          constrained by the grid column. Now shared verbatim by Brand/VizID
+          AND Innovation Flow B/A alike — Innovation's Add Details step uses
+          this exact same composition (no request-level date, per
+          showDate={!isInnovation}, but Supporting Materials/Notes/mock file
+          previews DO render here now for Innovation too, since Add Details
+          is where they live for every request type in this pattern — see
+          ManualDetailsForm's own showContentRequirements default of true).
+          Assignee renders here in both Create and Edit — Edit must closely
+          mirror Create with every currently-supported editable field
+          available in the main flow; the Edit sidebar has no Assignee
+          control of its own (it shows History only), so there is exactly
+          one Assignee input, never a second, competing one. */}
       {stepName === "Add Details" && (
-        <div className="w-[778px] mx-auto">
+        <div className={showEditSidebar ? "" : "w-[778px] mx-auto"}>
           <Card title="Request details" headerClassName="px-6 pt-6" bodyClassName="p-6">
             <ManualDetailsForm
               requestType={requestType}
@@ -404,6 +443,20 @@ export function ManualRequestWizard({
         />
       )}
 
+      {/* Review — ManualReviewStep/ReviewShell are used unmodified for
+          BOTH modes (never reconstructed manually here), preserving their
+          existing two-column composition: Request Summary + Products by
+          Retailer/Innovation items on the left, Supporting Materials +
+          Notes on the right, footer below. Edit mode's only addition is
+          `extraRightContent` — a small, backward-compatible slot
+          ManualReviewStep now supports (default null, so create mode is
+          byte-for-byte unaffected) that renders directly below Notes, in
+          that SAME right column. This is how History reaches the Review
+          step without a second outer sidebar and without ever appearing
+          above the Review content or below the footer. Every handler
+          passed below is the exact same wizard-owned handler create mode
+          already uses — no business logic, validation, or Save behavior
+          changed. */}
       {isReviewStep && (
         <ManualReviewStep
           requestType={requestType}
@@ -417,19 +470,21 @@ export function ManualRequestWizard({
           onUpdateGroupDate={updateGroupDate}
           mode={isEditMode ? "edit" : "create"}
           onSaveChanges={handleSaveChanges}
+          extraRightContent={isEditMode ? <RequestHistory events={history} /> : null}
         />
       )}
 
       {/* Add Details footer — Figma-aligned: anchored to the same 778px
-          work-surface boundary, 40px action row, no full-width top
-          border. Copy is type-specific ("Continue to products" for
-          Brand/VizID, "Continue to item inputs" for Innovation) since Add
-          Details is now the shared first step for both. Back never shows
-          here anyway (Add Details is always step 0), so dropping it
-          changes nothing functionally. Same handleNext/onCancel handlers,
-          same click-time validation — only the JSX shell differs. */}
+          work-surface boundary in create mode (no fixed width in Edit
+          mode's grid column), 40px action row, no full-width top border.
+          Copy is type-specific ("Continue to products" for Brand/VizID,
+          "Continue to item inputs" for Innovation) since Add Details is now
+          the shared first step for both. Back never shows here anyway (Add
+          Details is always step 0), so dropping it changes nothing
+          functionally. Same handleNext/onCancel handlers, same click-time
+          validation — only the JSX shell differs. */}
       {stepName === "Add Details" ? (
-        <div className="w-[778px] mx-auto flex items-center justify-between h-10">
+        <div className={`${showEditSidebar ? "" : "w-[778px] mx-auto"} flex items-center justify-between h-10`}>
           <Button variant="text" className="text-error" onClick={onCancel}>
             Discard
           </Button>
@@ -467,6 +522,45 @@ export function ManualRequestWizard({
             </Button>
           </div>
         )
+      )}
+    </>
+  );
+
+  return (
+    <div className="flex flex-col gap-6">
+      <WizardStepper
+        steps={steps}
+        currentStep={currentStep}
+        furthestStep={steps.length - 1}
+        variant="manualCreate"
+      />
+
+      {/* Edit layout: a persistent right-sidebar with ONLY History, next to
+          the editable flow content — active on Edit's non-Review steps
+          (Add Details, Item Inputs, Select Products). The Review step
+          never reaches this branch (showEditSidebar excludes it) — History
+          gets there instead via ManualReviewStep's own `extraRightContent`
+          slot, inside its existing Supporting Materials/Notes column (see
+          the Review block above), so it never needs a second outer
+          sidebar. Create mode always falls through to the plain `stepBody`
+          render below, completely unchanged. The left ("main") column
+          renders `stepBody` unmodified; it gets `min-w-0` so it can shrink
+          inside the fluid `minmax(0,1fr)` track instead of overflowing.
+
+          No Details, no Comments here either — Details was removed pending
+          final design (Details still renders in READ, via
+          RequestDetail.jsx, untouched), Comments stay READ-only. Assignee
+          lives exclusively in the main form (stepBody, via
+          ManualDetailsForm), same as every other editable field. */}
+      {showEditSidebar ? (
+        <div className={editSidebarGridClass}>
+          <div className="min-w-0 flex flex-col gap-6">{stepBody}</div>
+          <div className="min-w-0">
+            <RequestHistory events={history} />
+          </div>
+        </div>
+      ) : (
+        stepBody
       )}
     </div>
   );

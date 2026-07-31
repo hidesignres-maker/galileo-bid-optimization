@@ -45,6 +45,17 @@ const INNOVATION_GUIDANCE = "Review the details below, then create the request. 
  * `onSaveChanges` handler instead — the footer then reads "Save changes"
  * and calls that handler; `onCreateRequest` is simply never invoked in
  * that case (ManualRequestWizard doesn't even pass one).
+ *
+ * `extraRightContent` (default null) — optional, backward-compatible slot
+ * appended to the END of the existing right column, after Supporting
+ * Materials and Notes (never before, never in between, never in the left
+ * column). Every existing create-mode caller omits this, so the right
+ * column renders exactly as before. Added so ManualRequestWizard's Edit
+ * mode can surface History in the Review step's right rail (below Notes)
+ * without this component or ReviewShell being reconstructed manually
+ * elsewhere, and without duplicating or reordering Supporting
+ * Materials/Notes — it's the same right slot, just with one more item at
+ * the bottom.
  */
 export function ManualReviewStep({
   requestType,
@@ -58,6 +69,7 @@ export function ManualReviewStep({
   onUpdateGroupDate,
   mode = "create",
   onSaveChanges,
+  extraRightContent = null,
 }) {
   const isInnovation = requestType === "innovation";
   const isEdit = mode === "edit";
@@ -85,6 +97,7 @@ export function ManualReviewStep({
         <>
           <SupportingMaterialsReview contentRequirements={formData.contentRequirements} />
           <ReviewNotesPanel contentRequirements={formData.contentRequirements} />
+          {extraRightContent}
         </>
       }
       footer={

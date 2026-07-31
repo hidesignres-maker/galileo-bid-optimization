@@ -6,10 +6,16 @@
  * the table sits flush/integrated when it's already inside another
  * bordered surface (e.g. the Queue's Card) instead of reading as a nested
  * card-within-a-card. Every other existing Table usage is unaffected.
+ *
+ * `...rest` (e.g. id, role, aria-labelledby) — optional, spread onto the
+ * outer wrapper div. Added so ContentRequestQueue's table can be
+ * associated with its status tabs (role="tabpanel" + aria-labelledby the
+ * active tab) without every other existing Table caller needing to change;
+ * omitted entirely, these simply don't render, same as before.
  */
-export function Table({ children, className = "", flush = false }) {
+export function Table({ children, className = "", flush = false, ...rest }) {
   return (
-    <div className={`overflow-x-auto ${flush ? "" : "border border-base-300 rounded-box"} ${className}`}>
+    <div className={`overflow-x-auto ${flush ? "" : "border border-base-300 rounded-box"} ${className}`} {...rest}>
       <table className="table table-sm">{children}</table>
     </div>
   );

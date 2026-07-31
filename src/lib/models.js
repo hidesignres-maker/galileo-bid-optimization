@@ -19,6 +19,16 @@ export const REQUEST_STATUS = {
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",
   DRAFT: "draft",
+  // ARCHIVED — soft lifecycle state added for the Archive action (Content
+  // Request Intake functional expansion). Not deletion: an archived request
+  // stays in the in-memory `requests` collection and Request Detail still
+  // opens for it; it is only removed from the default/active Queue view and
+  // becomes read-only (see lib/editability.js callers, which layer this
+  // check on top of the existing date-based rule rather than folding it
+  // into isRequestEditable itself). Every existing status branch (badge
+  // maps, tab counts, filters) is additive here — no prior status value or
+  // handling changed.
+  ARCHIVED: "archived",
 };
 
 export const BULK_BATCH_STATUS = {

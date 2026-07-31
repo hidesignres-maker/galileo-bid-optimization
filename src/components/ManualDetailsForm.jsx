@@ -25,6 +25,15 @@ import { CONTENT_TYPE_OPTIONS_BY_FLOW, DATE_FIELD_LABEL_BY_FLOW, mockAssignees }
  * Innovation's primary object and should be entered before shared
  * supporting materials (see ManualRequestWizard for the TEMP ASSUMPTION
  * comment).
+ *
+ * Assignee always renders here, in both Create and Edit — a prior pass
+ * briefly moved Assignee into the Request Detail sidebar for Edit mode
+ * only; product feedback (Gowri) reversed that: Edit must closely mirror
+ * Create, with every currently-supported editable field (including
+ * Assignee) available in this same main form. The sidebar's Details card
+ * now only ever shows Assignee as read-only summary text (see
+ * RequestDetailsCard) — there is exactly one editable Assignee control,
+ * and it lives here.
  */
 export function ManualDetailsForm({
   requestType,

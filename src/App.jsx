@@ -10,8 +10,11 @@ import { CreateRequestLauncher } from "./components/CreateRequestLauncher";
 import { AppShell } from "./components/AppShell";
 import { Button } from "./components/ui/Button";
 import { mockRequests } from "./data/mockRequests";
+import { mockCommentsByRequestId, mockHistoryByRequestId } from "./data/mockActivity";
 import { REQUEST_TYPE_LABELS } from "./data/formOptions";
-import { isRequestEditable } from "./lib/editability";
+import { canEditRequest, editUnavailableReason } from "./lib/editability";
+import { REQUEST_STATUS } from "./lib/models";
+import { CURRENT_USER, makeHistoryEvent, diffRequestForHistory } from "./lib/requestHistory";
 import { handleInternalNavClick } from "./lib/clientNav";
 
 // Lightest possible route handling for this static prototype: no router
@@ -97,6 +100,16 @@ export default function App() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [initialManualRequestType, setInitialManualRequestType] = useState(null);
 
+  // Comments/History — Part I. Deliberately NOT part of the Request model:
+  // both are separate maps keyed by request id, seeded from optional mock
+  // data (src/data/mockActivity.js) and composed into RequestDetail via
+  // props. Nothing in createRequest()/buildUpdatedRequest() forwards
+  // arbitrary extra keys, so anything nested on the Request object itself
+  // would silently vanish on the next Save — keeping these here instead is
+  // what makes them survive edits/navigation for the rest of the session.
+  const [comments, setComments] = useState(() => ({ ...mockCommentsByRequestId }));
+  const [history, setHistory] = useState(() => ({ ...mockHistoryByRequestId }));
+
   // Lightweight client-side "router" state — just the current pathname,
   // initialized from the real URL so a direct load / refresh of
   // "/request/:id" still works exactly as before. `navigate` pushes a new
@@ -126,9 +139,64 @@ export default function App() {
   // one) or appending a duplicate. Navigates to the plain Detail route
   // afterward so the updated Detail page renders immediately from the
   // freshly replaced request in this same `requests` state.
+  //
+  // Part F — History diffing happens here, against the pre-edit request
+  // still sitting in this render's `requests` state (read via closure,
+  // before it's replaced below), via the shared diffRequestForHistory
+  // helper (lib/requestHistory.js). Concise events only for fields that
+  // actually changed; the Assignee-change event this produces is what
+  // satisfies Part G's "History records the assignee change after Save."
   const handleUpdateRequest = (updatedRequest) => {
+    const original = requests.find((r) => r.id === updatedRequest.id);
+    if (original) {
+      const events = diffRequestForHistory(original, updatedRequest).map((description) =>
+        makeHistoryEvent(CURRENT_USER, description)
+      );
+      if (events.length > 0) {
+        setHistory((prev) => ({
+          ...prev,
+          [updatedRequest.id]: [...(prev[updatedRequest.id] ?? []), ...events],
+        }));
+      }
+    }
     setRequests((prev) => prev.map((r) => (r.id === updatedRequest.id ? updatedRequest : r)));
     navigate(`/request/${updatedRequest.id}`);
+  };
+
+  // Part E — adds a comment (App.jsx-owned, keyed by request id) and
+  // records a matching "Comment added" History event. Blank/whitespace-only
+  // text is rejected here too (defense in depth — RequestComments' own
+  // add-comment field already disables Send when empty).
+  const handleAddComment = (requestId, text) => {
+    const trimmed = (text ?? "").trim();
+    if (!trimmed) return;
+    const comment = {
+      id: `CMT-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      authorName: CURRENT_USER,
+      text: trimmed,
+      createdAt: new Date().toISOString().slice(0, 10),
+    };
+    setComments((prev) => ({ ...prev, [requestId]: [...(prev[requestId] ?? []), comment] }));
+    setHistory((prev) => ({
+      ...prev,
+      [requestId]: [...(prev[requestId] ?? []), makeHistoryEvent(CURRENT_USER, "Comment added")],
+    }));
+  };
+
+  // Part C — soft lifecycle action, not deletion: only ever changes
+  // `status` to REQUEST_STATUS.ARCHIVED via an immutable map-replace (same
+  // pattern as handleUpdateRequest), so the request stays in `requests`
+  // and every other field is untouched. Records a "Request archived"
+  // History event. Never removes the request from the array and never
+  // implements unarchive/reopen in this pass, per instruction.
+  const handleArchiveRequest = (requestId) => {
+    setRequests((prev) =>
+      prev.map((r) => (r.id === requestId ? { ...r, status: REQUEST_STATUS.ARCHIVED } : r))
+    );
+    setHistory((prev) => ({
+      ...prev,
+      [requestId]: [...(prev[requestId] ?? []), makeHistoryEvent(CURRENT_USER, "Request archived")],
+    }));
   };
 
   // Edit route — checked before the plain Detail route below (though, per
@@ -152,14 +220,14 @@ export default function App() {
       return <RequestNotFound requestId={requestEditId} onNavigate={navigate} />;
     }
 
-    if (!isRequestEditable(matchedRequest)) {
+    if (!canEditRequest(matchedRequest)) {
       return (
         <AppShell showSectionTabs={false}>
           <main className="max-w-screen-xl mx-auto px-6 py-20 flex flex-col items-center text-center gap-3">
             <h1 className="text-xl font-bold text-base-content">This request is read-only</h1>
             <p className="text-sm text-base-content/60 max-w-md">
-              "{matchedRequest.title || "Untitled request"}" can no longer be edited — every
-              effective launch date has already passed.
+              "{matchedRequest.title || "Untitled request"}" can no longer be edited.{" "}
+              {editUnavailableReason(matchedRequest)}
             </p>
             <a
               href={`/request/${matchedRequest.id}`}
@@ -192,6 +260,7 @@ export default function App() {
             initialRequestData={matchedRequest}
             onUpdateRequest={handleUpdateRequest}
             onCancel={() => navigate(`/request/${matchedRequest.id}`)}
+            history={history[matchedRequest.id] ?? []}
           />
         </main>
       </AppShell>
@@ -211,18 +280,41 @@ export default function App() {
 
   if (isRequestDetailRoute) {
     const matchedRequest = requests.find((r) => r.id === requestDetailId) ?? null;
-    return <RequestDetail request={matchedRequest} requestId={requestDetailId} onNavigate={navigate} />;
+    return (
+      <RequestDetail
+        request={matchedRequest}
+        requestId={requestDetailId}
+        onNavigate={navigate}
+        comments={matchedRequest ? comments[matchedRequest.id] ?? [] : []}
+        history={matchedRequest ? history[matchedRequest.id] ?? [] : []}
+        onAddComment={handleAddComment}
+        onArchive={handleArchiveRequest}
+      />
+    );
   }
 
   const goTo = (v) => setView(v);
 
+  // Part F correction — History must begin at Create, not just Edit/
+  // Archive/Comment. Every newly created request (manual or bulk) gets a
+  // single seeded "Request created" event here, keyed by its own id;
+  // nothing else in `history` is touched, so this can never clobber an
+  // existing request's history (these ids are always brand new).
   const handleRequestCreated = (request) => {
     setRequests((prev) => [request, ...prev]);
+    setHistory((prev) => ({ ...prev, [request.id]: [makeHistoryEvent(CURRENT_USER, "Request created")] }));
     setView("queue");
   };
 
   const handleRequestsCreated = (newRequests) => {
     setRequests((prev) => [...newRequests, ...prev]);
+    setHistory((prev) => {
+      const next = { ...prev };
+      newRequests.forEach((request) => {
+        next[request.id] = [makeHistoryEvent(CURRENT_USER, "Request created")];
+      });
+      return next;
+    });
     setView("queue");
   };
 
@@ -295,7 +387,11 @@ export default function App() {
                   </Button>
                 </div>
               </div>
-              <ContentRequestQueue requests={requests} onNavigate={navigate} />
+              <ContentRequestQueue
+                requests={requests}
+                onNavigate={navigate}
+                onArchiveRequest={handleArchiveRequest}
+              />
             </>
           )}
 

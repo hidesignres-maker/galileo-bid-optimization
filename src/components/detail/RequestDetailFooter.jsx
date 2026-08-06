@@ -73,7 +73,7 @@ export function RequestDetailFooter({ isEditable, isArchived, onNavigate, reques
           title="Archive request?"
           body="This request will be moved out of the active queue. You can still view it from Archived requests."
           confirmLabel="Archive request"
-          confirmVariant="error"
+          confirmVariant="destructive"
           onCancel={() => setConfirmOpen(false)}
           onConfirm={handleConfirmArchive}
         />

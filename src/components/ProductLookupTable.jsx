@@ -5,6 +5,7 @@ import { Select } from "./ui/Select";
 import { Table } from "./ui/Table";
 import { Checkbox } from "./ui/Checkbox";
 import { Button } from "./ui/Button";
+import { Tab } from "./ui/Tab";
 import { mockProducts } from "../data/mockProducts";
 import { mockRetailers } from "../data/mockRetailers";
 
@@ -32,15 +33,26 @@ const RETAILER_FILTER_OPTIONS = [
  * tab) calls `onToggleProduct(id)`, which adds/removes that product
  * directly in wizard state.
  *
- * This pass simplifies the UI around that already-working persistence
+ * UI-only simplification history around that already-working persistence
  * logic: removed the redundant selection-summary action bar (the tabs
  * already provide "view selected"), removed "Select all N results" (out of
- * scope for validating persistence), and moved "Clear all" so it only
- * appears inside the Selected Products tab.
+ * scope for validating persistence), moved "Clear all" so it only appears
+ * inside the Selected Products tab, and (most recently) removed the
+ * trailing "N results shown · N selected overall" / "N selected products"
+ * line that used to render below the table — it duplicated the selected
+ * count already shown above the tabs and in the "Selected Products (N)"
+ * tab label, with no additional information of its own.
  *
  * Search fields: product description, brand, UPC, EAN, retailer (name or
  * code). Note: mockProducts has no `gtin` field (only `upc`/`ean`) — not
  * invented here; flagged separately as an open data-model question.
+ *
+ * The All Products / Selected Products view toggle renders via the shared
+ * `Tab` primitive (ui/Tab.jsx) — the Figma-approved tab-item geometry
+ * (40px height, 12px horizontal padding, transparent background in every
+ * state, blue underline only when active). `viewMode` state and switching
+ * behavior are unchanged; only the button markup moved to the shared
+ * component.
  */
 export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearAll }) {
   const [query, setQuery] = useState("");
@@ -116,28 +128,12 @@ export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearA
 
       <div className="flex items-center justify-between gap-3 border-b border-base-300">
         <div className="flex items-center gap-1">
-          <button
-            type="button"
-            onClick={() => setViewMode("all")}
-            className={`px-3 pb-2 text-sm border-b-2 -mb-px ${
-              viewMode === "all"
-                ? "border-primary text-primary font-semibold"
-                : "border-transparent text-base-content/60 hover:text-base-content"
-            }`}
-          >
+          <Tab active={viewMode === "all"} onClick={() => setViewMode("all")}>
             All Products
-          </button>
-          <button
-            type="button"
-            onClick={() => setViewMode("selected")}
-            className={`px-3 pb-2 text-sm border-b-2 -mb-px ${
-              isSelectedView
-                ? "border-primary text-primary font-semibold"
-                : "border-transparent text-base-content/60 hover:text-base-content"
-            }`}
-          >
+          </Tab>
+          <Tab active={isSelectedView} onClick={() => setViewMode("selected")}>
             Selected Products ({selectedCount})
-          </button>
+          </Tab>
         </div>
 
         {isSelectedView && selectedCount > 0 && (
@@ -199,12 +195,6 @@ export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearA
           </tbody>
         </Table>
       )}
-
-      <p className="text-xs text-base-content/50">
-        {isSelectedView
-          ? `${selectedCount} selected product${selectedCount === 1 ? "" : "s"}`
-          : `${allResults.length} result${allResults.length === 1 ? "" : "s"} shown · ${selectedCount} selected overall`}
-      </p>
     </div>
   );
 }

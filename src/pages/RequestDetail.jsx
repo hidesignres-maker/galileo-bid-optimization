@@ -1,15 +1,14 @@
+import { useState } from "react";
 import { AppShell } from "../components/AppShell";
 import { ReviewShell } from "../components/review/ReviewShell";
 import { BrandVizReviewBody } from "../components/review/BrandVizReviewBody";
 import { InnovationReviewBody } from "../components/review/InnovationReviewBody";
+import { BulkCsvReviewBody } from "../components/review/BulkCsvReviewBody";
 import { SupportingMaterialsReview, ReviewNotesPanel } from "../components/review/SupportingMaterialsReview";
 import { RequestDetailHeader } from "../components/detail/RequestDetailHeader";
-import { RequestDetailFooter } from "../components/detail/RequestDetailFooter";
-import { RequestDetailsCard } from "../components/detail/RequestDetailsCard";
-import { RequestComments } from "../components/detail/RequestComments";
-import { RequestHistory } from "../components/detail/RequestHistory";
+import { RequestConversationPanel } from "../components/detail/RequestConversationPanel";
 import { groupProductsByRetailer } from "../lib/groupByRetailer";
-import { canEditRequest, isRequestArchived } from "../lib/editability";
+import { canEditRequest } from "../lib/editability";
 import { handleInternalNavClick } from "../lib/clientNav";
 
 /**
@@ -45,45 +44,48 @@ export function RequestNotFound({ requestId, onNavigate }) {
 }
 
 /**
- * RequestDetail — READ-only Request Detail MVP.
+ * RequestDetail — READ-only Request Detail (Corrected Approved Scope, Aug
+ * 2026 pass).
  *
- * Thin dispatcher, deliberately mirroring ManualReviewStep's proven shape
- * rather than inventing a new one: pick the right explicit review body for
- * `request.requestType` and assemble it inside the same shared ReviewShell
- * (two-column grid + footer slot) Review already uses. This is not a
- * second, parallel Review implementation — it's the same body components,
- * reused, fed from a persisted Request instead of live wizard state.
+ * Still the same thin-dispatcher shape as before: pick the right explicit
+ * review body for `request.requestType` and assemble it inside the shared
+ * `ReviewShell` (two-column grid). This pass changes the composition
+ * around that reused core, not the core itself:
  *
- * Data flow: `request` is consumed read-only. Nothing here holds it in
- * local state, copies it into an editable form, or calls back into
- * App.jsx to change it — there is no mutation path from this page at all
- * in this slice.
+ *  - Header is now the full operational header (breadcrumb, title, latest
+ *    activity, Status quick-control, Edit, More) — see
+ *    RequestDetailHeader's own doc comment. It absorbs the primary
+ *    actions (Edit, Archive) that used to live in the now-retired
+ *    `RequestDetailFooter`, plus Copy link / View full history.
+ *  - `RequestDetailsCard` (the old right-rail metadata card) and
+ *    `RequestDetailFooter` are no longer rendered here — confirmed unused
+ *    anywhere else in the app before removal (grep). The approved right
+ *    rail is exactly three things: Supporting Materials, Notes, and the
+ *    combined Comments/History panel.
+ *  - `BrandVizRequestSummary`/`InnovationRequestSummary` (rendered inside
+ *    the two review bodies) now render with `hideTitle` — the title lives
+ *    once, in the header — and, when the request is editable, a real
+ *    `onAssigneeChange` wired to `onUpdateAssignee`.
+ *  - The two former separate Comments/History cards are replaced by one
+ *    `RequestConversationPanel`, tab-controlled from `activeTab` state
+ *    here so the header's "View full history" action can switch it.
  *
- * `formData` adapter: BrandVizRequestSummary / InnovationRequestSummary
- * (rendered inside the two review bodies) expect wizard-style field names
- * (`title`, `defaultDate`, `description`, `assignee`, `contentTypes`) —
- * not the persisted Request's own field names (`launchDate`/`dueDate`
- * instead of `defaultDate`). Building this small adapter object here means
- * neither summary component's contract has to change. `request.launchDate
- * ?? request.dueDate` mirrors the same fallback the wizard itself used when
- * originally writing `launchDate`/`dueDate` from the same `formData.
- * defaultDate` value at creation time (see ManualRequestWizard.
- * handleCreateRequest).
+ * Everything else — the `formData` adapter, `retailerGroups` derivation,
+ * `readOnly` wiring into `BrandVizReviewBody`, the not-found guard — is
+ * unchanged from before.
  *
- * Retailer/date grouping: re-derived from the persisted `products` +
- * `launchDate` via the exact same `groupProductsByRetailer` the wizard's
- * Review step uses — not a new grouping rule, not stored on the request
- * itself. Innovation needs no equivalent call here: InnovationReviewBody
- * already groups nothing (flat item table), it just reads `itemInputs`
- * directly.
- *
- * `BrandVizReviewBody` is rendered with `readOnly` and no
- * `onUpdateGroupDate` — there is nothing for it to call. `InnovationReviewBody`
- * is rendered completely unchanged; it already has no editable controls,
- * regardless of whether the request was originally created via Flow A
- * (per-item accordion) or Flow B (item table) — both produce the same
- * `itemInputs` shape, so Detail can't tell (and doesn't need to tell) which
- * one was used.
+ * Information-architecture pass (Aug 2026): every body below now renders
+ * with `variant="detail"` (see `BrandVizRequestSummary`/
+ * `InnovationRequestSummary`'s own doc comments) — Request Overview's
+ * approved READ field order (Description, Request type, Content type,
+ * [Launch Date], Assignee), not the wizard Review step's original order.
+ * A third dispatch branch is added ahead of the existing
+ * innovation/Brand-VizID split: `request.creationMethod === "bulkCsv"`
+ * renders `BulkCsvReviewBody`, the item-centered layout for a
+ * provisionally-imported row, regardless of that row's own `requestType`
+ * (Decision A) — Request type in its Overview still shows the real
+ * `requestType` label; only the body beneath it (item detail instead of
+ * retailer groups / an item table) changes for a bulk-imported request.
  */
 export function RequestDetail({
   request,
@@ -93,17 +95,22 @@ export function RequestDetail({
   history = [],
   onAddComment,
   onArchive,
+  onUpdateStatus,
+  onUpdateAssignee,
 }) {
+  const [activeTab, setActiveTab] = useState("comments");
+
   if (!request) {
     return <RequestNotFound requestId={requestId} onNavigate={onNavigate} />;
   }
 
   const isInnovation = request.requestType === "innovation";
+  const isBulkImport = request.creationMethod === "bulkCsv";
+  const bulkItem = isBulkImport ? (request.itemInputs?.[0] ?? null) : null;
   // Editable now folds in the Archive lifecycle check (canEditRequest)
   // alongside the pre-existing date rule (isRequestEditable, untouched) —
   // an archived request is always read-only regardless of its dates.
   const editable = canEditRequest(request);
-  const archived = isRequestArchived(request);
 
   const formData = {
     title: request.title,
@@ -117,15 +124,45 @@ export function RequestDetail({
     ? []
     : groupProductsByRetailer(request.products ?? [], request.launchDate);
 
+  // Assignee quick-edit is only wired in when the request is actually
+  // editable — an archived/date-locked request renders Assignee as plain
+  // text (onAssigneeChange omitted), same gating rule `canEditRequest`
+  // already applies to Status/Edit elsewhere on this page.
+  const handleAssigneeChange = editable
+    ? (newAssignee) => onUpdateAssignee?.(request.id, newAssignee)
+    : undefined;
+
   return (
     <AppShell showSectionTabs={false}>
       <main className="max-w-screen-xl mx-auto px-6 py-8">
-        <RequestDetailHeader request={request} isEditable={editable} onNavigate={onNavigate} />
+        <RequestDetailHeader
+          request={request}
+          requestId={request.id}
+          isEditable={editable}
+          history={history}
+          onNavigate={onNavigate}
+          onUpdateStatus={onUpdateStatus}
+          onArchive={onArchive}
+          onViewFullHistory={() => setActiveTab("history")}
+        />
 
         <ReviewShell
           left={
-            isInnovation ? (
-              <InnovationReviewBody formData={formData} itemInputs={request.itemInputs ?? []} />
+            isBulkImport ? (
+              <BulkCsvReviewBody
+                requestType={request.requestType}
+                formData={formData}
+                item={bulkItem}
+                onAssigneeChange={handleAssigneeChange}
+              />
+            ) : isInnovation ? (
+              <InnovationReviewBody
+                formData={formData}
+                itemInputs={request.itemInputs ?? []}
+                hideTitle
+                variant="detail"
+                onAssigneeChange={handleAssigneeChange}
+              />
             ) : (
               <BrandVizReviewBody
                 requestType={request.requestType}
@@ -133,34 +170,27 @@ export function RequestDetail({
                 products={request.products ?? []}
                 retailerGroups={retailerGroups}
                 readOnly
+                hideTitle
+                variant="detail"
+                onAssigneeChange={handleAssigneeChange}
               />
             )
           }
           right={
-            // Sidebar order (product-feedback correction): Details,
-            // Supporting Materials, Notes, Comments, History — Comments
-            // moved below Notes (was previously right under Details), and
-            // History stays last.
+            // Right rail (approved scope): exactly three things —
+            // Supporting Materials, Notes, and the combined Comments/
+            // History panel. No Details/Overview/metadata card.
             <>
-              <RequestDetailsCard request={request} />
-              <SupportingMaterialsReview contentRequirements={request.contentRequirements} />
-              <ReviewNotesPanel contentRequirements={request.contentRequirements} />
-              <RequestComments
+              <SupportingMaterialsReview contentRequirements={request.contentRequirements} variant="detail" />
+              <ReviewNotesPanel contentRequirements={request.contentRequirements} variant="detail" />
+              <RequestConversationPanel
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
                 comments={comments}
                 onAddComment={(text) => onAddComment?.(request.id, text)}
+                history={history}
               />
-              <RequestHistory events={history} />
             </>
-          }
-          footer={
-            <RequestDetailFooter
-              isEditable={editable}
-              isArchived={archived}
-              onNavigate={onNavigate}
-              requestId={request.id}
-              requestTitle={request.title}
-              onArchive={onArchive}
-            />
           }
         />
       </main>

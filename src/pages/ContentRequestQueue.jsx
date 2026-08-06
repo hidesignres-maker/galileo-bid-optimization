@@ -3,11 +3,15 @@ import { PencilIcon, ArchiveBoxIcon, ChevronLeftIcon, ChevronRightIcon } from "@
 import { MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { QueueMetricCards } from "../components/QueueMetricCards";
 import { Card } from "../components/ui/Card";
-import { Table, ClampCell } from "../components/ui/Table";
+import { Table, ClampCell, NUMERIC_CELL_CLASS } from "../components/ui/Table";
 import { Input } from "../components/ui/Input";
 import { Select } from "../components/ui/Select";
+import { SelectField } from "../components/ui/SelectField";
 import { Button } from "../components/ui/Button";
 import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import { Tab } from "../components/ui/Tab";
+import { CountBadge } from "../components/ui/CountBadge";
+import { CustomBadge } from "../components/ui/CustomBadge";
 import { mockRetailers } from "../data/mockRetailers";
 import { REQUEST_TYPE_LABELS, mockAssignees, getAssigneeLabel } from "../data/formOptions";
 import { REQUEST_STATUS, getRequestDisplayDate } from "../lib/models";
@@ -36,6 +40,11 @@ export const STATUS_BADGE = {
   // ARCHIVED — same neutral treatment as Draft (a "quiet"/inactive status),
   // added alongside the new REQUEST_STATUS.ARCHIVED value (see models.js).
   [REQUEST_STATUS.ARCHIVED]: "badge-soft badge-neutral",
+  // ON_HOLD — same neutral/"paused" treatment as Draft/Archived, added
+  // alongside the new REQUEST_STATUS.ON_HOLD value (see models.js). No
+  // mock request currently has this status; this entry exists so the
+  // row-level status pill has a defined style the moment one does.
+  [REQUEST_STATUS.ON_HOLD]: "badge-soft badge-neutral",
 };
 
 // badge's own base rule hardcodes border-radius: var(--radius-selector)
@@ -54,15 +63,19 @@ export const STATUS_LABEL = {
   [REQUEST_STATUS.COMPLETED]: "Completed",
   [REQUEST_STATUS.DRAFT]: "Draft",
   [REQUEST_STATUS.ARCHIVED]: "Archived",
+  [REQUEST_STATUS.ON_HOLD]: "On Hold",
 };
 
-// Status tabs use only real status values from lib/models.js. Figma's
-// reference screen also showed "Shipped" / "On Hold" tabs, but those
-// aren't values this prototype's data model defines — adding them would
-// mean inventing status/business logic, out of scope here. "Draft" is
-// defined in REQUEST_STATUS but isn't represented in the current mock
-// data, so it's left out of the tab row for now rather than shown as an
-// always-empty tab.
+// Status tabs use only real status values from lib/models.js. "On Hold"
+// maps to REQUEST_STATUS.ON_HOLD (additive, see models.js) — no duplicate
+// status semantics were created; it uses the exact same behavior model as
+// every other status tab below (exact status match, no special casing).
+// No mock request currently has this status, so — same as "Draft"
+// already was — it will show a 0 count until a request actually carries
+// it; nothing is backfilled or invented to populate it.
+//
+// Order (approved Figma parity pass): All, Needs Action, In Progress,
+// Completed, On Hold, Archived.
 //
 // Tab -> status mapping (explicit, since Part A requires documenting it):
 //   "all"                    -> every request EXCEPT archived ones (the
@@ -70,8 +83,8 @@ export const STATUS_LABEL = {
 //                               deliberately excluded from "All" per the
 //                               Archive spec: "archived requests disappear
 //                               from the default active view").
-//   REQUEST_STATUS.NEEDS_ACTION / IN_PROGRESS / COMPLETED -> exact status
-//                               match, unchanged.
+//   REQUEST_STATUS.NEEDS_ACTION / IN_PROGRESS / COMPLETED / ON_HOLD ->
+//                               exact status match, unchanged.
 //   REQUEST_STATUS.ARCHIVED  -> exact status match — the one place archived
 //                               requests remain reachable from this page.
 const STATUS_TABS = [
@@ -79,6 +92,7 @@ const STATUS_TABS = [
   { key: REQUEST_STATUS.NEEDS_ACTION, label: STATUS_LABEL[REQUEST_STATUS.NEEDS_ACTION] },
   { key: REQUEST_STATUS.IN_PROGRESS, label: STATUS_LABEL[REQUEST_STATUS.IN_PROGRESS] },
   { key: REQUEST_STATUS.COMPLETED, label: STATUS_LABEL[REQUEST_STATUS.COMPLETED] },
+  { key: REQUEST_STATUS.ON_HOLD, label: STATUS_LABEL[REQUEST_STATUS.ON_HOLD] },
   { key: REQUEST_STATUS.ARCHIVED, label: STATUS_LABEL[REQUEST_STATUS.ARCHIVED] },
 ];
 
@@ -120,18 +134,39 @@ function matchesSearch(request, query) {
 
 const MAX_VISIBLE_RETAILERS = 2;
 
+// Same categorical-dot convention BrandVizReviewBody's Products-by-Retailer
+// section already uses (built entirely from existing primary/secondary/
+// neutral tokens + opacity variants, not status-semantic colors, and
+// assigned by each retailer's fixed position in mockRetailers so the same
+// retailer always gets the same dot). Kept as its own local copy here
+// rather than importing from that file — it's a small, presentation-only
+// constant, and BrandVizReviewBody is part of the protected Creation/Read
+// review surface this pass doesn't touch.
+const RETAILER_DOT_PALETTE = ["bg-primary", "bg-secondary", "bg-neutral", "bg-primary/50", "bg-secondary/50", "bg-neutral/50", "bg-primary/25"];
+
+function retailerDotClass(code) {
+  const index = mockRetailers.findIndex((r) => r.code === code);
+  if (index === -1) return "bg-base-content/30";
+  return RETAILER_DOT_PALETTE[index % RETAILER_DOT_PALETTE.length];
+}
+
+/** Retailer cell — CustomBadge-based tags with the same categorical dot +
+ * overflow-count behavior the prior hand-built badge-ghost chips had.
+ * `req.retailers` (the request's own retailer codes) is the only data
+ * source; nothing new is read or invented. Full retailer name stays
+ * available via CustomBadge's `title` tooltip even though the visible
+ * label is the short code, so no information is lost versus the codes
+ * shown before. */
 function RetailerTags({ codes }) {
   if (!codes || codes.length === 0) return <span className="text-base-content/40">—</span>;
   const visible = codes.slice(0, MAX_VISIBLE_RETAILERS);
   const overflow = codes.length - visible.length;
   return (
-    <div className="flex items-center gap-1.5 flex-wrap">
+    <div className="flex items-center gap-1 flex-wrap">
       {visible.map((code) => (
-        <span key={code} className="badge badge-sm badge-ghost" title={retailerLabel(code)}>
-          {code}
-        </span>
+        <CustomBadge key={code} label={code} dotColor={retailerDotClass(code)} title={retailerLabel(code)} />
       ))}
-      {overflow > 0 && <span className="badge badge-sm badge-ghost">+{overflow}</span>}
+      {overflow > 0 && <CustomBadge label={`+${overflow}`} />}
     </div>
   );
 }
@@ -200,36 +235,45 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
             counts reflect the current search/type/assignee filters, so a
             tab's badge always matches how many rows selecting it would
             show. */}
-        <div role="tablist" aria-label="Filter by status" className="h-10 flex items-end gap-5 px-6 border-b border-base-300">
+        {/* gap-3 (was gap-5) — compact spacing correction; each Tab still
+            carries its own 12px horizontal padding, so this only tightens
+            the space between adjacent tabs, not their own internal
+            geometry. */}
+        <div role="tablist" aria-label="Filter by status" className="h-10 flex items-center gap-3 px-6 border-b border-base-300">
           {STATUS_TABS.map((tab) => {
             const isActive = tab.key === activeTab;
             return (
-              <button
+              <Tab
                 key={tab.key}
-                type="button"
+                active={isActive}
                 role="tab"
                 id={`queue-tab-${tab.key}`}
                 aria-selected={isActive}
                 aria-controls="queue-table"
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex items-center gap-1.5 pb-3 text-sm whitespace-nowrap border-b-2 -mb-px ${
-                  isActive ? "border-primary text-primary font-semibold" : "border-transparent text-base-content/60 hover:text-base-content"
-                }`}
+                className="whitespace-nowrap"
               >
                 {tab.label}
-                <span className="badge badge-sm badge-ghost">{countFor(tab.key)}</span>
-              </button>
+                <CountBadge count={countFor(tab.key)} active={isActive} />
+              </Tab>
             );
           })}
         </div>
 
         {/* Toolbar — controlled search + Request Type + Assignee filters,
-            each combining with the active tab. Accessible names are
-            provided via aria-label (Input/Select spread arbitrary props,
-            including aria-label, onto their underlying <input>/<select>)
-            without changing the compact visual layout by adding a second
-            visible <label> row. */}
-        <div className="flex items-center gap-2 px-6 py-3">
+            each combining with the active tab. Search stays the
+            dominant-width field (flex-1 vs the two fixed-width selects).
+            Request Type / Assignee render through SelectField
+            (ui/SelectField.jsx), the shared label-inside-control primitive
+            — field name and current value sit together inside one 40px
+            control ("Request Type   All"), matching the approved Figma
+            toolbar treatment, instead of a label row above the control.
+            aria-label is still set explicitly (defaulting to the same
+            text as the visible label) for a stable accessible name. All
+            three controls are the same 40px height, so items-center keeps
+            them aligned (no longer items-end — SelectField has no
+            separate label row above it to account for). */}
+        <div className="flex items-center gap-3 px-6 py-3">
           <div className="flex-1 relative">
             <MagnifyingGlassIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
             <Input
@@ -241,7 +285,8 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
             />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select
+            <SelectField
+              label="Request Type"
               placeholder="All"
               aria-label="Filter by request type"
               options={REQUEST_TYPE_FILTER_OPTIONS}
@@ -250,7 +295,8 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
             />
           </div>
           <div className="w-[200px] shrink-0">
-            <Select
+            <SelectField
+              label="Assignee"
               placeholder="All"
               aria-label="Filter by assignee"
               options={mockAssignees}
@@ -267,18 +313,27 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
 
         {/* Table — flush with the Card (no extra nested horizontal inset,
             no nested border/radius — see ui/Table's `flush` prop); explicit
-            48px header/row height via h-12 on each <tr>. */}
+            48px header/row height via h-12 on each <tr>.
+            Column model (approved Figma parity pass): Brand/Request,
+            Request type, Status, Retailers, YTD RSV, Content type,
+            Assignee, Launch Date, Actions. "Source" and the old "Due /
+            Launch" label are removed from this presentation — the
+            underlying request data/model is unchanged, this is a column
+            visibility/labeling change only. No sort state exists on this
+            table (there wasn't one before this pass either), so Launch
+            Date has no interactive sort indicator to preserve — nothing
+            new is introduced here. */}
         <Table id="queue-table" role="tabpanel" aria-labelledby={`queue-tab-${activeTab}`} flush>
           <thead>
             <tr className="h-12">
-              <th className="whitespace-nowrap">Request title</th>
-              <th className="whitespace-nowrap">Request type</th>
-              <th className="whitespace-nowrap">Status</th>
-              <th className="whitespace-nowrap">Retailers</th>
-              <th className="whitespace-nowrap">Content type</th>
-              <th className="whitespace-nowrap">Assignee</th>
-              <th className="whitespace-nowrap">Due / Launch</th>
-              <th className="whitespace-nowrap">Source</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Brand/Request</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Request type</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Status</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Retailers</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60 text-right">YTD RSV</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Content type</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Assignee</th>
+              <th className="whitespace-nowrap font-medium text-base-content/60">Launch Date</th>
               <th aria-label="Row actions" />
             </tr>
           </thead>
@@ -288,20 +343,30 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
               const archived = isRequestArchived(req);
               return (
                 <tr key={req.id}>
-                  <ClampCell contentClassName="font-semibold text-base-content">
-                    {/* Real link with a real href — keyboard focus, hover,
-                        right-click "copy link"/"open in new tab", and
-                        Cmd/Ctrl/Shift/middle-click all work natively. A
-                        plain, unmodified left-click is intercepted by
-                        handleInternalNavClick and routed through onNavigate
-                        (pushState, see App.jsx) instead of a full page
-                        reload, so in-memory `requests` state survives the
-                        trip to Request Detail — archived requests still
-                        open here too (Detail must remain reachable). */}
+                  {/* Brand/Request — approved Figma treatment renders only
+                      the request title as the semantic link; no muted
+                      brand/heading line above it (removed per the Figma-
+                      parity pass — a prior pass had added a derived brand
+                      eyebrow line that Figma does not show). This is a
+                      presentation-only change: the underlying brand data
+                      on the request/product/item model is untouched and
+                      not read here at all. Link is primary blue + medium
+                      weight (not heavy bold), matching the approved
+                      Brand/Request title treatment. Real link with a real
+                      href — keyboard focus, hover, right-click "copy
+                      link"/"open in new tab", and Cmd/Ctrl/Shift/middle-
+                      click all work natively. A plain, unmodified left-
+                      click is intercepted by handleInternalNavClick and
+                      routed through onNavigate (pushState, see App.jsx)
+                      instead of a full page reload, so in-memory
+                      `requests` state survives the trip to Request Detail
+                      — archived requests still open here too (Detail must
+                      remain reachable). */}
+                  <ClampCell>
                     <a
                       href={`/request/${req.id}`}
                       onClick={(e) => handleInternalNavClick(e, `/request/${req.id}`, onNavigate)}
-                      className="hover:underline focus-visible:underline"
+                      className="text-primary font-medium hover:underline focus-visible:underline"
                       aria-label={`View request details: ${req.title || "Untitled"}`}
                     >
                       {req.title || <span className="italic font-normal text-base-content/40">Untitled</span>}
@@ -321,20 +386,25 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
                   <td className="whitespace-nowrap align-middle">
                     <RetailerTags codes={req.retailers} />
                   </td>
+                  {/* YTD RSV — no such field exists anywhere in the Request
+                      data model (checked models.js/mockProducts/
+                      mockRequests) — nothing to display, so every row
+                      renders a dash rather than a fabricated number. Uses
+                      the shared NUMERIC_CELL_CLASS (Table.jsx) — Roboto
+                      Mono, 12px, right-aligned — per the global table
+                      numeric/monetary-cell rule, so the dash sits exactly
+                      where a real value would once this field exists. */}
+                  <td className={`text-base-content/40 whitespace-nowrap align-middle ${NUMERIC_CELL_CLASS}`}>—</td>
                   <td className="text-base-content/70 whitespace-nowrap align-middle">
                     {(req.contentTypes ?? []).join(", ") || <span className="text-base-content/40">—</span>}
                   </td>
                   <td className="text-base-content/70 whitespace-nowrap align-middle">
                     {getAssigneeLabel(req.assignee) || <span className="text-base-content/40">Unassigned</span>}
                   </td>
+                  {/* Launch Date — same getRequestDisplayDate derivation as
+                      before (dueDate -> launchDate -> earliest item
+                      onSaleDate), only the visible column label changed. */}
                   <td className="text-base-content/70 whitespace-nowrap align-middle">{fmtDate(getRequestDisplayDate(req))}</td>
-                  <td className="whitespace-nowrap text-xs text-base-content/40 align-middle">
-                    {req.isPlaceholder ? (
-                      <span title={req.sourceBatchId ?? ""}>Bulk placeholder</span>
-                    ) : (
-                      <span>Manual</span>
-                    )}
-                  </td>
                   <td className="align-middle">
                     <div className="flex items-center justify-end gap-3 text-base-content/55">
                       {editable ? (
@@ -432,7 +502,7 @@ export function ContentRequestQueue({ requests, onNavigate, onArchiveRequest }) 
           title="Archive request?"
           body="This request will be moved out of the active queue. You can still view it from Archived requests."
           confirmLabel="Archive request"
-          confirmVariant="error"
+          confirmVariant="destructive"
           onCancel={() => setArchiveTarget(null)}
           onConfirm={confirmArchive}
         />

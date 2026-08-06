@@ -1,51 +1,66 @@
-import { useMemo, useState } from "react";
-import {
-  ArrowDownTrayIcon,
-  ArrowUpTrayIcon,
-  CheckCircleIcon,
-  InformationCircleIcon,
-  MagnifyingGlassIcon,
-} from "@heroicons/react/24/outline";
+import { useState } from "react";
+import { ArrowDownTrayIcon, ArrowUpTrayIcon, InformationCircleIcon } from "@heroicons/react/24/outline";
 import { Card } from "./ui/Card";
 import { Button } from "./ui/Button";
 import { InfoBanner } from "./ui/InfoBanner";
 import { UploadDropzone } from "./ui/UploadDropzone";
-import { Table } from "./ui/Table";
 import { mockBulkRows } from "../data/mockBulkRows";
-import { mockRetailers } from "../data/mockRetailers";
-import { REQUEST_TYPE_LABELS } from "../data/formOptions";
-import { fmtDate } from "../lib/format";
-import { COMBINED_TEMPLATE_COLUMNS, downloadCsvTemplate } from "../lib/csvTemplate";
-
-const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name ?? code;
+import { COMBINED_TEMPLATE_COLUMNS, TEMPLATE_COLUMNS_BY_BULK_TYPE, downloadCsvTemplate } from "../lib/csvTemplate";
 
 /**
  * ImportCsvStep — Bulk CSV's merged "Import CSV" step. Replaces what used
  * to be two separate stepper steps (Download Template, Upload Template) —
  * per stakeholder feedback, they belong in one card, matching the
  * reference internal-app pattern: download action + required columns +
- * upload control all together, and once upload succeeds, the SAME card
- * grows an "Imported requests" section in place (summary banner, search,
- * "Upload another file", and a row table) rather than navigating away.
+ * upload control all together.
  *
- * A separate Review step still follows (kept per product decision) for a
- * fuller checkpoint before Confirm — this inline table is a quick,
- * immediate confirmation right after upload, not a replacement for Review.
+ * Flow simplification (Aug 2026 pass): this step no longer grows its own
+ * full "Imported requests" table/search after a successful upload — that
+ * duplicated the exact same `rows` the Review step (BulkReviewStep) already
+ * shows, with richer, product-centered, validated detail. A successful
+ * upload now auto-advances the wizard straight to Review
+ * (BulkCsvWizard.handleUploadComplete), so this step's own post-upload
+ * state is only actually seen if the user navigates Back from Review —
+ * in that case it shows compact source metadata only (filename, row
+ * count, Replace file), sourced from `batch` (the parent-owned record that
+ * survives this component unmounting/remounting across step navigation —
+ * this component's own local state does not).
  *
- * `rows` is owned by the parent (BulkCsvWizard), passed in as a prop, so
- * this component stays in sync with the single source of truth rather than
- * tracking its own copy.
+ * `rows`/`batch` are owned by the parent (BulkCsvWizard), passed in as
+ * props, so this component stays in sync with the single source of truth
+ * rather than tracking its own copy. `onUploadComplete(rows, fileName)` —
+ * `fileName` is the real picked/dropped file's name from
+ * UploadDropzone's browser File API callback (previously captured and then
+ * discarded); threaded up so the parent can carry it into `batch`.
+ *
+ * `bulkType` (Aug 2026 pass, `"innovation"|"brandViz"`, from
+ * CreateRequestLauncher's new Bulk type choice) — picks the matching
+ * column subset for the required-columns guidance and template download
+ * (`TEMPLATE_COLUMNS_BY_BULK_TYPE`, lib/csvTemplate.js), and, for the
+ * simulated upload only, filters `mockBulkRows` down to the rows whose
+ * `requestType` actually belongs to that bulk type — so choosing "Bulk
+ * Innovation" doesn't hand back unrelated VizID/Brand Request rows in the
+ * demo. This is a simulation-consistency choice, not new parsing/matching
+ * logic: a real upload would only ever contain rows from the template the
+ * user actually downloaded.
  */
-export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
+export function ImportCsvStep({ rows, batch, bulkType, onUploadComplete, onReset }) {
   const [status, setStatus] = useState("idle"); // idle | processing | empty | failed
-  const [query, setQuery] = useState("");
 
-  const simulate = (outcome) => {
+  const templateColumns = TEMPLATE_COLUMNS_BY_BULK_TYPE[bulkType] ?? COMBINED_TEMPLATE_COLUMNS;
+
+  const simulate = (outcome, fileName) => {
     setStatus("processing");
     setTimeout(() => {
       if (outcome === "success") {
         setStatus("idle");
-        onUploadComplete(mockBulkRows);
+        const rowsForType =
+          bulkType === "innovation"
+            ? mockBulkRows.filter((r) => r.requestType === "innovation")
+            : bulkType === "brandViz"
+              ? mockBulkRows.filter((r) => r.requestType !== "innovation")
+              : mockBulkRows;
+        onUploadComplete(rowsForType, fileName);
       } else if (outcome === "empty") {
         setStatus("empty");
         onUploadComplete([]);
@@ -57,31 +72,9 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
 
   const handleReset = () => {
     setStatus("idle");
-    setQuery("");
     onReset();
   };
 
-  const filteredRows = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => {
-      const haystack = [
-        row.title,
-        row.productTitle,
-        row.brand,
-        row.upc,
-        row.retailer,
-        retailerLabel(row.retailer),
-        REQUEST_TYPE_LABELS[row.requestType],
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(q);
-    });
-  }, [rows, query]);
-
-  const readyCount = rows.filter((r) => r.willCreateRequest && r.status !== "issue").length;
   const showUploaded = status !== "processing" && rows.length > 0;
   const showDropzone = status === "idle" && rows.length === 0;
 
@@ -95,7 +88,7 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
           size="sm"
           icon={ArrowDownTrayIcon}
           iconPosition="leading"
-          onClick={downloadCsvTemplate}
+          onClick={() => downloadCsvTemplate(bulkType)}
         >
           Download CSV template
         </Button>
@@ -107,7 +100,7 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
           <div>
             <p className="text-sm font-semibold text-base-content mb-1.5">Required columns</p>
             <div className="flex flex-wrap gap-1.5">
-              {COMBINED_TEMPLATE_COLUMNS.map((col) => (
+              {templateColumns.map((col) => (
                 <span key={col} className="badge badge-sm badge-ghost font-mono">
                   {col}
                 </span>
@@ -138,7 +131,7 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
 
         {showDropzone && (
           <div className="flex flex-col gap-3">
-            <UploadDropzone onFileSelected={() => simulate("success")} />
+            <UploadDropzone onFileSelected={(fileName) => simulate("success", fileName)} />
             <p className="text-xs text-base-content/50 -mt-1">Accepted file type: .csv</p>
             <div className="flex items-center gap-2 text-xs text-base-content/50">
               <span>Simulate:</span>
@@ -176,98 +169,15 @@ export function ImportCsvStep({ rows, onUploadComplete, onReset }) {
         )}
 
         {showUploaded && (
-          <div className="flex flex-col gap-4 border-t border-base-300 pt-5">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <h3 className="text-sm font-bold text-base-content">Imported requests</h3>
-                <p className="text-xs text-base-content/50 mt-0.5">
-                  Rows imported from CSV. Review and fix any rows that need attention.
-                </p>
-              </div>
-              <div className="rounded-box bg-success/10 border border-success/30 px-4 py-2.5 flex items-start gap-2">
-                <CheckCircleIcon className="w-5 h-5 text-success shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-success">CSV import summary</p>
-                  <p className="text-xs text-success/80">
-                    {rows.length} row{rows.length === 1 ? "" : "s"} uploaded · {readyCount} ready to
-                    create
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-3 flex-wrap">
-              <div className="relative flex-1 min-w-[220px]">
-                <MagnifyingGlassIcon className="w-4 h-4 text-base-content/40 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  className="input input-bordered input-sm w-full pl-9"
-                  placeholder="Search by title, brand, UPC, or retailer"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                icon={ArrowUpTrayIcon}
-                iconPosition="leading"
-                onClick={handleReset}
-              >
-                Upload another file
-              </Button>
-            </div>
-
-            <Table>
-              <thead>
-                <tr>
-                  <th>Status</th>
-                  <th>Request Type</th>
-                  <th>Title</th>
-                  <th>Retailer</th>
-                  <th>Date</th>
-                  <th>Content Type</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRows.map((row) => {
-                  const displayTitle = row.title || row.productTitle || "Untitled request";
-                  return (
-                    <tr key={row.id} className={row.status === "issue" ? "bg-error/5" : ""}>
-                      <td>
-                        <span
-                          className={`badge badge-sm ${
-                            row.status === "issue" ? "badge-error" : "badge-success"
-                          }`}
-                        >
-                          {row.status === "issue" ? "Issue" : "Ready"}
-                        </span>
-                      </td>
-                      <td className="text-base-content/70">
-                        {REQUEST_TYPE_LABELS[row.requestType] ?? row.requestType}
-                      </td>
-                      <td className="text-base-content">{displayTitle}</td>
-                      <td className="text-base-content/70">
-                        {row.retailer ? retailerLabel(row.retailer) : "—"}
-                      </td>
-                      <td className="text-base-content/70">
-                        {fmtDate(row.requestType === "brandRequest" ? row.dueDate : row.launchDate)}
-                      </td>
-                      <td className="text-base-content/70">{row.contentType ?? "—"}</td>
-                    </tr>
-                  );
-                })}
-                {filteredRows.length === 0 && (
-                  <tr>
-                    <td colSpan={6} className="text-center text-sm text-base-content/50 py-6">
-                      No rows match your search.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </Table>
-
-            <p className="text-xs text-base-content/40">Last updated: Now</p>
+          <div className="flex items-center justify-between gap-4 flex-wrap border-t border-base-300 pt-5">
+            <p className="text-sm text-base-content/70">
+              <span className="font-semibold text-base-content">{batch?.templateName || "Uploaded file"}</span>
+              {" · "}
+              {rows.length} row{rows.length === 1 ? "" : "s"} uploaded
+            </p>
+            <Button variant="outline" size="sm" icon={ArrowUpTrayIcon} iconPosition="leading" onClick={handleReset}>
+              Replace file
+            </Button>
           </div>
         )}
       </div>

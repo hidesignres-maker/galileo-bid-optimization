@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowLeftIcon, ChevronRightIcon, CalendarDaysIcon } from "@heroicons/react/24/outline";
+import { ArrowLeftIcon, ChevronRightIcon, CalendarIcon } from "@heroicons/react/24/outline";
 import { PlusIcon } from "@heroicons/react/24/solid";
 import { ContentRequestQueue } from "./pages/ContentRequestQueue";
 import { ManualRequestWizard } from "./pages/ManualRequestWizard";
@@ -11,9 +11,10 @@ import { AppShell } from "./components/AppShell";
 import { Button } from "./components/ui/Button";
 import { mockRequests } from "./data/mockRequests";
 import { mockCommentsByRequestId, mockHistoryByRequestId } from "./data/mockActivity";
-import { REQUEST_TYPE_LABELS } from "./data/formOptions";
+import { REQUEST_TYPE_LABELS, getAssigneeLabel } from "./data/formOptions";
 import { canEditRequest, editUnavailableReason } from "./lib/editability";
 import { REQUEST_STATUS } from "./lib/models";
+import { STATUS_LABEL } from "./pages/ContentRequestQueue";
 import { CURRENT_USER, makeHistoryEvent, diffRequestForHistory } from "./lib/requestHistory";
 import { handleInternalNavClick } from "./lib/clientNav";
 
@@ -72,6 +73,14 @@ const MANUAL_TITLE_BY_TYPE = {
   innovation: "New Request : Innovation - flow A",
 };
 
+// Bulk CSV page title — fixed literal per the approved flow's own page
+// hierarchy spec (Aug 2026 drawer pass), replacing the prior per-Bulk-type
+// suffix. The Bulk type itself is already visible inside the wizard
+// (Upload step's required-columns guidance, Review's per-row Request
+// type text) — repeating it in the page heading isn't part of the
+// approved hierarchy.
+const BULK_PAGE_TITLE = "New Request: Bulk CSV Import";
+
 /**
  * App — view state machine (no router; this is still a static prototype).
  * Holds the in-memory "requests database" so requests created by either
@@ -99,6 +108,7 @@ export default function App() {
   const [requests, setRequests] = useState(mockRequests);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [initialManualRequestType, setInitialManualRequestType] = useState(null);
+  const [initialBulkType, setInitialBulkType] = useState(null);
 
   // Comments/History — Part I. Deliberately NOT part of the Request model:
   // both are separate maps keyed by request id, seeded from optional mock
@@ -199,6 +209,50 @@ export default function App() {
     }));
   };
 
+  // READ header quick-controls (Corrected Approved Scope, Aug 2026) —
+  // Status and Assignee are now editable directly from Request Detail's
+  // header, without opening the full Edit wizard. Same immutable
+  // setRequests map-replace pattern as handleArchiveRequest/
+  // handleUpdateRequest above, and the same history-event convention
+  // diffRequestForHistory already uses elsewhere (description prefixed
+  // with CURRENT_USER, actor field also CURRENT_USER — the same
+  // pre-existing, intentionally-unfixed redundancy documented in
+  // lib/requestHistory.js). No new status/assignee values are introduced;
+  // both only ever write values that already exist in REQUEST_STATUS /
+  // mockAssignees.
+  //
+  // Status intentionally excludes REQUEST_STATUS.ARCHIVED as a selectable
+  // option here — Archive stays its own distinct, confirmed action (More
+  // menu -> handleArchiveRequest), matching its existing lifecycle
+  // semantics (removes the request from the active Queue view, becomes
+  // read-only). Folding "Archived" into this plain status dropdown would
+  // let it be picked without the existing confirm step and would collide
+  // with the read-only rule Archive already enforces elsewhere — not a
+  // new product decision, just reusing the one Archive already made.
+  const handleUpdateStatus = (requestId, newStatus) => {
+    setRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, status: newStatus } : r)));
+    const label = STATUS_LABEL[newStatus] ?? newStatus;
+    setHistory((prev) => ({
+      ...prev,
+      [requestId]: [
+        ...(prev[requestId] ?? []),
+        makeHistoryEvent(CURRENT_USER, `${CURRENT_USER} changed Status to ${label}`),
+      ],
+    }));
+  };
+
+  const handleUpdateAssignee = (requestId, newAssignee) => {
+    setRequests((prev) => prev.map((r) => (r.id === requestId ? { ...r, assignee: newAssignee } : r)));
+    const label = getAssigneeLabel(newAssignee) || "Unassigned";
+    setHistory((prev) => ({
+      ...prev,
+      [requestId]: [
+        ...(prev[requestId] ?? []),
+        makeHistoryEvent(CURRENT_USER, `${CURRENT_USER} changed Assignee to ${label}`),
+      ],
+    }));
+  };
+
   // Edit route — checked before the plain Detail route below (though, per
   // the regex comment above, the two patterns never actually overlap).
   // Looks up the same in-memory `requests` array; three possible outcomes,
@@ -289,6 +343,8 @@ export default function App() {
         history={matchedRequest ? history[matchedRequest.id] ?? [] : []}
         onAddComment={handleAddComment}
         onArchive={handleArchiveRequest}
+        onUpdateStatus={handleUpdateStatus}
+        onUpdateAssignee={handleUpdateAssignee}
       />
     );
   }
@@ -318,12 +374,14 @@ export default function App() {
     setView("queue");
   };
 
-  const handleLauncherContinue = (method, requestType) => {
+  const handleLauncherContinue = (method, requestType, bulkType) => {
     if (method === "manual") {
       setInitialManualRequestType(requestType);
+      setInitialBulkType(null);
       setView("manual");
     } else {
       setInitialManualRequestType(null);
+      setInitialBulkType(bulkType);
       setView("bulk");
     }
     setIsCreateModalOpen(false);
@@ -374,9 +432,17 @@ export default function App() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
+                  {/* Soft/Neutral button group (see ui/Button.jsx) — no
+                      primary-blue fill, neutral soft surface/text per the
+                      approved Figma. Icon corrected to Heroicons Outline
+                      "Calendar" (was "CalendarDays", the wrong glyph from
+                      that set). iconClassName="w-5 h-5" (20px) is an
+                      earlier, already-approved Figma-parity detail for
+                      this specific button and is preserved unchanged. */}
                   <Button
-                    variant="outline"
-                    icon={CalendarDaysIcon}
+                    variant="neutral"
+                    emphasis="soft"
+                    icon={CalendarIcon}
                     iconPosition="leading"
                     iconClassName="w-5 h-5"
                   >
@@ -410,8 +476,12 @@ export default function App() {
 
           {view === "bulk" && (
             <>
-              <h1 className="text-xl font-bold text-base-content mb-6">Bulk CSV Import</h1>
-              <BulkCsvWizard onRequestsCreated={handleRequestsCreated} onCancel={() => goTo("queue")} />
+              <h1 className="text-xl font-bold text-base-content mb-6">{BULK_PAGE_TITLE}</h1>
+              <BulkCsvWizard
+                initialBulkType={initialBulkType}
+                onRequestsCreated={handleRequestsCreated}
+                onCancel={() => goTo("queue")}
+              />
             </>
           )}
         </main>

@@ -178,6 +178,26 @@ export const mockRequests = [
     contentTypes: ["images"],
     retailers: ["KR"],
     products: [],
+    // Bulk CSV READ-view fixture (Decision B, Aug 2026 pass): a small,
+    // clearly fictional item, added so the item-centered Bulk CSV Request
+    // Detail (BulkCsvReviewBody) has real data to demonstrate — every field
+    // here already exists on the itemInputs shape (see
+    // createBulkRow/bulkRowToRequest in lib/models.js), nothing new was
+    // added to the model. REQ-2102 below is deliberately left without an
+    // item, to also exercise the empty-state path.
+    itemInputs: [
+      {
+        id: "ITEM-2101-1",
+        upc: "611234455667",
+        retailer: "KR",
+        customerId: "CID-30601",
+        productTitle: "SunBrew Coffee Cold Brew Concentrate, Kroger Exclusive 32oz",
+        brand: "SunBrew Coffee",
+        startShipDate: "2026-09-20",
+        onSaleDate: "2026-10-05",
+        ecommPackDetails: "Single unit, front-of-pack VizID update pending Kroger creative review.",
+      },
+    ],
     isPlaceholder: true,
     sourceBatchId: "BATCH-9001",
   }),

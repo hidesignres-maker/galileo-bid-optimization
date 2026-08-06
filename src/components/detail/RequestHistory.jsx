@@ -15,24 +15,37 @@ import { fmtDate } from "../../lib/format";
  *
  * Rendered as an ordered list (`<ol>`) since sequence is meaningful here —
  * a real chronological record, not an unordered set of facts.
+ *
+ * `RequestHistoryBody` — the same content, extracted without the
+ * surrounding `Card` wrapper, for `RequestConversationPanel` (the combined
+ * Comments/History tabbed panel, Corrected Approved Scope Aug 2026), which
+ * supplies its own card + tab-strip header instead. `RequestHistory`
+ * itself is unchanged — still `<Card title="History">` around the exact
+ * same body — so this is a pure extraction, not a behavior change. No
+ * change to the underlying `{id, actor, description, at}` event shape.
  */
+export function RequestHistoryBody({ events = [] }) {
+  return events.length === 0 ? (
+    <p className="text-sm text-base-content/40 italic">No history recorded yet.</p>
+  ) : (
+    <ol className="flex flex-col gap-3">
+      {events.map((event) => (
+        <li key={event.id} className="border-l-2 border-base-300 pl-3">
+          <p className="text-sm text-base-content">{event.description}</p>
+          <p className="text-xs text-base-content/40 mt-0.5">
+            {event.actor} · {fmtDate(event.at)}
+          </p>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** RequestHistory — the original Card-wrapped surface, unchanged. */
 export function RequestHistory({ events = [] }) {
   return (
     <Card title="History">
-      {events.length === 0 ? (
-        <p className="text-sm text-base-content/40 italic">No history recorded yet.</p>
-      ) : (
-        <ol className="flex flex-col gap-3">
-          {events.map((event) => (
-            <li key={event.id} className="border-l-2 border-base-300 pl-3">
-              <p className="text-sm text-base-content">{event.description}</p>
-              <p className="text-xs text-base-content/40 mt-0.5">
-                {event.actor} · {fmtDate(event.at)}
-              </p>
-            </li>
-          ))}
-        </ol>
-      )}
+      <RequestHistoryBody events={events} />
     </Card>
   );
 }

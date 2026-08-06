@@ -38,13 +38,53 @@ export const COMBINED_TEMPLATE_COLUMNS = [
   "content_notes", // optional — free-text notes on supporting content
 ];
 
-export function downloadCsvTemplate() {
-  const csv = COMBINED_TEMPLATE_COLUMNS.join(",") + "\n";
+/**
+ * Per-bulk-type template column subsets (Aug 2026 pass — Bulk type/
+ * template selection). Derived entirely from COMBINED_TEMPLATE_COLUMNS'
+ * own existing inline comments above (which columns are already marked
+ * "Innovation only" vs "Brand Request") — no new columns invented, no
+ * third template. "Bulk Brand / Viz ID" keeps both `launch_date` (VizID)
+ * and `due_date` (Brand Request) since that one template still supports
+ * either sub-type per row via `request_type`, exactly like the combined
+ * template already does — only the Innovation-only product columns are
+ * dropped for it. "Bulk Innovation" drops the one Brand-Request-only
+ * column (`due_date`) it never uses.
+ */
+const INNOVATION_ONLY_COLUMNS = [
+  "upc",
+  "customer_id",
+  "product_title",
+  "brand",
+  "start_ship_date",
+  "on_sale_date",
+  "ecomm_pack_details",
+];
+const BRAND_REQUEST_ONLY_COLUMNS = ["due_date"];
+
+export const TEMPLATE_COLUMNS_BY_BULK_TYPE = {
+  innovation: COMBINED_TEMPLATE_COLUMNS.filter((c) => !BRAND_REQUEST_ONLY_COLUMNS.includes(c)),
+  brandViz: COMBINED_TEMPLATE_COLUMNS.filter((c) => !INNOVATION_ONLY_COLUMNS.includes(c)),
+};
+
+const TEMPLATE_FILENAME_BY_BULK_TYPE = {
+  innovation: "bulk-innovation-template.csv",
+  brandViz: "bulk-brand-vizid-template.csv",
+};
+
+/**
+ * downloadCsvTemplate(bulkType) — `bulkType` optional for backward
+ * compatibility: omitted (or unrecognized), falls back to the full
+ * combined template exactly as before this pass.
+ */
+export function downloadCsvTemplate(bulkType) {
+  const columns = TEMPLATE_COLUMNS_BY_BULK_TYPE[bulkType] ?? COMBINED_TEMPLATE_COLUMNS;
+  const filename = TEMPLATE_FILENAME_BY_BULK_TYPE[bulkType] ?? "bulk-request-template.csv";
+  const csv = columns.join(",") + "\n";
   const blob = new Blob([csv], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "bulk-request-template.csv";
+  a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
 }

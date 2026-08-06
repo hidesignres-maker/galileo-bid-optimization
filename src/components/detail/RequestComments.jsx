@@ -28,8 +28,15 @@ function initialsFor(name) {
  * clears its own draft field immediately after calling it (optimistic —
  * App.jsx is expected to synchronously append the new comment to `comments`
  * on every call, exactly like every other handler in this prototype).
+ *
+ * `RequestCommentsBody` — the same content, extracted without the
+ * surrounding `Card` wrapper, for `RequestConversationPanel` (the combined
+ * Comments/History tabbed panel, Corrected Approved Scope Aug 2026), which
+ * supplies its own card + tab-strip header instead. `RequestComments`
+ * itself is unchanged — still `<Card title="Comments">` around the exact
+ * same body — so this is a pure extraction, not a behavior change.
  */
-export function RequestComments({ comments = [], onAddComment }) {
+export function RequestCommentsBody({ comments = [], onAddComment }) {
   const [draft, setDraft] = useState("");
   const trimmed = draft.trim();
   const canSubmit = trimmed.length > 0;
@@ -41,9 +48,8 @@ export function RequestComments({ comments = [], onAddComment }) {
   };
 
   return (
-    <Card title="Comments">
-      <div className="flex flex-col gap-4">
-        {comments.length === 0 ? (
+    <div className="flex flex-col gap-4">
+      {comments.length === 0 ? (
           <p className="text-sm text-base-content/40 italic">No comments yet.</p>
         ) : (
           <ul className="flex flex-col gap-3">
@@ -91,7 +97,15 @@ export function RequestComments({ comments = [], onAddComment }) {
             </Button>
           </div>
         </div>
-      </div>
+    </div>
+  );
+}
+
+/** RequestComments — the original Card-wrapped surface, unchanged. */
+export function RequestComments({ comments = [], onAddComment }) {
+  return (
+    <Card title="Comments">
+      <RequestCommentsBody comments={comments} onAddComment={onAddComment} />
     </Card>
   );
 }

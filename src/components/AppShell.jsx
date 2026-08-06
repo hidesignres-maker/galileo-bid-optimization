@@ -12,6 +12,7 @@ import {
   CurrencyDollarIcon,
   ArrowsRightLeftIcon,
 } from "@heroicons/react/24/outline";
+import { Tab } from "./ui/Tab";
 
 /**
  * AppShell — reusable Galileo page shell (left nav rail + blue module
@@ -33,6 +34,17 @@ import {
  * Request/Insights per the approved Figma create-flow shell). Every
  * existing caller that doesn't pass this prop renders exactly as before;
  * the rail and blue module header are unaffected either way.
+ *
+ * `pageBackgroundClassName` (default "bg-base-200"): opt-in,
+ * backward-compatible — the page-canvas background class applied to the
+ * outer shell wrapper. Every existing caller that doesn't pass this prop
+ * keeps the shared `bg-base-200` surface (Queue, Read, Edit) exactly as
+ * before. App.jsx's Creation route (Brand/VizID + Innovation manual
+ * flow) is the only caller that overrides it, to `bg-page-creation` — the
+ * token alias for Figma's approved `main/color/base/200` (#F5F5F7) — so
+ * that change is scoped to Creation without touching the canonical
+ * base-200 mapping other screens (and assorted chip/avatar fills) still
+ * rely on.
  */
 
 export const DEFAULT_NAV_ITEMS = [
@@ -62,10 +74,11 @@ export function AppShell({
   activeSectionTab = "Content Request",
   onSectionTabSelect,
   showSectionTabs = true,
+  pageBackgroundClassName = "bg-base-200",
   children,
 }) {
   return (
-    <div className="min-h-screen flex bg-base-200">
+    <div className={`min-h-screen flex ${pageBackgroundClassName}`}>
       <nav
         aria-label="Primary"
         className="w-[52px] bg-base-100 border-r border-base-300 flex flex-col items-center py-5 gap-1.5 shrink-0"
@@ -99,28 +112,37 @@ export function AppShell({
           <span className="text-sm">{pageGroupLabel}</span>
         </header>
 
+        {/* Module-nav row wrapper — transparent by design: this row sits
+            directly on the page canvas (bg-base-200 / bg-page-creation set
+            higher up in AppShell/App.jsx), so it must not paint its own
+            opaque fill. A prior pass kept `bg-base-100` here on the
+            assumption that white was the approved Figma surface token for
+            this row; product feedback corrected that — the row itself
+            carries no background at all, only the tabs' own transparent
+            state plus the divider border below. `border-b border-base-300`
+            stays as the visual separator from the content below it.
+            `pt-2` (8px breathing room above the 40px tabs) and `items-end`
+            (keeps each Tab's `border-b-2 -mb-px` underline flush against
+            this row's own `border-b`) are unchanged from the prior pass.
+            This wrapper is intentionally not reused by Queue status tabs
+            or Product Selection tabs — both keep their own surrounding
+            containers, only sharing the Tab item itself. */}
         {showSectionTabs && (
-          <div className="bg-base-100 border-b border-base-300 px-6 shrink-0">
-            <div className="h-10 flex items-end gap-7">
-              {sectionTabs.map((tab) => {
-                const isActive = tab === activeSectionTab;
-                return (
-                  <button
-                    key={tab}
-                    type="button"
-                    aria-current={isActive ? "page" : undefined}
-                    onClick={onSectionTabSelect ? () => onSectionTabSelect(tab) : undefined}
-                    className={`pb-3 text-sm border-b-2 -mb-px transition-colors ${
-                      isActive
-                        ? "border-primary text-primary font-semibold"
-                        : "border-transparent text-base-content/60 hover:text-base-content hover:border-base-300"
-                    }`}
-                  >
-                    {tab}
-                  </button>
-                );
-              })}
-            </div>
+          <div className="border-b border-base-300 px-6 pt-2 flex items-end gap-7 shrink-0">
+            {sectionTabs.map((tab) => {
+              const isActive = tab === activeSectionTab;
+              return (
+                <Tab
+                  key={tab}
+                  active={isActive}
+                  aria-current={isActive ? "page" : undefined}
+                  onClick={onSectionTabSelect ? () => onSectionTabSelect(tab) : undefined}
+                  className={!isActive ? "hover:border-base-300" : ""}
+                >
+                  {tab}
+                </Tab>
+              );
+            })}
           </div>
         )}
 

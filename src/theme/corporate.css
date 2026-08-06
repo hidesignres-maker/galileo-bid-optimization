@@ -16,6 +16,87 @@
 }
 
 /* ============================================================
+   TYPOGRAPHY UTILITIES — Tailwind v4 generates a `font-*` utility only
+   for theme keys declared inside an @theme block (same rule that
+   governs the count-badge color naming below); --font-code above is a
+   plain :root custom property, so on its own it does NOT produce a
+   `font-code` utility class. Re-declaring the identical value here,
+   under the same `--font-*` prefix Tailwind's typography-utility
+   generator matches, produces a real `font-code` utility
+   (`.font-code{font-family:var(--font-code)}`) without a second source
+   of truth for the actual font stack — this line and the :root value
+   above must always match (Roboto Mono is the only font this token
+   names). Used by the global table numeric/monetary-cell rule (see
+   ui/Table.jsx's NUMERIC_CELL_CLASS).
+   ============================================================ */
+@theme {
+  --font-code: "Roboto Mono", ui-monospace, monospace;
+}
+
+/* ============================================================
+   COUNT BADGE — shared token pair for the neutral count-pill pattern
+   (tab counts today; any other "N of X" pill in the future). Figma
+   values, not derived from an existing base/* token — base-200 is now
+   #F5F5F7 and base-300 is #E4E6EA, neither matches this badge's fill/
+   border, so these get their own explicit pair rather than reusing (or
+   silently drifting from) an unrelated surface token. Registered in a
+   Tailwind v4 @theme block so `bg-count-badge` / `border-count-badge-outline`
+   are generated as real utility classes — CountBadge.jsx is the only
+   consumer, so this value is defined exactly once, not hardcoded per
+   usage site. Named as two distinct colors (not "count-badge-bg" /
+   "count-badge-border") because Tailwind v4 generates utilities per
+   *color name*, not per intended CSS property — a name ending in "-bg"
+   only ever produces "bg-count-badge-bg", never a plain "bg-count-badge".
+   ============================================================ */
+@theme {
+  --color-count-badge: #EFEFEF;
+  --color-count-badge-outline: #D5D6D6;
+}
+
+/* ============================================================
+   MODAL FOUNDATION — 16px radius for the shared Modal primitive
+   (ui/Modal.jsx), approved for the Create Request / Archive confirmation
+   modal pattern. Not a DaisyUI radius role (radius-selector/field/box
+   above are DaisyUI's fixed slots; "modal" isn't one of them), so this
+   is a plain component-contract token: Modal.jsx applies it via an
+   inline style referencing this variable — same guaranteed-override
+   reasoning already used for STATUS_PILL_RADIUS (ContentRequestQueue.jsx)
+   — rather than a competing Tailwind radius utility class. Declared in
+   an @theme block so a `rounded-modal` utility also exists if ever
+   needed directly, matching the naming convention already established
+   for the count-badge/font-code tokens above.
+   ============================================================ */
+@theme {
+  --radius-modal: 1rem; /* 16px */
+}
+
+/* ============================================================
+   DESTRUCTIVE ACTION — solid-fill token pair for the Button system's
+   Default/Destructive variant (Archive confirm, etc.). Deliberately
+   NOT the same value as --color-error (#FF6266) below: --color-error is
+   already load-bearing for form validation text, the "Needs Action"
+   soft status pill, and several existing outline/text error buttons
+   throughout the app (BulkCsvWizard, ManualRequestWizard, ReviewFooter,
+   RequestDetailFooter's Archive trigger, etc.) — changing that shared
+   value would silently restyle all of them. Figma's approved destructive
+   action color (main/color/error/error = #DC2626) is a distinct, more
+   saturated red reserved for a solid destructive button fill, so it gets
+   its own additive token pair instead of overwriting the existing one.
+   Registered in an @theme block (bg-destructive/text-destructive/
+   border-destructive utilities become available) and also consumed
+   directly by Button.jsx's "destructive" variant via an inline
+   --btn-color/--btn-fg override (DaisyUI's own button mechanism derives
+   every hover/active/focus/disabled state from --btn-color via
+   color-mix, so overriding just these two custom properties gets full,
+   correct interactive-state parity with every other Button variant for
+   free, without a new hardcoded .btn-destructive class).
+   ============================================================ */
+@theme {
+  --color-destructive: #DC2626;
+  --color-destructive-content: #FFFFFF;
+}
+
+/* ============================================================
    SEMANTIC UI (DaisyUI v5 "corporate" theme)
    1:1 mapping from d).tokens.json theme(01).color
    ============================================================ */
@@ -44,8 +125,13 @@
   --color-info-content: #FFFFFF;
 
   /* ── Base surfaces ── */
+  /* main/color/base/200 (Figma) = #F5F5F7 — corrected from the prior
+     #E8E8E8. This is the canonical, single source of truth for base-200;
+     it's shared by every screen through AppShell (Queue/Read/Edit/
+     Creation all use bg-base-200 for the page canvas), so this one value
+     change is what makes them all resolve to the approved Figma color. */
   --color-base-100:     #FFFFFF;
-  --color-base-200:     #E8E8E8;
+  --color-base-200:     #F5F5F7;
   --color-base-300:     #E4E6EA;
   --color-base-content: #13181B;
 

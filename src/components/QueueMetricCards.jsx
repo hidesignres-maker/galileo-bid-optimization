@@ -1,5 +1,5 @@
 import { REQUEST_STATUS, isDueThisPeriod } from "../lib/models";
-import { Card } from "./ui/Card";
+import { MetricCard } from "./ui/MetricCard";
 
 /**
  * QueueMetricCards — Galileo summary-card row above the Queue surface.
@@ -16,28 +16,27 @@ import { Card } from "./ui/Card";
  *    card's title is period-scoped (Figma copy) but its number is the same
  *    all-time Completed count that already existed. Flagged in the parity
  *    report; not silently invented.
+ *
+ * Rendering moved to the shared MetricCard primitive (ui/MetricCard.jsx)
+ * — this component now only computes the two values and supplies
+ * label/value; card geometry, colors, and the label-above-value order
+ * live in MetricCard, not here. Both cards use the default "neutral"
+ * variant per the approved Figma state — the prior yellow/green tones
+ * are gone, not reassigned to a different token.
  */
 export function QueueMetricCards({ requests }) {
   const dueThisPeriod = requests.filter((r) => isDueThisPeriod(r.dueDate)).length;
   const completed = requests.filter((r) => r.status === REQUEST_STATUS.COMPLETED).length;
 
   const cards = [
-    { label: "Due this Period", value: dueThisPeriod, tone: "text-warning" },
-    { label: "Completed This Period", value: completed, tone: "text-success" },
+    { label: "Due this Period", value: dueThisPeriod },
+    { label: "Completed This Period", value: completed },
   ];
 
   return (
     <div className="flex gap-6">
       {cards.map((c) => (
-        <Card
-          key={c.label}
-          flat
-          className="w-[194px] h-[84px] shrink-0"
-          bodyClassName="p-4 h-full flex flex-col justify-center"
-        >
-          <div className={`text-2xl font-bold ${c.tone}`}>{c.value}</div>
-          <div className="text-xs text-base-content/60 mt-1">{c.label}</div>
-        </Card>
+        <MetricCard key={c.label} label={c.label} value={c.value} />
       ))}
     </div>
   );

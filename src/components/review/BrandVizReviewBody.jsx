@@ -2,7 +2,9 @@ import { useState } from "react";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Table, ClampCell } from "../ui/Table";
 import { ProductImageThumb } from "../ui/ProductImageThumb";
+import { CustomBadge } from "../ui/CustomBadge";
 import { mockRetailers } from "../../data/mockRetailers";
+import { getPlaceholderProductImage } from "../../data/productImages";
 import { fmtDate, fmtCount } from "../../lib/format";
 import { BrandVizRequestSummary } from "./BrandVizRequestSummary";
 
@@ -80,8 +82,30 @@ function retailerDotClass(code) {
  * prop and renders exactly as before. Added for the READ Request Detail
  * page, which reuses this component for its retailer/product body but must
  * never expose a control that could mutate a persisted request.
+ *
+ * `isOverride` (optional boolean) — the Retailer Date-Source Indicator
+ * (Corrected Approved Scope, Aug 2026). Only rendered when `readOnly` is
+ * true, so the wizard's own live Review step (which never passes
+ * `readOnly`) renders identically to before — this is a READ-only
+ * addition, not a change to the shared editable header. When shown, it's
+ * a small `CustomBadge` reading "Retailer override" (every product in
+ * this group carries its own explicit `launchDate`) or "Inherited from
+ * default" (at least one product in the group fell back to the request's
+ * default date) — positioned beside the date context, before the
+ * expand/collapse chevron. The boolean itself is computed one level up in
+ * `BrandVizReviewBody`, by cross-referencing `products`' own `launchDate`
+ * field per EAN — this component only renders whatever it's given, it
+ * never re-derives the value itself.
  */
-function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdateGroupDate, readOnly = false }) {
+function RetailerGroupPanel({
+  group,
+  brandByEan,
+  defaultOpen,
+  dateLabel,
+  onUpdateGroupDate,
+  readOnly = false,
+  isOverride,
+}) {
   const [open, setOpen] = useState(defaultOpen);
   const toggle = () => setOpen((o) => !o);
   const label = retailerLabel(group.retailer);
@@ -115,10 +139,13 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
             // editable branch specifically because a native date input's
             // own displayed value isn't in the friendly fmtDate format;
             // there's nothing to disambiguate once it's already plain text).
-            <span className="text-xs whitespace-nowrap" aria-label={`${dateLabel} for ${label}`}>
-              <span className="font-semibold text-base-content/70">{dateLabel}:</span>{" "}
-              <span className="text-base-content/70">{fmtDate(group.date)}</span>
-            </span>
+            <>
+              <span className="text-xs whitespace-nowrap" aria-label={`${dateLabel} for ${label}`}>
+                <span className="font-semibold text-base-content/70">{dateLabel}:</span>{" "}
+                <span className="text-base-content/70">{fmtDate(group.date)}</span>
+              </span>
+              <CustomBadge label={isOverride ? "Retailer override" : "Inherited from default"} />
+            </>
           ) : (
             <>
               <span className="text-xs whitespace-nowrap">
@@ -164,7 +191,10 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
               {group.rows.map((r, i) => (
                 <tr key={i}>
                   <td className="align-middle">
-                    <ProductImageThumb src={r.imageUrl} alt={r.productTitle} />
+                    <ProductImageThumb
+                      src={r.imageUrl ?? getPlaceholderProductImage(r.ean || r.upc)}
+                      alt={r.productTitle}
+                    />
                   </td>
                   <ClampCell contentClassName="text-base-content">{r.productTitle}</ClampCell>
                   <td className="text-base-content/70 whitespace-nowrap align-middle">
@@ -220,6 +250,24 @@ function RetailerGroupPanel({ group, brandByEan, defaultOpen, dateLabel, onUpdat
  * editable date inputs exactly as before. Request Detail (READ MVP) passes
  * `readOnly` and omits `onUpdateGroupDate` entirely, since there is
  * nothing here to call it.
+ *
+ * Retailer Date-Source Indicator — `hasOwnDateByEan` mirrors the exact
+ * existing `brandByEan` pattern directly above it: a plain Map built from
+ * `products` (never from `retailerGroups`, and never touching
+ * lib/groupByRetailer.js), keyed by EAN, this time recording whether that
+ * product carries its own explicit `launchDate` (override) or not
+ * (inherits the request's default date). Each group's `isOverride` is
+ * then computed the same way `brandByEan` is joined into each row below:
+ * a presentational-only derivation, passed to `RetailerGroupPanel` as a
+ * plain boolean, never stored or written back anywhere.
+ *
+ * `hideTitle`/`onAssigneeChange`/`variant` — passed straight through to
+ * `BrandVizRequestSummary` unchanged (see its own doc comment). Omitted by
+ * every existing caller (wizard Review), so this body renders exactly as
+ * before by default. Only the summary sub-component reacts to `variant` —
+ * the retailer-grouped product table below it (and its now-deterministic
+ * placeholder thumbnails, see `getPlaceholderProductImage` above) is
+ * unaffected by `variant` and renders identically in both.
  */
 export function BrandVizReviewBody({
   requestType,
@@ -228,13 +276,23 @@ export function BrandVizReviewBody({
   retailerGroups,
   onUpdateGroupDate,
   readOnly = false,
+  hideTitle = false,
+  onAssigneeChange,
+  variant = "review",
 }) {
   const brandByEan = new Map(products.map((p) => [p.ean, p.brand]));
+  const hasOwnDateByEan = new Map(products.map((p) => [p.ean, Boolean(p.launchDate)]));
   const dateLabel = DATE_COLUMN_LABEL[requestType] ?? "Date";
 
   return (
     <>
-      <BrandVizRequestSummary requestType={requestType} formData={formData} />
+      <BrandVizRequestSummary
+        requestType={requestType}
+        formData={formData}
+        hideTitle={hideTitle}
+        onAssigneeChange={onAssigneeChange}
+        variant={variant}
+      />
 
       <div className="flex flex-col gap-4">
         <div>
@@ -257,6 +315,7 @@ export function BrandVizReviewBody({
                 dateLabel={dateLabel}
                 onUpdateGroupDate={onUpdateGroupDate}
                 readOnly={readOnly}
+                isOverride={g.rows.every((r) => hasOwnDateByEan.get(r.ean))}
               />
             ))}
           </div>

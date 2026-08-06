@@ -74,3 +74,18 @@ export const DATE_FIELD_LABEL_BY_FLOW = {
   brandRequest: "Due/Launch Date",
   innovation: "Default On Sale Date",
 };
+
+/**
+ * BULK_TYPE_LABELS — Bulk CSV's own type/template choice (Aug 2026 pass).
+ * Presentation/simulation-only concept, NOT part of the `requestType`
+ * enum: the model's `requestType` stays exactly `"vizId"|"brandRequest"|
+ * "innovation"` everywhere (see lib/models.js). `bulkType` only decides
+ * which CSV template downloads and which mock rows a simulated upload
+ * returns — "Bulk Brand / Viz ID" intentionally covers both `vizId` and
+ * `brandRequest` rows under one template/choice, matching the approved
+ * conceptual options (two choices, not three, and no new request types).
+ */
+export const BULK_TYPE_LABELS = {
+  innovation: "Bulk Innovation",
+  brandViz: "Bulk Brand / Viz ID",
+};

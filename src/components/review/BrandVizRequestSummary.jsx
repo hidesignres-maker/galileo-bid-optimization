@@ -1,5 +1,11 @@
 import { Card } from "../ui/Card";
-import { CONTENT_TYPE_OPTIONS_BY_FLOW } from "../../data/formOptions";
+import { Select } from "../ui/Select";
+import {
+  CONTENT_TYPE_OPTIONS_BY_FLOW,
+  REQUEST_TYPE_LABELS,
+  getAssigneeLabel,
+  mockAssignees,
+} from "../../data/formOptions";
 import { fmtDate } from "../../lib/format";
 
 function contentTypeLabels(requestType, values) {
@@ -41,20 +47,107 @@ function SummaryField({ label, children }) {
  * by Retailer" section (see RetailerGroupPanel), so there is exactly one
  * place retailer date state can be edited from, never two. There is no
  * visible remove action anywhere in Review (see BrandVizReviewBody).
+ *
+ * `formData.assignee` is always the Select's raw option value (e.g.
+ * "priya.nair"), whether this renders live during the wizard (create or
+ * edit) or read-only inside Request Detail — `getAssigneeLabel` turns it
+ * into the friendly display name in every case; the underlying value is
+ * never rewritten.
+ *
+ * `hideTitle` (default false, opt-in) — omits the "Request title" field
+ * entirely, for Request Detail's compact Request Overview card, which
+ * shows the title once already (in the operational header) and doesn't
+ * repeat it here. Every existing caller (the wizard's Review step) omits
+ * this prop, so "Request title" keeps rendering exactly as before. Only
+ * consulted by the `"review"` variant — the `"detail"` variant never shows
+ * a title row regardless (see below).
+ *
+ * `onAssigneeChange` (optional, opt-in) — when provided, the Assignee
+ * field renders as a real `<Select>` (mockAssignees options) instead of
+ * plain text, and calls `onAssigneeChange(newValue)` on change; the
+ * caller owns the actual mutation (Request Detail wires this to
+ * `onUpdateAssignee`). Omitted by every existing caller (including a
+ * read-only Request Detail render), so Assignee keeps rendering as plain
+ * text everywhere it already did.
+ *
+ * `variant` (default `"review"`, opt-in) — Request Detail READ-view
+ * information-hierarchy correction (Aug 2026 pass). `"review"` renders
+ * byte-identical output to before this prop existed (every existing
+ * caller — the wizard's Review step — omits it, so nothing there changes).
+ * `"detail"` renders the approved READ-view field order instead: Description
+ * first (widest field), then a Request type / Content type row, then a
+ * Launch Date / Assignee row — plus a new Request type field this
+ * component never rendered before. This is a display-only addition:
+ * `requestType` itself was already a required prop, just not shown until
+ * now. Only Request Detail passes `variant="detail"`.
  */
-export function BrandVizRequestSummary({ requestType, formData }) {
+export function BrandVizRequestSummary({
+  requestType,
+  formData,
+  hideTitle = false,
+  onAssigneeChange,
+  variant = "review",
+}) {
   const contentTypes = contentTypeLabels(requestType, formData.contentTypes);
   const dateLabel = requestType === "brandRequest" ? "Due/launch date" : "Launch date";
+
+  const assigneeField = onAssigneeChange ? (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs font-semibold text-base-content/50">Assignee</span>
+      <Select
+        size="sm"
+        aria-label="Assignee"
+        value={formData.assignee || ""}
+        placeholder="Unassigned"
+        options={mockAssignees}
+        onChange={(e) => onAssigneeChange(e.target.value)}
+      />
+    </div>
+  ) : (
+    <SummaryField label="Assignee">{getAssigneeLabel(formData.assignee) || "Unassigned"}</SummaryField>
+  );
+
+  if (variant === "detail") {
+    return (
+      <Card title="Request Summary" bodyClassName="p-6">
+        <div className="flex flex-col gap-4">
+          <SummaryField label="Description">{formData.description || "Not provided"}</SummaryField>
+          <div className="grid grid-cols-2 gap-6">
+            <SummaryField label="Request type">{REQUEST_TYPE_LABELS[requestType] ?? requestType}</SummaryField>
+            <SummaryField label="Content type">{contentTypes.join(", ") || "—"}</SummaryField>
+          </div>
+          <div className="grid grid-cols-2 gap-6">
+            <SummaryField label="Launch Date">{fmtDate(formData.defaultDate)}</SummaryField>
+            {assigneeField}
+          </div>
+        </div>
+      </Card>
+    );
+  }
 
   return (
     <Card title="Request Summary" bodyClassName="p-6">
       <div className="grid grid-cols-2 gap-8">
         <div className="flex flex-col gap-4">
-          <SummaryField label="Request title">{formData.title || "—"}</SummaryField>
+          {!hideTitle && <SummaryField label="Request title">{formData.title || "—"}</SummaryField>}
           <div className="flex items-start gap-6">
             <SummaryField label={dateLabel}>{fmtDate(formData.defaultDate)}</SummaryField>
             <SummaryField label="Content type">{contentTypes.join(", ") || "—"}</SummaryField>
-            <SummaryField label="Assignee">{formData.assignee || "Unassigned"}</SummaryField>
+            {onAssigneeChange ? (
+              <div className="flex flex-col gap-1 w-40">
+                <span className="text-xs font-semibold text-base-content/50">Assignee</span>
+                <Select
+                  size="sm"
+                  aria-label="Assignee"
+                  value={formData.assignee || ""}
+                  placeholder="Unassigned"
+                  options={mockAssignees}
+                  onChange={(e) => onAssigneeChange(e.target.value)}
+                />
+              </div>
+            ) : (
+              <SummaryField label="Assignee">{getAssigneeLabel(formData.assignee) || "Unassigned"}</SummaryField>
+            )}
           </div>
         </div>
         <div>

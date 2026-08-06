@@ -36,6 +36,26 @@ const INNOVATION_GUIDANCE = "Review the details below, then create the request. 
  * one ("New Request : VizID change" / "Brand request" / "Innovation -
  * flow A"), so this internal heading intentionally does not repeat the
  * request type, to avoid showing it twice on the same screen.
+ *
+ * `mode` ("create", default | "edit") + `onSaveChanges` — optional,
+ * backward compatible. Every existing create-mode caller omits both, so
+ * `primaryLabel` stays "Create Request" and the footer's primary button
+ * still calls `onCreateRequest`, unchanged. In edit mode, the Edit MVP
+ * (ManualRequestWizard mode="edit") passes `mode="edit"` and its own
+ * `onSaveChanges` handler instead — the footer then reads "Save changes"
+ * and calls that handler; `onCreateRequest` is simply never invoked in
+ * that case (ManualRequestWizard doesn't even pass one).
+ *
+ * `extraRightContent` (default null) — optional, backward-compatible slot
+ * appended to the END of the existing right column, after Supporting
+ * Materials and Notes (never before, never in between, never in the left
+ * column). Every existing create-mode caller omits this, so the right
+ * column renders exactly as before. Added so ManualRequestWizard's Edit
+ * mode can surface History in the Review step's right rail (below Notes)
+ * without this component or ReviewShell being reconstructed manually
+ * elsewhere, and without duplicating or reordering Supporting
+ * Materials/Notes — it's the same right slot, just with one more item at
+ * the bottom.
  */
 export function ManualReviewStep({
   requestType,
@@ -47,8 +67,14 @@ export function ManualReviewStep({
   onDiscard,
   onCreateRequest,
   onUpdateGroupDate,
+  mode = "create",
+  onSaveChanges,
+  extraRightContent = null,
 }) {
   const isInnovation = requestType === "innovation";
+  const isEdit = mode === "edit";
+  const primaryLabel = isEdit ? "Save changes" : "Create Request";
+  const handlePrimaryAction = isEdit ? onSaveChanges : onCreateRequest;
 
   return (
     <ReviewShell
@@ -71,9 +97,17 @@ export function ManualReviewStep({
         <>
           <SupportingMaterialsReview contentRequirements={formData.contentRequirements} />
           <ReviewNotesPanel contentRequirements={formData.contentRequirements} />
+          {extraRightContent}
         </>
       }
-      footer={<ReviewFooter onBack={onBack} onDiscard={onDiscard} onCreateRequest={onCreateRequest} />}
+      footer={
+        <ReviewFooter
+          onBack={onBack}
+          onDiscard={onDiscard}
+          onCreateRequest={handlePrimaryAction}
+          primaryLabel={primaryLabel}
+        />
+      }
     />
   );
 }

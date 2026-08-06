@@ -2,20 +2,24 @@ import { Button } from "../ui/Button";
 
 /**
  * ReviewFooter — the Review step's final action row: Back, then Discard,
- * then Create Request right-aligned. This replaces the generic wizard
+ * then the primary action right-aligned. This replaces the generic wizard
  * footer only on the Review & Create step (ManualRequestWizard suppresses
  * its own footer there) — every other step keeps the existing shared
  * footer unchanged.
  *
- * All three handlers are passed straight through from ManualRequestWizard
- * (handleBack / onCancel / handleCreateRequest) — this component owns no
- * state and makes no decisions about what those actions do.
+ * All handlers are passed straight through from ManualRequestWizard (via
+ * ManualReviewStep) — this component owns no state and makes no decisions
+ * about what those actions do.
  *
- * Create Request uses the standard primary (blue) Button variant, not
- * the previous success/green variant — visual-only change, same
- * onClick={onCreateRequest} handler as before.
+ * `primaryLabel` (default "Create Request") — optional, backward
+ * compatible. ManualReviewStep passes "Save changes" here in edit mode;
+ * every existing create-mode call site omits it and renders exactly as
+ * before. The handler prop name (`onCreateRequest`) is intentionally left
+ * unchanged rather than renamed — ManualReviewStep already decides which
+ * real handler (create vs. save) to pass into it, so this component itself
+ * doesn't need to know or care which mode produced the label/handler pair.
  */
-export function ReviewFooter({ showBack = true, onBack, onDiscard, onCreateRequest }) {
+export function ReviewFooter({ showBack = true, onBack, onDiscard, onCreateRequest, primaryLabel = "Create Request" }) {
   return (
     <div className="flex items-center justify-between border-t border-base-300 pt-4">
       <div className="flex items-center gap-2">
@@ -29,7 +33,7 @@ export function ReviewFooter({ showBack = true, onBack, onDiscard, onCreateReque
         </Button>
       </div>
       <Button variant="primary" onClick={onCreateRequest}>
-        Create Request
+        {primaryLabel}
       </Button>
     </div>
   );

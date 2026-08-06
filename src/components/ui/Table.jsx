@@ -6,10 +6,16 @@
  * the table sits flush/integrated when it's already inside another
  * bordered surface (e.g. the Queue's Card) instead of reading as a nested
  * card-within-a-card. Every other existing Table usage is unaffected.
+ *
+ * `...rest` (e.g. id, role, aria-labelledby) — optional, spread onto the
+ * outer wrapper div. Added so ContentRequestQueue's table can be
+ * associated with its status tabs (role="tabpanel" + aria-labelledby the
+ * active tab) without every other existing Table caller needing to change;
+ * omitted entirely, these simply don't render, same as before.
  */
-export function Table({ children, className = "", flush = false }) {
+export function Table({ children, className = "", flush = false, ...rest }) {
   return (
-    <div className={`overflow-x-auto ${flush ? "" : "border border-base-300 rounded-box"} ${className}`}>
+    <div className={`overflow-x-auto ${flush ? "" : "border border-base-300 rounded-box"} ${className}`} {...rest}>
       <table className="table table-sm">{children}</table>
     </div>
   );
@@ -47,6 +53,30 @@ export function ClampCell({ children, className = "", contentClassName = "" }) {
     </td>
   );
 }
+
+/**
+ * NUMERIC_CELL_CLASS — shared Galileo class string for a table cell
+ * whose content is a numeric-only or monetary value (currency, a numeric
+ * metric, a total, a percentage where the cell is primarily numeric).
+ * Roboto Mono (`font-code`, registered as a real Tailwind utility in
+ * theme/corporate.css — see that file's TYPOGRAPHY UTILITIES comment),
+ * 12px (`text-xs`), right-aligned (`text-right`), `tabular-nums` so
+ * digits keep a consistent width if/when a real number replaces a dash.
+ *
+ * Applies to the data cell only, not the column header — a header like
+ * "YTD RSV" is a label, not a numeric value, so it stays in the normal
+ * table-header font/weight and only picks up `text-right` for column
+ * alignment (see ContentRequestQueue.jsx's `<thead>`); this keeps the
+ * label readable rather than rendering it in a monospace numeric face.
+ *
+ * Do not apply table-wide. Only cells whose primary content is a bare
+ * number/currency value use this — ids, dates, status, assignee, and any
+ * cell mixing text with a number (e.g. "3 items") stay in the normal
+ * body font. Missing values still render as "—" inside a cell carrying
+ * this class, so the dash lands in the same right-aligned position a
+ * real number would.
+ */
+export const NUMERIC_CELL_CLASS = "font-code text-xs text-right tabular-nums";
 
 export function EmptyRow({ colSpan, children = "No rows yet." }) {
   return (

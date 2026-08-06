@@ -19,6 +19,23 @@ export const REQUEST_STATUS = {
   IN_PROGRESS: "in_progress",
   COMPLETED: "completed",
   DRAFT: "draft",
+  // ARCHIVED — soft lifecycle state added for the Archive action (Content
+  // Request Intake functional expansion). Not deletion: an archived request
+  // stays in the in-memory `requests` collection and Request Detail still
+  // opens for it; it is only removed from the default/active Queue view and
+  // becomes read-only (see lib/editability.js callers, which layer this
+  // check on top of the existing date-based rule rather than folding it
+  // into isRequestEditable itself). Every existing status branch (badge
+  // maps, tab counts, filters) is additive here — no prior status value or
+  // handling changed.
+  ARCHIVED: "archived",
+  // ON_HOLD — Queue status-tab parity correction: Figma's Queue reference
+  // includes an "On Hold" tab that this prototype's status enum didn't
+  // have a value for yet. Additive only, same as ARCHIVED above — no
+  // existing status branch, badge map, or tab changed. No current mock
+  // request uses this status, so the tab renders with a 0 count until a
+  // request is actually put on hold; not invented/backfilled data.
+  ON_HOLD: "on_hold",
 };
 
 export const BULK_BATCH_STATUS = {
@@ -105,6 +122,22 @@ export function createRequest(partial = {}) {
  * `issueReason` is set when status is "issue", so Review can explain why a
  * row needs attention instead of just flagging it.
  *
+ * `products` — additive, Aug 2026 Bulk Edit Ticket pass. Empty array by
+ * default; every existing `createBulkRow({...})` call site (mockBulkRows.js)
+ * is unaffected. Holds zero or more product entries in the exact same
+ * shape `mockProducts.js` catalog entries already use
+ * (`{id, description, brand, upc, ean, retailers}`), so the Edit Ticket
+ * drawer's product search can push a real catalog match in here directly
+ * with no reshaping. This is deliberately separate from the flat
+ * `upc`/`customerId`/`productTitle`/`brand` fields above — those stay
+ * exactly as they were (still read by BulkReviewStep's product-identity
+ * fallback and RequestDetail's Bulk item view) — nothing here renames or
+ * repurposes them. Scope note: `bulkRowToRequest` below does NOT read this
+ * array yet — populating a real created Request's own `products` field
+ * from it is a reported, not-yet-implemented follow-up (see Edit Ticket
+ * drawer's own doc comment), kept out of this pass since it touches
+ * Confirm/creation-mapping territory this pass was not asked to change.
+ *
  * referenceLinks / assetLinks / contentNotes — per-row supporting-content
  * references (mirror the CSV's reference_links / asset_links /
  * content_notes columns). These are plain text (URLs or notes typed into
@@ -133,6 +166,8 @@ export function createBulkRow(partial = {}) {
     startShipDate: null,
     onSaleDate: null,
     ecommPackDetails: null,
+    // Multi-product support — see comment above. Empty by default.
+    products: [],
     // Per-row supporting-content references — see comment above.
     referenceLinks: "",
     assetLinks: "",

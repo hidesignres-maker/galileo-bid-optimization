@@ -21,6 +21,12 @@ export function groupProductsByRetailer(products, defaultDate) {
         ean: product.ean,
         upc: product.upc,
         retailers: product.retailers ?? [],
+        // Optional, backward-compatible — undefined on every product today
+        // (no real image URLs added yet), so every existing consumer that
+        // doesn't read this key is completely unaffected. Carried through
+        // here so BrandVizReviewBody's product table can render
+        // ProductImageThumb without a second lookup back into `products`.
+        imageUrl: product.imageUrl,
       });
     }
   }

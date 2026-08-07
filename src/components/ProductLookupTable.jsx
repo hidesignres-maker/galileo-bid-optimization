@@ -19,29 +19,32 @@ const RETAILER_FILTER_OPTIONS = [
   ...mockRetailers.map((r) => ({ value: r.code, label: r.name })),
 ];
 
+function matchesProductQuery(product, q, retailerFilter) {
+  const matchesRetailer = retailerFilter === "all" || product.retailers.includes(retailerFilter);
+  if (!matchesRetailer) return false;
+  if (!q) return true;
+  return (
+    product.description.toLowerCase().includes(q) ||
+    product.brand.toLowerCase().includes(q) ||
+    product.upc.includes(q) ||
+    product.ean.includes(q) ||
+    product.retailers.some((r) => retailerLabel(r).toLowerCase().includes(q) || r.toLowerCase().includes(q))
+  );
+}
+
 /**
- * ProductLookupTable — shared by VizID Change and Brand Request manual mode.
+ * ProductLookupTable — shared by VizID Change and Brand Request manual mode,
+ * and (Aug 2026 Bulk Edit Ticket pass) the Bulk CSV Edit Ticket drawer.
  *
  * Product-first selection model: search (live, no Enter required) ->
  * optionally narrow by a single-select retailer filter -> check products ->
  * change search or retailer -> selection persists -> review the accumulated
  * selection via the "Selected Products" tab.
  *
- * `selectedProducts` is the wizard's own `products` array (owned by
- * ManualRequestWizard) passed straight through — this component holds no
- * parallel copy of "which products are selected." Checking a row (in either
- * tab) calls `onToggleProduct(id)`, which adds/removes that product
- * directly in wizard state.
- *
- * UI-only simplification history around that already-working persistence
- * logic: removed the redundant selection-summary action bar (the tabs
- * already provide "view selected"), removed "Select all N results" (out of
- * scope for validating persistence), moved "Clear all" so it only appears
- * inside the Selected Products tab, and (most recently) removed the
- * trailing "N results shown · N selected overall" / "N selected products"
- * line that used to render below the table — it duplicated the selected
- * count already shown above the tabs and in the "Selected Products (N)"
- * tab label, with no additional information of its own.
+ * `selectedProducts` is the caller's own products array, passed straight
+ * through — this component holds no parallel copy of "which products are
+ * selected." Checking a row (in either tab) calls `onToggleProduct(id)`,
+ * which adds/removes that product directly in the caller's own state.
  *
  * Search fields: product description, brand, UPC, EAN, retailer (name or
  * code). Note: mockProducts has no `gtin` field (only `upc`/`ean`) — not
@@ -50,70 +53,124 @@ const RETAILER_FILTER_OPTIONS = [
  * The All Products / Selected Products view toggle renders via the shared
  * `Tab` primitive (ui/Tab.jsx) — the Figma-approved tab-item geometry
  * (40px height, 12px horizontal padding, transparent background in every
- * state, blue underline only when active). `viewMode` state and switching
- * behavior are unchanged; only the button markup moved to the shared
- * component.
+ * state, blue underline only when active).
+ *
+ * Opt-in extension props (Bulk Edit Ticket pass) — every one of these
+ * defaults to this component's exact original behavior, so ManualRequestWizard
+ * and ProductSelectionDemo render byte-identical to before this pass:
+ *  - `showIntro` (default true) — the "Select products" heading/description.
+ *  - `showSelectionSummary` (default true) — the "{N} products selected"
+ *    line above the tabs. The Bulk drawer disables this: its Selected
+ *    Products tab count is the only selection count shown, per the approved
+ *    "no redundant N selected metadata" rule.
+ *  - `showAllProductsCount` (default false) — shows the total catalog size
+ *    next to "All Products", e.g. "All Products (1,230)". Deliberately the
+ *    full catalog size, not the current filtered result count, so it keeps
+ *    reading as "how big is this catalog" (the point of showing it at all)
+ *    rather than jumping around as the user types.
+ *  - `enableSelectedSearch` (default false) — when true, the search input
+ *    and retailer filter are live (not disabled/dimmed) while on the
+ *    Selected Products tab, and filter `selectedProducts` itself. Query and
+ *    retailer-filter state is shared across tabs (same as the original
+ *    single-input design) — switching tabs re-scopes the same query against
+ *    whichever product list is active, rather than introducing a second,
+ *    parallel set of search state.
+ *  - `selectedSearchPlaceholder` / `allSearchPlaceholder` — per-tab search
+ *    placeholder overrides. Both default to this component's original copy.
+ *  - `maxVisibleRows` (default undefined = unbounded, original behavior) —
+ *    caps the rendered table to this many rows (of the current
+ *    search/filter/tab result set), with a small "Showing X of Y" note
+ *    beneath the table when the result set exceeds the cap. Exists so a
+ *    large catalog (1,000+ products) never renders an uncontrolled list;
+ *    with today's 10-item mock catalog this rarely engages.
+ *  - `defaultViewMode` (default `"all"`, original behavior) — which tab is
+ *    active on mount. The Bulk Edit Ticket drawer passes `"selected"` so a
+ *    ticket that already has products opens showing them, instead of
+ *    landing on All Products first.
+ *  - `selectedTabFirst` (default `false`, original order/behavior) — when
+ *    true, renders "Selected Products (N)" before "All Products (N)"
+ *    instead of after. The Bulk Edit Ticket drawer passes `true`;
+ *    ManualRequestWizard/ProductSelectionDemo omit it and keep today's
+ *    All-Products-first order.
  */
-export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearAll }) {
+export function ProductLookupTable({
+  selectedProducts,
+  onToggleProduct,
+  onClearAll,
+  showIntro = true,
+  showSelectionSummary = true,
+  showAllProductsCount = false,
+  enableSelectedSearch = false,
+  selectedSearchPlaceholder = "Search selected products…",
+  allSearchPlaceholder = "Search by description, brand, UPC, EAN, or retailer…",
+  maxVisibleRows,
+  defaultViewMode = "all",
+  selectedTabFirst = false,
+}) {
   const [query, setQuery] = useState("");
   const [retailerFilter, setRetailerFilter] = useState("all");
-  const [viewMode, setViewMode] = useState("all"); // "all" | "selected"
+  const [viewMode, setViewMode] = useState(defaultViewMode); // "all" | "selected"
 
   const isSelectedView = viewMode === "selected";
+  const searchIsActive = !isSelectedView || enableSelectedSearch;
 
   const selectedIds = useMemo(() => new Set(selectedProducts.map((p) => p.id)), [selectedProducts]);
 
-  const allResults = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return mockProducts.filter((p) => {
-      const matchesRetailer = retailerFilter === "all" || p.retailers.includes(retailerFilter);
-      if (!matchesRetailer) return false;
-      if (!q) return true;
-      return (
-        p.description.toLowerCase().includes(q) ||
-        p.brand.toLowerCase().includes(q) ||
-        p.upc.includes(q) ||
-        p.ean.includes(q) ||
-        p.retailers.some((r) => retailerLabel(r).toLowerCase().includes(q) || r.toLowerCase().includes(q))
-      );
-    });
-  }, [query, retailerFilter]);
+  const q = query.trim().toLowerCase();
 
-  // Selected Products ignores the current search/retailer filter, so the
-  // full accumulated selection is always reviewable in one place.
-  const visibleResults = isSelectedView ? selectedProducts : allResults;
+  const allResults = useMemo(
+    () => mockProducts.filter((p) => matchesProductQuery(p, q, retailerFilter)),
+    [q, retailerFilter]
+  );
+
+  // Selected Products only ever filters the caller's own selection array,
+  // never the full catalog — searching/filtering here can narrow which
+  // selected products are shown, but can never add to or remove from the
+  // selection itself.
+  const selectedResults = useMemo(
+    () => (enableSelectedSearch ? selectedProducts.filter((p) => matchesProductQuery(p, q, retailerFilter)) : selectedProducts),
+    [enableSelectedSearch, selectedProducts, q, retailerFilter]
+  );
+
+  const visibleResults = isSelectedView ? selectedResults : allResults;
+  const boundedResults = maxVisibleRows ? visibleResults.slice(0, maxVisibleRows) : visibleResults;
+  const isTruncated = Boolean(maxVisibleRows) && visibleResults.length > maxVisibleRows;
 
   const selectedCount = selectedProducts.length;
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <h3 className="text-sm font-semibold text-base-content">Select products</h3>
-        <p className="text-xs text-base-content/60 mt-0.5">
-          Search across retailers and select the products this request covers.
-        </p>
-      </div>
+      {showIntro && (
+        <div>
+          <h3 className="text-sm font-semibold text-base-content">Select products</h3>
+          <p className="text-xs text-base-content/60 mt-0.5">
+            Search across retailers and select the products this request covers.
+          </p>
+        </div>
+      )}
 
-      <p className="text-sm font-semibold text-base-content">
-        {selectedCount} product{selectedCount === 1 ? "" : "s"} selected
-      </p>
+      {showSelectionSummary && (
+        <p className="text-sm font-semibold text-base-content">
+          {selectedCount} product{selectedCount === 1 ? "" : "s"} selected
+        </p>
+      )}
 
       {/* Input/Select both hardcode `w-full` on their own root element, so
           passing a width via containerClassName competes with that same
           property instead of overriding it. Sizing each control from a
           dedicated wrapper div sidesteps that conflict, so search reliably
-          dominates the row. In Selected Products, both controls are
-          disabled + dimmed rather than unmounted — they don't apply to this
-          view, but keeping them in place avoids a layout shift between
-          tabs. */}
-      <div className={`flex items-center gap-3 ${isSelectedView ? "opacity-50" : ""}`}>
+          dominates the row. In Selected Products (when search there isn't
+          enabled), both controls are disabled + dimmed rather than
+          unmounted — they don't apply to this view, but keeping them in
+          place avoids a layout shift between tabs. */}
+      <div className={`flex items-center gap-3 ${!searchIsActive ? "opacity-50" : ""}`}>
         <div className="flex-1">
           <Input
             icon={MagnifyingGlassIcon}
-            placeholder="Search by description, brand, UPC, EAN, or retailer…"
+            placeholder={isSelectedView ? selectedSearchPlaceholder : allSearchPlaceholder}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            disabled={isSelectedView}
+            disabled={!searchIsActive}
           />
         </div>
         <div className="w-44 shrink-0">
@@ -121,19 +178,32 @@ export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearA
             value={retailerFilter}
             onChange={(e) => setRetailerFilter(e.target.value)}
             options={RETAILER_FILTER_OPTIONS}
-            disabled={isSelectedView}
+            disabled={!searchIsActive}
           />
         </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 border-b border-base-300">
         <div className="flex items-center gap-1">
-          <Tab active={viewMode === "all"} onClick={() => setViewMode("all")}>
-            All Products
-          </Tab>
-          <Tab active={isSelectedView} onClick={() => setViewMode("selected")}>
-            Selected Products ({selectedCount})
-          </Tab>
+          {selectedTabFirst ? (
+            <>
+              <Tab active={isSelectedView} onClick={() => setViewMode("selected")}>
+                Selected Products ({selectedCount})
+              </Tab>
+              <Tab active={viewMode === "all"} onClick={() => setViewMode("all")}>
+                All Products{showAllProductsCount ? ` (${mockProducts.length.toLocaleString()})` : ""}
+              </Tab>
+            </>
+          ) : (
+            <>
+              <Tab active={viewMode === "all"} onClick={() => setViewMode("all")}>
+                All Products{showAllProductsCount ? ` (${mockProducts.length.toLocaleString()})` : ""}
+              </Tab>
+              <Tab active={isSelectedView} onClick={() => setViewMode("selected")}>
+                Selected Products ({selectedCount})
+              </Tab>
+            </>
+          )}
         </div>
 
         {isSelectedView && selectedCount > 0 && (
@@ -155,45 +225,52 @@ export function ProductLookupTable({ selectedProducts, onToggleProduct, onClearA
           </Button>
         </div>
       ) : (
-        <Table>
-          <thead>
-            <tr>
-              <th className="w-10" />
-              <th>Product Description</th>
-              <th>Brand</th>
-              <th>EAN</th>
-              <th>Retailers</th>
-            </tr>
-          </thead>
-          <tbody>
-            {visibleResults.map((p) => (
-              <tr key={p.id} className="hover:bg-base-200/60">
-                <td>
-                  <Checkbox checked={selectedIds.has(p.id)} onChange={() => onToggleProduct(p.id)} />
-                </td>
-                <td className="text-base-content">{p.description}</td>
-                <td className="text-base-content/70">{p.brand}</td>
-                <td className="text-base-content/70">{p.ean}</td>
-                <td>
-                  <div className="flex flex-wrap gap-1">
-                    {p.retailers.map((r) => (
-                      <span key={r} className="badge badge-sm badge-ghost">
-                        {retailerLabel(r)}
-                      </span>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-            {visibleResults.length === 0 && (
+        <>
+          <Table>
+            <thead>
               <tr>
-                <td colSpan={5} className="text-center text-sm text-base-content/50 py-6">
-                  No products match "{query}".
-                </td>
+                <th className="w-10" />
+                <th>Product Description</th>
+                <th>Brand</th>
+                <th>EAN</th>
+                <th>Retailers</th>
               </tr>
-            )}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {boundedResults.map((p) => (
+                <tr key={p.id} className="hover:bg-base-200/60">
+                  <td>
+                    <Checkbox checked={selectedIds.has(p.id)} onChange={() => onToggleProduct(p.id)} />
+                  </td>
+                  <td className="text-base-content">{p.description}</td>
+                  <td className="text-base-content/70">{p.brand}</td>
+                  <td className="text-base-content/70">{p.ean}</td>
+                  <td>
+                    <div className="flex flex-wrap gap-1">
+                      {p.retailers.map((r) => (
+                        <span key={r} className="badge badge-sm badge-ghost">
+                          {retailerLabel(r)}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {visibleResults.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="text-center text-sm text-base-content/50 py-6">
+                    {isSelectedView ? "No selected products match this search." : `No products match "${query}".`}
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </Table>
+          {isTruncated && (
+            <p className="text-xs text-base-content/50">
+              Showing {boundedResults.length} of {visibleResults.length.toLocaleString()} — refine your search to narrow results.
+            </p>
+          )}
+        </>
       )}
     </div>
   );

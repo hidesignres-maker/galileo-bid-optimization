@@ -3,7 +3,7 @@ import { ArrowRightIcon } from "@heroicons/react/24/solid";
 import { WizardStepper } from "../components/WizardStepper";
 import { ImportCsvStep } from "../components/ImportCsvStep";
 import { BulkReviewStep } from "../components/BulkReviewStep";
-import { ConfirmRequestsStep } from "../components/ConfirmRequestsStep";
+import { ConfirmCreateModal } from "../components/ConfirmCreateModal";
 import { Button } from "../components/ui/Button";
 import { createBulkBatch, bulkRowToRequest } from "../lib/models";
 
@@ -47,6 +47,18 @@ const BULK_STEPS = ["Upload", "Review tickets", "Confirm"];
  * flow. `handleUpdateRow` is the single place a ticket's data can change
  * after upload (Edit Ticket's Save, via BulkReviewStep) — same
  * "rows/batch owned here" principle as everything else in this component.
+ *
+ * Confirm-as-modal pass: the prior full-page Confirm step
+ * (`ConfirmRequestsStep`, removed) is now `ConfirmCreateModal`, opened over
+ * Review Tickets instead of navigating to a fourth screen. `currentStep`
+ * still advances to index 2 ("Confirm") exactly as before — the stepper
+ * still needs an accurate current step, and `handleConfirm`/the
+ * "Back to review" wiring are both reused verbatim from the old page — but
+ * `showReviewScreen` below now covers both the real Review step AND this
+ * conceptual Confirm step, so `BulkReviewStep` is never unmounted while the
+ * modal is open: its own local state (search/status filter/scroll/which
+ * row is mid-edit) survives untouched, and the modal simply renders on top,
+ * dimming it via Modal's own backdrop.
  */
 export function BulkCsvWizard({ initialBulkType = null, onRequestsCreated, onCancel }) {
   const [currentStep, setCurrentStep] = useState(0);
@@ -105,6 +117,10 @@ export function BulkCsvWizard({ initialBulkType = null, onRequestsCreated, onCan
 
   const canContinue = stepName !== "Upload" || rows.length > 0;
   const isReviewStep = stepName === "Review tickets";
+  const isConfirmStep = stepName === "Confirm";
+  // Review Tickets stays mounted for both the real Review step and the
+  // conceptual Confirm step (modal open on top of it) — see doc comment.
+  const showReviewScreen = isReviewStep || isConfirmStep;
 
   return (
     <div className="flex flex-col gap-6">
@@ -120,15 +136,15 @@ export function BulkCsvWizard({ initialBulkType = null, onRequestsCreated, onCan
         />
       )}
 
-      {isReviewStep && (
+      {showReviewScreen && (
         <BulkReviewStep rows={rows} batch={batch} onReplaceFile={handleReset} onUpdateRow={handleUpdateRow} />
       )}
 
-      {stepName === "Confirm" && (
-        <ConfirmRequestsStep rows={rows} onConfirm={handleConfirm} onBack={() => setCurrentStep(1)} />
+      {isConfirmStep && (
+        <ConfirmCreateModal rows={rows} onConfirm={handleConfirm} onBack={() => setCurrentStep(1)} />
       )}
 
-      {stepName !== "Confirm" && (
+      {!isConfirmStep && (
         <div className="flex flex-col gap-2 border-t border-base-300 pt-4">
           {isReviewStep && (
             <p className="text-xs text-base-content/50">Only tickets marked Ready will be created.</p>

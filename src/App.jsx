@@ -356,9 +356,22 @@ export default function App() {
   // single seeded "Request created" event here, keyed by its own id;
   // nothing else in `history` is touched, so this can never clobber an
   // existing request's history (these ids are always brand new).
-  const handleRequestCreated = (request) => {
-    setRequests((prev) => [request, ...prev]);
-    setHistory((prev) => ({ ...prev, [request.id]: [makeHistoryEvent(CURRENT_USER, "Request created")] }));
+  // Accepts either a single Request (every existing call site) or an array
+  // (Manual Review & Create's retailer-launch-date-split pass, when one
+  // draft produces several Requests at once) — normalized to an array
+  // internally so both shapes go through the exact same
+  // prepend/history-seed/navigate logic. A single-object call behaves
+  // identically to before this normalization was added.
+  const handleRequestCreated = (requestOrRequests) => {
+    const newRequests = Array.isArray(requestOrRequests) ? requestOrRequests : [requestOrRequests];
+    setRequests((prev) => [...newRequests, ...prev]);
+    setHistory((prev) => {
+      const next = { ...prev };
+      newRequests.forEach((request) => {
+        next[request.id] = [makeHistoryEvent(CURRENT_USER, "Request created")];
+      });
+      return next;
+    });
     setView("queue");
   };
 

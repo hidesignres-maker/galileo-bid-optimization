@@ -9,7 +9,7 @@
  * function is that minimal adapter — it recognizes exactly two issues
  * this prototype can actually PROVE resolved, nothing broader:
  *
- *   - "Missing retailer code" — provable via `row.retailer` presence.
+ *   - "Missing retailer" — provable via `row.retailer` presence.
  *   - "No product match" — provable via `row.productTitle` or a non-empty
  *     `row.products` array (see lib/models.js's `products` field).
  *
@@ -25,7 +25,7 @@
  * Rules (per the approved provisional validation direction):
  *  - An unrelated/unmodeled `issueReason` is NEVER touched, regardless of
  *    what changed — this adapter has no way to prove an opaque problem is
- *    resolved, so it always preserves Needs attention as-is.
+ *    resolved, so it always preserves Incomplete as-is.
  *  - Retailer presence is always re-checked live (even for a row that
  *    started Ready) — clearing a previously-valid retailer during an edit
  *    is a real, freshly-detected problem, not a retroactive judgment.
@@ -45,14 +45,14 @@
  *    Each known issue can only be resolved by fixing the thing it's
  *    actually about.
  *  - If a row somehow has both known problems at once, fixing only one
- *    leaves the row Needs attention with the other issue's reason — it
+ *    leaves the row Incomplete with the other issue's reason — it
  *    does not clear to Ready until both are actually addressed. True
  *    *simultaneous* multi-issue tracking (more than one active
  *    `issueReason` at a time) isn't representable with today's
  *    single-string `issueReason` field — that would need an array-shaped
  *    field, an explicit model change not made in this pass.
  */
-const RETAILER_ISSUE = "Missing retailer code";
+const RETAILER_ISSUE = "Missing retailer";
 const PRODUCT_ISSUE = "No product match";
 
 function hasProductMatch(row) {

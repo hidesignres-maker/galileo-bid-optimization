@@ -149,7 +149,7 @@ export function createRequest(partial = {}) {
  * request detail view (not built yet in this prototype).
  */
 export function createBulkRow(partial = {}) {
-  return {
+  const row = {
     id: nextId("ROW"),
     requestType: "vizId", // "vizId" | "brandRequest" | "innovation" — per row
     title: "",
@@ -157,7 +157,22 @@ export function createBulkRow(partial = {}) {
     launchDate: null,
     dueDate: null,
     contentType: null,
+    // contentTypes — additive, Bulk Edit Ticket product-selection refinement
+    // pass. Empty array by default; every existing `createBulkRow({...})`
+    // call site (mockBulkRows.js) is unaffected. The legacy singular
+    // `contentType` field above stays exactly as it was (still read by
+    // `bulkRowToRequest` and any existing display code) — on Save, the Edit
+    // Ticket drawer mirrors `contentTypes[0]` into it, the same
+    // additive-array-plus-legacy-mirror convention already used for
+    // `products` below.
+    contentTypes: [],
     retailer: null,
+    // assignee — additive, Bulk Edit Ticket drawer pass. No prior Bulk row
+    // ever carried this field; Requests (createRequest above) already have
+    // one, so this brings Bulk rows to parity for the one drawer field that
+    // needs it. Null by default — no assignee is picked until an editor
+    // sets one.
+    assignee: null,
     // Innovation-only fields (blank for VizID / Brand Request rows):
     upc: null,
     customerId: null,
@@ -177,6 +192,37 @@ export function createBulkRow(partial = {}) {
     willCreateRequest: true,
     ...partial,
   };
+
+  // Matched-product hydration fix: a row's "matched product" (Innovation's
+  // upc/productTitle/brand CSV columns — the only product-identifying data
+  // this prototype's CSV template carries; VizID/Brand rows have none) used
+  // to only ever get mirrored into `products` inside EditTicketDrawer's
+  // local `initialProducts`, computed fresh on every mount and never
+  // written back into the actual row — so the row's own, real `products`
+  // array stayed `[]` at the source, and Selected Products showed 0 until
+  // an editor happened to open and Save. This performs that exact same
+  // mapping once, here, at row-creation time, so a row already carries its
+  // matched product before Review or Edit ever render it. Only fires when
+  // the caller didn't already pass an explicit `products` array (every
+  // existing `createBulkRow({...})` call site omits `products`, so this is
+  // purely additive) and there's real matched-product data to mirror — a
+  // row with no `productTitle` (every VizID/Brand row today) is genuinely
+  // unmatched and correctly stays `products: []`, never fabricated from
+  // the row's own `title`/`description`.
+  if (row.products.length === 0 && row.productTitle) {
+    row.products = [
+      {
+        id: row.upc || row.id,
+        description: row.productTitle,
+        brand: row.brand,
+        upc: row.upc,
+        ean: null,
+        retailers: row.retailer ? [row.retailer] : [],
+      },
+    ];
+  }
+
+  return row;
 }
 
 /**

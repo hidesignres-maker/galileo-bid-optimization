@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { ArrowUpTrayIcon, ExclamationTriangleIcon, MagnifyingGlassIcon } from "@heroicons/react/24/outline";
 import { Card } from "./ui/Card";
-import { Table } from "./ui/Table";
+import { Table, ClampCell } from "./ui/Table";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { ProductImageThumb } from "./ui/ProductImageThumb";
 import { CustomBadge } from "./ui/CustomBadge";
 import { EditTicketDrawer } from "./EditTicketDrawer";
 import { mockRetailers } from "../data/mockRetailers";
-import { REQUEST_TYPE_LABELS } from "../data/formOptions";
+import { REQUEST_TYPE_LABELS, CONTENT_TYPE_LABELS } from "../data/formOptions";
 import { getPlaceholderProductImage } from "../data/productImages";
 import { revalidateBulkRow } from "../lib/bulkRowValidation";
 import { fmtDate } from "../lib/format";
@@ -17,13 +17,13 @@ const retailerLabel = (code) => mockRetailers.find((r) => r.code === code)?.name
 
 const STATUS_FILTER_OPTIONS = [
   { value: "all", label: "All" },
-  { value: "issue", label: "Needs attention" },
+  { value: "issue", label: "Incomplete" },
   { value: "ready", label: "Ready" },
 ];
 
-/** Ticket identity for the Request cell — deliberately never falls back
- * to product data, per the approved model: a row's product description
- * is not its ticket identity. */
+/** Ticket identity for the Title cell — deliberately never falls back to
+ * product data, per the approved model: a row's product description is
+ * not its ticket identity. */
 function ticketIdentity(row) {
   return row.title || row.description || "Untitled ticket";
 }
@@ -36,15 +36,28 @@ function productCountFor(row) {
   return row.productTitle ? 1 : 0;
 }
 
-/** Best-available single-product identity/UPC, used when a ticket has 0
- * or 1 product (2+ shows a count instead — see the Product cell below).
- * Prefers the new `products[0]`, then legacy flat fields, then the
- * ticket's own description/title, never fabricating a name. */
+/** Single-product identity/UPC, used only when a ticket has exactly 1
+ * product (0 gets its own empty state, 2+ shows a count — see the
+ * Products cell below). Prefers the new `products[0]`, then legacy flat
+ * fields. Deliberately does NOT fall back to the ticket's own
+ * description/title — that fallback used to make a 0-product row render
+ * as if it had one (a fake product identity built from the ticket's own
+ * title), which is exactly the bug this fixes: Review's displayed product
+ * state must match what EditTicketDrawer will actually hydrate. */
 function productIdentity(row) {
-  return row.products?.[0]?.description || row.productTitle || row.description || row.title || "Untitled item";
+  return row.products?.[0]?.description || row.productTitle || null;
 }
 function productUpc(row) {
   return row.products?.[0]?.upc || row.upc || null;
+}
+
+/** Content type label(s) for the Content type cell — reads the new
+ * `contentTypes` array first, falling back to the legacy singular
+ * `contentType` field for rows that haven't gone through Edit yet. */
+function contentTypeLabelsFor(row) {
+  const values = row.contentTypes && row.contentTypes.length > 0 ? row.contentTypes : row.contentType ? [row.contentType] : [];
+  if (values.length === 0) return "—";
+  return values.map((v) => CONTENT_TYPE_LABELS[v] ?? v).join(", ");
 }
 
 function matchesSearch(row, query) {
@@ -76,27 +89,38 @@ function onSaleDateFor(row) {
 
 /**
  * BulkReviewStep — ticket-centered Bulk CSV review table, refined to the
- * Galileo enterprise-table visual direction (Aug 2026 drawer pass): one
- * white Card/Table surface, compact toolbar (search + status filter +
- * count), restrained borders, compact badges, subtle row hover — no
- * oversized banners, no per-ticket cards, no accordions, no status tabs.
+ * Galileo enterprise-table visual direction: one white Card/Table surface,
+ * compact toolbar (search + status filter + count), restrained borders,
+ * compact badges, subtle row hover — no oversized banners, no per-ticket
+ * cards, no accordions, no status tabs.
  *
- * Approved conceptual model unchanged from the prior pass: each row is
- * one future Content Request/ticket, not a standalone catalog product.
- * Terminology: "Ticket"/"Request" for the row, "Product" only for the
- * product data it contains, "Ready"/"Needs attention" for status.
+ * Approved conceptual model unchanged: each row is one future Content
+ * Request/ticket, not a standalone catalog product. Terminology: "Ticket"/
+ * "Request" for the row, "Product" only for the product data it contains,
+ * "Ready"/"Incomplete" for pre-creation completeness — never a
+ * request-workflow status ("Needs action", "In progress", etc.), since
+ * these rows are not Content Requests yet.
  *
- * Edit now opens `EditTicketDrawer` (right-side Drawer) instead of a
- * modal — see that component's own doc comment for the full contract.
- * `editingRowId`/`statusFilter`/`searchQuery` all live here, in local
- * state untouched by the drawer opening/closing (it's a sibling overlay,
- * not a route change), so table scroll/filter/search context survives
- * automatically across an edit.
+ * Columns (product-selection/checkbox-content-type refinement pass): the
+ * prior combined "Request" cell (type + title + ID) splits into separate
+ * Request type / Title columns, a new Description column is added
+ * (ClampCell — the existing shared 2-line-clamp cell, reused unchanged from
+ * ui/Table.jsx rather than a new wrap/truncate treatment), and a new
+ * Content type column is added. The prior standalone "Validation" column is
+ * folded into the Status cell as a second line under the badge, matching
+ * the same badge-plus-reason-line pattern EditTicketDrawer's header already
+ * uses — not a new pattern, just the same one applied here too.
  *
- * Product cell (Aug 2026): a ticket with 2+ products now shows a compact
- * count ("3 products / View and manage in Edit") instead of the large
- * product list the table itself must never render — full detail (add/
- * remove/search) lives exclusively in the drawer.
+ * Edit opens `EditTicketDrawer` (right-side Drawer) — see that component's
+ * own doc comment for the full contract. `editingRowId`/`statusFilter`/
+ * `searchQuery` all live here, in local state untouched by the drawer
+ * opening/closing (it's a sibling overlay, not a route change), so table
+ * scroll/filter/search context survives automatically across an edit.
+ *
+ * Products cell: a ticket with 2+ products shows a compact count
+ * ("3 products / View and manage in Edit") instead of the large product
+ * list the table itself must never render — full detail (add/remove/
+ * search) lives exclusively in the drawer. Unchanged from before this pass.
  */
 export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
   const [statusFilter, setStatusFilter] = useState("all");
@@ -107,7 +131,7 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
   const issueRows = rows.filter((r) => r.status === "issue");
   const types = Array.from(new Set(rows.map((r) => r.requestType).filter(Boolean)));
 
-  // Needs attention first, Ready after — stable sort preserves original
+  // Incomplete first, Ready after — stable sort preserves original
   // CSV order within each group. Status filter + search narrow the same
   // sorted list further; never a second table.
   const sortedRows = [...rows].sort((a, b) => {
@@ -149,7 +173,7 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
         ) : (
           <>
             <p className="text-sm text-base-content/60">
-              {rows.length} tickets · {readyRows.length} ready · {issueRows.length} need attention
+              {rows.length} tickets · {readyRows.length} ready · {issueRows.length} incomplete
               {types.length > 1 && (
                 <span className="text-base-content/40">
                   {" "}
@@ -191,11 +215,13 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
               <thead>
                 <tr>
                   <th>Status</th>
-                  <th>Request</th>
-                  <th>Product</th>
-                  <th>Retailer</th>
-                  <th>Launch / On Sale Date</th>
-                  <th>Validation</th>
+                  <th>Request type</th>
+                  <th>Title</th>
+                  <th>Description</th>
+                  <th>Products</th>
+                  <th>Retailers</th>
+                  <th>On Sale Date</th>
+                  <th>Content type</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -207,29 +233,38 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
                   return (
                     <tr key={row.id} className="hover:bg-base-200/50">
                       <td>
-                        <span className={`badge badge-sm gap-1 ${isIssue ? "badge-soft badge-error" : "badge-soft badge-success"}`}>
-                          {isIssue && <ExclamationTriangleIcon className="w-3 h-3" aria-hidden="true" />}
-                          {isIssue ? "Needs attention" : "Ready"}
-                        </span>
-                      </td>
-                      <td>
                         <div className="min-w-0">
-                          <p className="text-xs text-base-content/40">
-                            {REQUEST_TYPE_LABELS[row.requestType] ?? row.requestType}
-                          </p>
-                          <p className="text-base-content font-medium truncate max-w-[200px]">
-                            {ticketIdentity(row)}
-                          </p>
-                          {row.id && <p className="text-xs text-base-content/40">ID: {row.id}</p>}
+                          <span
+                            className={`badge badge-sm gap-1 ${isIssue ? "badge-soft badge-error" : "badge-soft badge-success"}`}
+                          >
+                            {isIssue && <ExclamationTriangleIcon className="w-3 h-3" aria-hidden="true" />}
+                            {isIssue ? "Incomplete" : "Ready"}
+                          </span>
+                          {isIssue && (
+                            <p className="mt-1 flex items-center gap-1 text-xs text-error whitespace-nowrap">
+                              {row.issueReason || "Incomplete"}
+                            </p>
+                          )}
                         </div>
                       </td>
+                      <td className="text-base-content/70 whitespace-nowrap">
+                        {REQUEST_TYPE_LABELS[row.requestType] ?? row.requestType}
+                      </td>
+                      <td>
+                        <p className="text-base-content font-medium truncate max-w-[200px]">
+                          {ticketIdentity(row)}
+                        </p>
+                      </td>
+                      <ClampCell contentClassName="text-sm text-base-content/70 max-w-[220px]">
+                        {row.description || "—"}
+                      </ClampCell>
                       <td>
                         {productCount > 1 ? (
                           <div className="min-w-0">
                             <p className="text-base-content font-medium">{productCount} products</p>
                             <p className="text-xs text-base-content/40">View and manage in Edit</p>
                           </div>
-                        ) : (
+                        ) : productCount === 1 ? (
                           <div className="flex items-center gap-2">
                             <ProductImageThumb
                               src={getPlaceholderProductImage(productUpc(row) || row.id)}
@@ -238,10 +273,12 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
                             <div className="min-w-0">
                               <p className="text-base-content truncate max-w-[180px]">{productIdentity(row)}</p>
                               <p className="text-xs text-base-content/40 truncate max-w-[180px]">
-                                {productUpc(row) ? `UPC: ${productUpc(row)}` : "No product match"}
+                                {productUpc(row) ? `UPC: ${productUpc(row)}` : "—"}
                               </p>
                             </div>
                           </div>
+                        ) : (
+                          <p className="text-xs text-base-content/40 italic">No product selected</p>
                         )}
                       </td>
                       <td
@@ -261,16 +298,7 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
                         )}
                       </td>
                       <td className="text-base-content/70 whitespace-nowrap">{fmtDate(onSaleDateFor(row))}</td>
-                      <td className="whitespace-nowrap">
-                        {isIssue ? (
-                          <span className="flex items-center gap-1 text-error">
-                            <ExclamationTriangleIcon className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
-                            {row.issueReason || "Needs attention"}
-                          </span>
-                        ) : (
-                          <span className="text-success">Matched</span>
-                        )}
-                      </td>
+                      <td className="text-base-content/70 whitespace-nowrap">{contentTypeLabelsFor(row)}</td>
                       <td className="whitespace-nowrap">
                         <Button variant="ghost" size="small" onClick={() => setEditingRowId(row.id)}>
                           Edit
@@ -281,7 +309,7 @@ export function BulkReviewStep({ rows, batch, onReplaceFile, onUpdateRow }) {
                 })}
                 {visibleRows.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="text-center text-sm text-base-content/50 py-6">
+                    <td colSpan={9} className="text-center text-sm text-base-content/50 py-6">
                       No tickets match this filter.
                     </td>
                   </tr>

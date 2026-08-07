@@ -65,7 +65,7 @@ export const mockBulkRows = [
     contentType: "images",
     retailer: null,
     status: "issue",
-    issueReason: "Missing retailer code",
+    issueReason: "Missing retailer",
   }),
   createBulkRow({
     title: "Fresh Fields — new eComm pack setup (Instacart)",

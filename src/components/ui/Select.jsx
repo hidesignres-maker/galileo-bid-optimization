@@ -1,3 +1,5 @@
+import { FieldInfoTooltip } from "./FieldInfoTooltip";
+
 /**
  * Select — labeled select input, Galileo style
  * options: [{ value, label }]
@@ -6,9 +8,14 @@
  * own `select-sm` modifier, ~32px tall, for compact table-cell editing —
  * see InnovationItemTable.jsx). Every existing caller omits this prop and
  * renders with the exact same classes as before.
+ *
+ * `labelInfo` — optional tooltip text rendered as a small info icon next to
+ * the label (see FieldInfoTooltip). Omitted by every existing caller, so
+ * every existing Select renders with no label icon, exactly as before.
  */
 export function Select({
   label,
+  labelInfo,
   hint,
   error,
   required,
@@ -23,9 +30,10 @@ export function Select({
     <div className={`form-control w-full ${containerClassName}`}>
       {label && (
         <label className="label pb-1">
-          <span className="label-text text-sm font-semibold text-base-content">
+          <span className="label-text text-sm font-semibold text-base-content inline-flex items-center gap-1">
             {label}
             {required && <span className="text-error ml-0.5">*</span>}
+            {labelInfo && <FieldInfoTooltip text={labelInfo} />}
           </span>
         </label>
       )}

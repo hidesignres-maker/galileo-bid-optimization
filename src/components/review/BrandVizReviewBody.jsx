@@ -3,6 +3,7 @@ import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
 import { Table, ClampCell } from "../ui/Table";
 import { ProductImageThumb } from "../ui/ProductImageThumb";
 import { CustomBadge } from "../ui/CustomBadge";
+import { InfoBanner } from "../ui/InfoBanner";
 import { mockRetailers } from "../../data/mockRetailers";
 import { getPlaceholderProductImage } from "../../data/productImages";
 import { fmtDate, fmtCount } from "../../lib/format";
@@ -268,6 +269,14 @@ function RetailerGroupPanel({
  * the retailer-grouped product table below it (and its now-deterministic
  * placeholder thumbnails, see `getPlaceholderProductImage` above) is
  * unaffected by `variant` and renders identically in both.
+ *
+ * Retailer-launch-date-split helper copy — gated to `!readOnly`, so it
+ * only appears in the live wizard Review step, never in Request Detail's
+ * read-only reuse of this same component (READ must stay unchanged). A
+ * compact `InfoBanner` explaining that retailers sharing a launch date
+ * stay in one request while a different date creates a separate one —
+ * evergreen guidance about how the section behaves, not conditional on
+ * the current group count.
  */
 export function BrandVizReviewBody({
   requestType,
@@ -301,6 +310,16 @@ export function BrandVizReviewBody({
             Review the products assigned to each retailer and the launch date they will inherit.
           </p>
         </div>
+
+        {!readOnly && retailerGroups.length > 0 && (
+          <InfoBanner variant="info">
+            <span className="font-semibold">Retailer launch dates may create separate requests.</span>
+            <div className="mt-0.5 opacity-90">
+              Retailers with the same launch date will stay together. A different launch date will create a
+              separate request.
+            </div>
+          </InfoBanner>
+        )}
 
         {retailerGroups.length === 0 ? (
           <p className="text-sm text-base-content/50 text-center py-6">No retailer groups yet.</p>

@@ -8,12 +8,13 @@ import { InnovationItemInputForm, makeBlankItem } from "../components/Innovation
 import { InnovationItemTable } from "../components/product-input/InnovationItemTable";
 import { ManualReviewStep } from "../components/ManualReviewStep";
 import { RequestHistory } from "../components/detail/RequestHistory";
+import { SplitRequestConfirmModal } from "../components/SplitRequestConfirmModal";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { InfoBanner } from "../components/ui/InfoBanner";
 import { mockProducts } from "../data/mockProducts";
 import { getDetailsValidationErrors, isItemRowValid } from "../lib/businessRules";
-import { groupProductsByRetailer } from "../lib/groupByRetailer";
+import { groupProductsByRetailer, groupProductsByLaunchDate } from "../lib/groupByRetailer";
 import { createRequest } from "../lib/models";
 import {
   requestToWizardFormData,
@@ -140,6 +141,11 @@ export function ManualRequestWizard({
     return [makeBlankItem()];
   });
   const [errors, setErrors] = useState({});
+  // Retailer-launch-date-split pass: whether the "Create N requests?"
+  // confirmation modal is open. Only ever set true from handleCreateRequest
+  // when requestGroupCount > 1 — the single-request happy path never
+  // touches this state at all.
+  const [showSplitConfirm, setShowSplitConfirm] = useState(false);
 
   // Presentation-only Innovation input mode — "table" (Flow B, primary) or
   // "form" (Flow A, reached via the temporary "Test option A" toggle in
@@ -177,6 +183,19 @@ export function ManualRequestWizard({
     if (!requestType || isInnovation) return [];
     return groupProductsByRetailer(products, formData.defaultDate);
   }, [requestType, isInnovation, products, formData.defaultDate]);
+
+  // Retailer-launch-date-split pass: which output Request(s) this draft
+  // will actually create. Not applicable to Innovation — no request-level
+  // launch date exists there to split on, so this always stays `[]` and
+  // `requestGroupCount` is hardcoded to 1 for that request type (see
+  // groupProductsByLaunchDate's own doc comment for why this is a safe,
+  // unambiguous re-bucketing of the same product/date data
+  // `retailerGroups` above already reads, not a new business rule).
+  const launchDateGroups = useMemo(() => {
+    if (!requestType || isInnovation) return [];
+    return groupProductsByLaunchDate(products, formData.defaultDate);
+  }, [requestType, isInnovation, products, formData.defaultDate]);
+  const requestGroupCount = isInnovation ? 1 : Math.max(launchDateGroups.length, 1);
 
   const patchField = (field, value) => setFormData((f) => ({ ...f, [field]: value }));
 
@@ -258,38 +277,84 @@ export function ManualRequestWizard({
 
   const handleBack = () => setCurrentStep((s) => Math.max(s - 1, 0));
 
+  // Fields shared by every Request this draft can produce — identical
+  // regardless of whether it ends up as one request or several (retailer-
+  // launch-date-split pass, section 7 of the approved rule: title/
+  // description/content type/assignee/supporting materials/notes are never
+  // duplicated-with-variation, only retailers/products/dates differ per
+  // group). Extracted so the single-request and split-request paths below
+  // can't drift from each other.
+  const sharedRequestFields = () => ({
+    requestType,
+    creationMethod: "manual",
+    title: formData.title,
+    description: formData.description,
+    assignee: formData.assignee,
+    contentTypes: formData.contentTypes,
+    // Content requirements collected at creation time (Gowri's
+    // clarification) — files/referenceLink/notes are Manual's own fields;
+    // referenceLinks/assetLinks/contentNotes stay empty here since those
+    // are Bulk CSV's per-row fields (see bulkRowToRequest in models.js).
+    contentRequirements: {
+      files: formData.contentRequirements.files,
+      referenceLink: formData.contentRequirements.referenceLink,
+      notes: formData.contentRequirements.notes,
+      referenceLinks: "",
+      assetLinks: "",
+      contentNotes: "",
+    },
+    status: "needs_action",
+  });
+
+  // Create Request — the Review footer's primary action in create mode.
+  // When the current draft's retailer launch dates resolve to more than
+  // one group, this opens the split confirmation modal instead of creating
+  // immediately (see SplitRequestConfirmModal); the actual multi-create
+  // happens from there, via handleConfirmSplitCreate. The single-group
+  // path below (including every Innovation request, always exactly one
+  // group) is byte-for-byte the same request-building logic as before this
+  // pass — no behavior change on the happy path.
   const handleCreateRequest = () => {
+    if (!isInnovation && requestGroupCount > 1) {
+      setShowSplitConfirm(true);
+      return;
+    }
+
     const distinctRetailers = isInnovation
       ? Array.from(new Set(itemInputs.map((i) => i.retailer).filter(Boolean)))
       : Array.from(new Set(retailerGroups.map((g) => g.retailer)));
 
     const request = createRequest({
-      requestType,
-      creationMethod: "manual",
-      title: formData.title,
-      description: formData.description,
-      assignee: formData.assignee,
+      ...sharedRequestFields(),
       dueDate: formData.defaultDate || null,
       launchDate: formData.defaultDate || null,
-      contentTypes: formData.contentTypes,
       retailers: distinctRetailers,
       products: isInnovation ? [] : products,
       itemInputs: isInnovation ? itemInputs : [],
-      // Content requirements collected at creation time (Gowri's
-      // clarification) — files/referenceLink/notes are Manual's own fields;
-      // referenceLinks/assetLinks/contentNotes stay empty here since those
-      // are Bulk CSV's per-row fields (see bulkRowToRequest in models.js).
-      contentRequirements: {
-        files: formData.contentRequirements.files,
-        referenceLink: formData.contentRequirements.referenceLink,
-        notes: formData.contentRequirements.notes,
-        referenceLinks: "",
-        assetLinks: "",
-        contentNotes: "",
-      },
-      status: "needs_action",
     });
     onCreateRequest(request);
+  };
+
+  // Split-confirm modal's primary action — one createRequest() per
+  // launch-date group, each inheriting every shared field unchanged and
+  // receiving only that group's own retailers/products/date (see
+  // groupProductsByLaunchDate — a product can never span two groups, so
+  // there is no product to reconcile between them). `onCreateRequest` here
+  // receives an array; App.jsx's handler already normalizes a single
+  // request or an array to the same prepend/history/navigate behavior.
+  const handleConfirmSplitCreate = () => {
+    const newRequests = launchDateGroups.map((group) =>
+      createRequest({
+        ...sharedRequestFields(),
+        dueDate: group.date || null,
+        launchDate: group.date || null,
+        retailers: group.retailers,
+        products: group.products,
+        itemInputs: [],
+      })
+    );
+    setShowSplitConfirm(false);
+    onCreateRequest(newRequests);
   };
 
   // EDIT MVP — the Save path. Builds the updated request via the shared
@@ -471,6 +536,7 @@ export function ManualRequestWizard({
           mode={isEditMode ? "edit" : "create"}
           onSaveChanges={handleSaveChanges}
           extraRightContent={isEditMode ? <RequestHistory events={history} /> : null}
+          createLabel={requestGroupCount > 1 ? `Create ${requestGroupCount} requests` : "Create Request"}
         />
       )}
 
@@ -561,6 +627,14 @@ export function ManualRequestWizard({
         </div>
       ) : (
         stepBody
+      )}
+
+      {showSplitConfirm && (
+        <SplitRequestConfirmModal
+          groups={launchDateGroups}
+          onBack={() => setShowSplitConfirm(false)}
+          onConfirm={handleConfirmSplitCreate}
+        />
       )}
     </div>
   );

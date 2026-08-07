@@ -56,6 +56,15 @@ const INNOVATION_GUIDANCE = "Review the details below, then create the request. 
  * elsewhere, and without duplicating or reordering Supporting
  * Materials/Notes — it's the same right slot, just with one more item at
  * the bottom.
+ *
+ * `createLabel` (default "Create Request") — optional, backward
+ * compatible, create-mode only. Manual Review & Create's retailer-launch-
+ * date-split pass: ManualRequestWizard passes "Create N requests" here
+ * when the current draft's retailer launch dates will produce more than
+ * one Request; every other/prior caller omits it, so the button reads
+ * "Create Request" exactly as before. Ignored in edit mode — Save always
+ * reads "Save changes" regardless of this prop, since editing never
+ * splits an already-persisted request.
  */
 export function ManualReviewStep({
   requestType,
@@ -70,10 +79,11 @@ export function ManualReviewStep({
   mode = "create",
   onSaveChanges,
   extraRightContent = null,
+  createLabel = "Create Request",
 }) {
   const isInnovation = requestType === "innovation";
   const isEdit = mode === "edit";
-  const primaryLabel = isEdit ? "Save changes" : "Create Request";
+  const primaryLabel = isEdit ? "Save changes" : createLabel;
   const handlePrimaryAction = isEdit ? onSaveChanges : onCreateRequest;
 
   return (

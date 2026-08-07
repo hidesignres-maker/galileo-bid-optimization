@@ -60,3 +60,40 @@ export function groupItemsByRetailer(itemInputs) {
 export function distinctRetailers(groups) {
   return Array.from(new Set(groups.map((g) => g.retailer)));
 }
+
+/**
+ * groupProductsByLaunchDate — derives the actual output Request(s) a Brand
+ * Request / VizID Change draft will create (Manual Review & Create
+ * retailer-date-split pass). Same effective-date rule
+ * `groupProductsByRetailer` already uses per retailer
+ * (`product.launchDate || defaultDate`), grouped by date instead of by
+ * (retailer, date) — retailers sharing an effective date stay in one
+ * group; a different effective date is a separate group.
+ *
+ * A product's `launchDate` is a single value applied uniformly across
+ * every retailer it carries, so a product can never span two different
+ * date groups — every product belongs to exactly one resulting group, and
+ * that group's own `retailers` list is therefore already fully scoped
+ * (no cross-group retailer leakage to reconcile). This is the same data,
+ * just re-bucketed — not a new business rule.
+ *
+ * Not used for Innovation (no request-level launch date to split on —
+ * callers gate this out entirely for that request type).
+ */
+export function groupProductsByLaunchDate(products, defaultDate) {
+  const byDate = new Map();
+  for (const product of products) {
+    const date = product.launchDate || defaultDate || "";
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date).push(product);
+  }
+  return Array.from(byDate.entries())
+    .map(([date, groupProducts]) => ({
+      date,
+      products: groupProducts,
+      retailers: Array.from(
+        new Set(groupProducts.flatMap((p) => (p.retailers?.length ? p.retailers : ["UNASSIGNED"])))
+      ),
+    }))
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+}

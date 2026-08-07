@@ -30,6 +30,15 @@ export const CONTENT_TYPE_OPTIONS_BY_FLOW = {
   innovation: CONTENT_TYPE_OPTIONS,
 };
 
+/**
+ * CONTENT_TYPE_LABELS — value -> label lookup, derived from the same
+ * CONTENT_TYPE_OPTIONS list above (no new values invented). Exists for
+ * display-only contexts that have a stored value (or array of values) and
+ * need the friendly label without importing an options array meant for a
+ * <Select> (e.g. the Bulk Review table's Content type column).
+ */
+export const CONTENT_TYPE_LABELS = Object.fromEntries(CONTENT_TYPE_OPTIONS.map((o) => [o.value, o.label]));
+
 export const mockAssignees = [
   { value: "priya.nair", label: "Priya Nair" },
   { value: "diego.alvarez", label: "Diego Alvarez" },
